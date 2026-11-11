@@ -10,7 +10,12 @@ import {
 	listTemplates,
 } from "./agendas.server";
 import { createUser } from "./auth.server";
-import { addMemberByEmail, BoardError, createBoard } from "./boards.server";
+import {
+	addMemberByEmail,
+	BoardError,
+	createBoard,
+	setMemberTitle,
+} from "./boards.server";
 import { migrate } from "./migrate";
 import {
 	closeProtocol,
@@ -246,4 +251,23 @@ test("a protocol without a closing point can be closed by hand", async () => {
 	expect(
 		(await getProtocol(db, anna, protocol.id)).protocol.closedAt,
 	).not.toBeNull();
+});
+
+test("members are written with their title, as it was when recorded", async () => {
+	await setMemberTitle(db, anna, boardId, anna, "Ordförande");
+	const protocol = await createProtocol(db, anna, agendaId);
+	expect((await getProtocol(db, anna, protocol.id)).memberNames).toEqual([
+		"anna (Ordförande)",
+		"bo",
+	]);
+
+	// The edit history uses the same form.
+	const items = (await getProtocol(db, anna, protocol.id)).items;
+	const close = items.find((i) => i.type === "close")?.id ?? "";
+	await saveItemValue(db, anna, close, { at: "2026-11-20T19:00" });
+	const session = "11111111-2222-4333-8444-555555555555";
+	await saveItemValue(db, anna, close, { at: "2026-11-20T19:05" }, session);
+	expect((await getProtocol(db, anna, protocol.id)).edits[0].userName).toBe(
+		"anna (Ordförande)",
+	);
 });

@@ -11,6 +11,7 @@ import {
 	removeMember,
 	setBackground,
 	setMemberRole,
+	setMemberTitle,
 	setMyTitle,
 } from "./boards.server";
 import { migrate } from "./migrate";
@@ -133,4 +134,24 @@ test("members set their own title per board", async () => {
 	);
 	await setMyTitle(db, bo, boardId, "");
 	expect(await title(boardId)).toBe("");
+});
+
+test("admins set titles when adding and can change anyone's; members only their own", async () => {
+	await addMemberByEmail(db, anna, boardId, "bo@example.se", " Sekreterare ");
+	await addMemberByEmail(db, anna, boardId, "cia@example.se");
+	const title = async (u: string) =>
+		(await listMembers(db, anna, boardId)).find((m) => m.userId === u)?.title;
+	expect(await title(bo)).toBe("Sekreterare");
+	expect(await title(cia)).toBe("");
+
+	await setMemberTitle(db, anna, boardId, cia, "Kassör");
+	expect(await title(cia)).toBe("Kassör");
+	await setMemberTitle(db, cia, boardId, cia, "Vice ordförande");
+	expect(await title(cia)).toBe("Vice ordförande");
+	await expect(setMemberTitle(db, bo, boardId, cia, "Ledamot")).rejects.toThrow(
+		BoardError,
+	);
+	await expect(
+		addMemberByEmail(db, anna, boardId, "x@example.se", "x".repeat(61)),
+	).rejects.toThrow(BoardError);
 });

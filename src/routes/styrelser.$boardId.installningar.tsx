@@ -5,6 +5,11 @@ import {
 	useRouter,
 } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import {
+	TITLE_LIST_ID,
+	TitleForm,
+	TitleSuggestions,
+} from "#/components/TitleForm";
 import { DEFAULT_PATTERN, PATTERNS } from "#/patterns";
 import { createTemplate, getBoardOverview } from "#/server/agendas.functions";
 import {
@@ -13,7 +18,9 @@ import {
 	getBoardDetails,
 	removeBoardMember,
 	setBoardBackground,
+	setMemberTitle,
 } from "#/server/boards.functions";
+import { personLabel } from "#/server/items";
 
 // Board settings: background, templates and members, kept off the overview so that
 // page can focus on agendas and protocols.
@@ -58,9 +65,11 @@ function Settings() {
 	function onAdd(e: React.FormEvent<HTMLFormElement>) {
 		e.preventDefault();
 		const form = e.currentTarget;
-		const email = String(new FormData(form).get("email"));
+		const f = new FormData(form);
+		const email = String(f.get("email"));
+		const title = String(f.get("title") ?? "");
 		return run(
-			() => addMember({ data: { boardId: board.id, email } }),
+			() => addMember({ data: { boardId: board.id, email, title } }),
 			() => form.reset(),
 		);
 	}
@@ -146,13 +155,15 @@ function Settings() {
 
 			<section aria-labelledby="members">
 				<h2 id="members">Ledamöter</h2>
+				<TitleSuggestions />
 				<ul>
 					{members.map((m) => (
 						<li key={m.userId}>
-							<span>
-								{m.name}
-								{m.title && <>, {m.title}</>} <small>{m.email}</small>
-							</span>{" "}
+							<MemberTitle
+								boardId={board.id}
+								member={m}
+								canEdit={isAdmin || m.userId === currentUserId}
+							/>{" "}
 							<span>{m.role === "admin" ? "Administratör" : "Ledamot"}</span>
 							{isAdmin && (
 								<button
@@ -191,6 +202,17 @@ function Settings() {
 						<p>
 							<label htmlFor="email">E-postadress till personens konto</label>
 							<input id="email" name="email" type="email" required />
+						</p>
+						<p>
+							<label htmlFor="new-member-title">
+								Titel, t.ex. Sekreterare eller Kassör
+							</label>
+							<input
+								id="new-member-title"
+								name="title"
+								list={TITLE_LIST_ID}
+								maxLength={60}
+							/>
 						</p>
 						<button type="submit">Lägg till</button>
 					</form>
@@ -296,5 +318,50 @@ function BackgroundSection({
 				</form>
 			)}
 		</section>
+	);
+}
+
+/** A member as "Namn (Titel)", with a way to change the title if allowed. */
+function MemberTitle({
+	boardId,
+	member,
+	canEdit,
+}: {
+	boardId: string;
+	member: { userId: string; name: string; email: string; title: string };
+	canEdit: boolean;
+}) {
+	const router = useRouter();
+	const [editing, setEditing] = useState(false);
+
+	if (editing)
+		return (
+			<TitleForm
+				id={`title-${member.userId}`}
+				label={`Titel för ${member.name}`}
+				title={member.title}
+				onSave={async (title) => {
+					await setMemberTitle({
+						data: { boardId, userId: member.userId, title },
+					});
+					await router.invalidate();
+					setEditing(false);
+				}}
+				onCancel={() => setEditing(false)}
+			/>
+		);
+
+	return (
+		<span>
+			{personLabel(member.name, member.title)} <small>{member.email}</small>
+			{canEdit && (
+				<>
+					{" "}
+					<button type="button" onClick={() => setEditing(true)}>
+						{member.title ? "Ändra titel" : "Lägg till titel"}
+					</button>
+				</>
+			)}
+		</span>
 	);
 }

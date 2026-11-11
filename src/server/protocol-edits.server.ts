@@ -1,5 +1,6 @@
 import type { Client } from "@libsql/client";
 import { BoardError } from "./boards.server";
+import { personLabel } from "./items";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -25,9 +26,13 @@ export async function guardProtocolEdit(
 		throw new BoardError(
 			"Protokollet är stängt. Välj ”Redigera protokollet” för att ändra det.",
 		);
+	// The editor as written in the protocol, with their title on this board.
 	const user = await db.execute({
-		sql: "SELECT name FROM users WHERE id = ?",
-		args: [userId],
+		sql: `SELECT u.name, m.title FROM users u
+          JOIN protocols p ON p.id = ?
+          LEFT JOIN board_memberships m ON m.board_id = p.board_id AND m.user_id = u.id
+          WHERE u.id = ?`,
+		args: [protocolId, userId],
 	});
 	const logged = await db.execute({
 		sql: `INSERT INTO protocol_edits (id, protocol_id, user_id, user_name, edited_at)
@@ -39,7 +44,10 @@ export async function guardProtocolEdit(
 			editSession,
 			protocolId,
 			userId,
-			String(user.rows[0]?.name ?? ""),
+			personLabel(
+				String(user.rows[0]?.name ?? ""),
+				String(user.rows[0]?.title ?? ""),
+			),
 			new Date().toISOString(),
 		],
 	});

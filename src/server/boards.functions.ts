@@ -40,10 +40,17 @@ export const addMember = createServerFn({ method: "POST" })
 	.validator((d: unknown) => ({
 		boardId: str(obj(d).boardId),
 		email: str(obj(d).email),
+		title: str(obj(d).title),
 	}))
 	.handler(async ({ data }) => {
 		const { db, user, boards } = await ctx();
-		await boards.addMemberByEmail(db, user.id, data.boardId, data.email);
+		await boards.addMemberByEmail(
+			db,
+			user.id,
+			data.boardId,
+			data.email,
+			data.title,
+		);
 	});
 
 export const changeMemberRole = createServerFn({ method: "POST" })
@@ -91,4 +98,21 @@ export const setMyTitle = createServerFn({ method: "POST" })
 	.handler(async ({ data }) => {
 		const { db, user, boards } = await ctx();
 		await boards.setMyTitle(db, user.id, data.boardId, data.title);
+	});
+
+export const setMemberTitle = createServerFn({ method: "POST" })
+	.validator((d: unknown) => ({
+		boardId: str(obj(d).boardId),
+		userId: str(obj(d).userId),
+		title: str(obj(d).title),
+	}))
+	.handler(async ({ data }) => {
+		const { db, user, boards } = await ctx();
+		await boards.setMemberTitle(
+			db,
+			user.id,
+			data.boardId,
+			data.userId,
+			data.title,
+		);
 	});

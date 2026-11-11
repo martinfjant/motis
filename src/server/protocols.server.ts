@@ -12,7 +12,12 @@ import {
 	requireTitle,
 } from "./agendas.server";
 import { BoardError, listMembers, requireMember } from "./boards.server";
-import type { ItemType, ProtocolItem, ProtocolValue } from "./items";
+import {
+	type ItemType,
+	type ProtocolItem,
+	type ProtocolValue,
+	personLabel,
+} from "./items";
 import { guardProtocolEdit } from "./protocol-edits.server";
 
 export type Protocol = {
@@ -204,8 +209,12 @@ export async function getProtocol(
 				editedAt: String(r.edited_at),
 			}),
 		),
-		/** Board members' names, for attendance and person choices. */
-		memberNames: members.map((m) => m.name),
+		/**
+		 * Board members as written in the protocol, "Namn (Titel)", for
+		 * attendance and person choices. Saved values keep the label as it
+		 * was, so a protocol shows the titles people had at the meeting.
+		 */
+		memberNames: members.map((m) => personLabel(m.name, m.title)),
 	};
 }
 

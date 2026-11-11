@@ -52,3 +52,11 @@ export type ProtocolValue = {
 };
 
 export type ProtocolItem = Item & { value: ProtocolValue };
+
+/**
+ * How a board member is written in protocols: "Namn Namnsson (Sekreterare)",
+ * or just the name if they have no title.
+ */
+export function personLabel(name: string, title: string): string {
+	return title ? `${name} (${title})` : name;
+}

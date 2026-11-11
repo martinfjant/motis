@@ -143,8 +143,10 @@ export async function addMemberByEmail(
 	actorId: string,
 	boardId: string,
 	emailInput: string,
+	titleInput = "",
 ) {
 	await requireAdmin(db, actorId, boardId);
+	const title = cleanTitle(titleInput);
 	const email = emailInput.trim().toLowerCase();
 	const user = await db.execute({
 		sql: "SELECT id FROM users WHERE email = ?",
@@ -162,8 +164,8 @@ export async function addMemberByEmail(
 	if (existing.rows.length > 0)
 		throw new BoardError("Personen är redan med i styrelsen.");
 	await db.execute({
-		sql: "INSERT INTO board_memberships (board_id, user_id, role) VALUES (?, ?, 'member')",
-		args: [boardId, userId],
+		sql: "INSERT INTO board_memberships (board_id, user_id, role, title) VALUES (?, ?, 'member', ?)",
+		args: [boardId, userId, title],
 	});
 }
 
@@ -232,11 +234,30 @@ export async function setMyTitle(
 	boardId: string,
 	titleInput: string,
 ) {
-	await requireMember(db, userId, boardId);
-	const title = titleInput.trim();
-	if (title.length > 60) throw new BoardError("Titeln är för lång.");
-	await db.execute({
+	await setMemberTitle(db, userId, boardId, userId, titleInput);
+}
+
+/** Admins set anyone's title on the board; members only their own. */
+export async function setMemberTitle(
+	db: Client,
+	actorId: string,
+	boardId: string,
+	userId: string,
+	titleInput: string,
+) {
+	if (actorId === userId) await requireMember(db, actorId, boardId);
+	else await requireAdmin(db, actorId, boardId);
+	const title = cleanTitle(titleInput);
+	const res = await db.execute({
 		sql: "UPDATE board_memberships SET title = ? WHERE board_id = ? AND user_id = ?",
 		args: [title, boardId, userId],
 	});
+	if (res.rowsAffected === 0)
+		throw new BoardError("Personen är inte med i styrelsen.");
+}
+
+function cleanTitle(input: string) {
+	const title = input.trim();
+	if (title.length > 60) throw new BoardError("Titeln är för lång.");
+	return title;
 }

@@ -5,18 +5,9 @@ import {
 	useRouter,
 } from "@tanstack/react-router";
 import { useState } from "react";
+import { TitleForm, TitleSuggestions } from "#/components/TitleForm";
 import { updateProfile } from "#/server/auth.functions";
 import { getMyBoards, setMyTitle } from "#/server/boards.functions";
-
-/** Common posts on a BRF board, offered as suggestions; any title is allowed. */
-const TITLE_SUGGESTIONS = [
-	"Ordförande",
-	"Vice ordförande",
-	"Sekreterare",
-	"Kassör",
-	"Ledamot",
-	"Suppleant",
-];
 
 export const Route = createFileRoute("/konto")({
 	beforeLoad: ({ context }) => {
@@ -41,11 +32,7 @@ function Account() {
 				) : (
 					<>
 						<p>Din titel visas i styrelsens lista över ledamöter.</p>
-						<datalist id="title-suggestions">
-							{TITLE_SUGGESTIONS.map((t) => (
-								<option key={t} value={t} />
-							))}
-						</datalist>
+						<TitleSuggestions />
 						<ul>
 							{boards.map((board) => (
 								<li key={board.id}>
@@ -189,58 +176,31 @@ function TitleRow({
 }) {
 	const router = useRouter();
 	const [editing, setEditing] = useState(false);
-	const [error, setError] = useState<string | null>(null);
-	const inputId = `title-${boardId}`;
 
-	async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-		e.preventDefault();
-		setError(null);
-		try {
-			await setMyTitle({
-				data: {
-					boardId,
-					title: String(new FormData(e.currentTarget).get("title")),
-				},
-			});
-			await router.invalidate();
-			setEditing(false);
-		} catch (err) {
-			setError(err instanceof Error ? err.message : "Något gick fel.");
-		}
-	}
-
-	if (!editing)
+	if (editing)
 		return (
-			<p>
-				<Link to="/styrelser/$boardId" params={{ boardId }}>
-					{boardName}
-				</Link>
-				: {title || <em>ingen titel</em>}{" "}
-				<button type="button" onClick={() => setEditing(true)}>
-					{title ? "Ändra" : "Lägg till titel"}
-				</button>
-			</p>
+			<TitleForm
+				id={`title-${boardId}`}
+				label={`Din titel i ${boardName}`}
+				title={title}
+				onSave={async (value) => {
+					await setMyTitle({ data: { boardId, title: value } });
+					await router.invalidate();
+					setEditing(false);
+				}}
+				onCancel={() => setEditing(false)}
+			/>
 		);
 
 	return (
-		<form onSubmit={onSubmit}>
-			<p>
-				<label htmlFor={inputId}>Din titel i {boardName}</label>
-				<input
-					id={inputId}
-					name="title"
-					list="title-suggestions"
-					maxLength={60}
-					defaultValue={title}
-				/>
-			</p>
-			{error && <p role="alert">{error}</p>}
-			<p>
-				<button type="submit">Spara</button>{" "}
-				<button type="button" onClick={() => setEditing(false)}>
-					Avbryt
-				</button>
-			</p>
-		</form>
+		<p>
+			<Link to="/styrelser/$boardId" params={{ boardId }}>
+				{boardName}
+			</Link>
+			: {title || <em>ingen titel</em>}{" "}
+			<button type="button" onClick={() => setEditing(true)}>
+				{title ? "Ändra" : "Lägg till titel"}
+			</button>
+		</p>
 	);
 }
