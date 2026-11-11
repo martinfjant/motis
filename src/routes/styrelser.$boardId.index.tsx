@@ -4,7 +4,7 @@ import {
 	notFound,
 	useRouter,
 } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { formatMeetingAt } from "#/meeting-time";
 import {
 	createAgenda,
@@ -67,26 +67,6 @@ function Board() {
 		);
 	}
 
-	function onCreateAgenda(e: React.FormEvent<HTMLFormElement>) {
-		e.preventDefault();
-		const f = new FormData(e.currentTarget);
-		return run(async () => {
-			const agenda = await createAgenda({
-				data: {
-					boardId: board.id,
-					templateId: String(f.get("templateId")),
-					title: String(f.get("title")),
-					meetingAt: String(f.get("meetingAt")),
-					location: String(f.get("location")),
-				},
-			});
-			await router.navigate({
-				to: "/styrelser/$boardId/dagordningar/$agendaId",
-				params: { boardId: board.id, agendaId: agenda.id },
-			});
-		});
-	}
-
 	function onCreateTemplate(e: React.FormEvent<HTMLFormElement>) {
 		e.preventDefault();
 		const name = String(new FormData(e.currentTarget).get("templateName"));
@@ -116,6 +96,7 @@ function Board() {
 
 			<section aria-labelledby="agendas">
 				<h2 id="agendas">Dagordningar</h2>
+				<NewAgendaDialog boardId={board.id} templates={templates} />
 				{agendas.length === 0 ? (
 					<p>Inga dagordningar ännu.</p>
 				) : (
@@ -140,39 +121,6 @@ function Board() {
 						))}
 					</ul>
 				)}
-
-				<h3>Ny dagordning</h3>
-				<form onSubmit={onCreateAgenda}>
-					<p>
-						<label htmlFor="templateId">Mall</label>
-						<select id="templateId" name="templateId">
-							{templates.map((t) => (
-								<option key={t.id} value={t.id}>
-									{t.name}
-								</option>
-							))}
-							<option value="">Ingen mall (tom dagordning)</option>
-						</select>
-					</p>
-					<p>
-						<label htmlFor="title">Rubrik</label>
-						<input
-							id="title"
-							name="title"
-							defaultValue="Styrelsemöte"
-							required
-						/>
-					</p>
-					<p>
-						<label htmlFor="meetingAt">Datum och tid</label>
-						<input id="meetingAt" name="meetingAt" type="datetime-local" />
-					</p>
-					<p>
-						<label htmlFor="location">Plats</label>
-						<input id="location" name="location" />
-					</p>
-					<button type="submit">Skapa dagordning</button>
-				</form>
 			</section>
 
 			<section aria-labelledby="protocols">
@@ -298,5 +246,105 @@ function Board() {
 				</section>
 			)}
 		</main>
+	);
+}
+
+/** "Skapa ny dagordning" button that opens the creation form in a modal dialog. */
+function NewAgendaDialog({
+	boardId,
+	templates,
+}: {
+	boardId: string;
+	templates: { id: string; name: string }[];
+}) {
+	const router = useRouter();
+	const dialog = useRef<HTMLDialogElement>(null);
+	const [error, setError] = useState<string | null>(null);
+	const [pending, setPending] = useState(false);
+
+	async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+		e.preventDefault();
+		const f = new FormData(e.currentTarget);
+		setError(null);
+		setPending(true);
+		try {
+			const agenda = await createAgenda({
+				data: {
+					boardId,
+					templateId: String(f.get("templateId")),
+					title: String(f.get("title")),
+					meetingAt: String(f.get("meetingAt")),
+					location: String(f.get("location")),
+				},
+			});
+			dialog.current?.close();
+			await router.navigate({
+				to: "/styrelser/$boardId/dagordningar/$agendaId",
+				params: { boardId, agendaId: agenda.id },
+			});
+		} catch (err) {
+			setError(err instanceof Error ? err.message : "Något gick fel.");
+		} finally {
+			setPending(false);
+		}
+	}
+
+	return (
+		<>
+			<p>
+				<button type="button" onClick={() => dialog.current?.showModal()}>
+					Skapa ny dagordning
+				</button>
+			</p>
+			<dialog
+				ref={dialog}
+				aria-labelledby="new-agenda"
+				onClose={(e) => {
+					e.currentTarget.querySelector("form")?.reset();
+					setError(null);
+				}}
+			>
+				<h2 id="new-agenda">Ny dagordning</h2>
+				<form onSubmit={onSubmit}>
+					<p>
+						<label htmlFor="templateId">Mall</label>
+						<select id="templateId" name="templateId">
+							{templates.map((t) => (
+								<option key={t.id} value={t.id}>
+									{t.name}
+								</option>
+							))}
+							<option value="">Ingen mall (tom dagordning)</option>
+						</select>
+					</p>
+					<p>
+						<label htmlFor="title">Rubrik</label>
+						<input
+							id="title"
+							name="title"
+							defaultValue="Styrelsemöte"
+							required
+						/>
+					</p>
+					<p>
+						<label htmlFor="meetingAt">Datum och tid</label>
+						<input id="meetingAt" name="meetingAt" type="datetime-local" />
+					</p>
+					<p>
+						<label htmlFor="location">Plats</label>
+						<input id="location" name="location" />
+					</p>
+					{error && <p role="alert">{error}</p>}
+					<p>
+						<button type="submit" disabled={pending}>
+							Skapa dagordning
+						</button>{" "}
+						<button type="button" onClick={() => dialog.current?.close()}>
+							Avbryt
+						</button>
+					</p>
+				</form>
+			</dialog>
+		</>
 	);
 }
