@@ -1,6 +1,8 @@
 // Shared, client-safe definitions for agenda/template items.
 
 export const ITEM_TYPES = [
+	"open",
+	"close",
 	"toggle",
 	"attendance",
 	"person",
@@ -10,6 +12,8 @@ export const ITEM_TYPES = [
 export type ItemType = (typeof ITEM_TYPES)[number];
 
 export const ITEM_TYPE_LABELS: Record<ItemType, string> = {
+	open: "Mötets öppnande (med tidpunkt)",
+	close: "Mötets avslutande (med tidpunkt)",
 	toggle: "Ja/nej (t.ex. mötet öppnat)",
 	attendance: "Närvaro",
 	person: "Val av person",
@@ -33,8 +37,10 @@ export function isItemType(v: unknown): v is ItemType {
 
 /** What was recorded for a point at the meeting. Which fields apply depends on the type. */
 export type ProtocolValue = {
-	/** toggle: e.g. the meeting was opened, the agenda was approved. */
+	/** toggle: e.g. the agenda was approved. */
 	done?: boolean;
+	/** open/close: when it happened, local wall-clock "YYYY-MM-DDTHH:MM". */
+	at?: string;
 	/** attendance: names of everyone present (snapshot, not account ids). */
 	present?: string[];
 	/** person: the chosen person's name. */

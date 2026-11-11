@@ -4,9 +4,11 @@ import {
 	notFound,
 	useRouter,
 } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { MeetingDetails } from "#/components/AgendaView";
 import { ItemFields } from "#/components/ItemEditor";
 import { MeetingForm } from "#/components/MeetingForm";
+import { formatMeetingAt, toLocalStamp } from "#/meeting-time";
 import { addItem, deleteItem } from "#/server/agendas.functions";
 import type { ProtocolItem, ProtocolValue } from "#/server/items";
 import {
@@ -42,6 +44,7 @@ function ProtocolPage() {
 	const router = useRouter();
 	const [error, setError] = useState<string | null>(null);
 	const [addFormKey, setAddFormKey] = useState(0);
+	const [editingDetails, setEditingDetails] = useState(false);
 
 	// Who can be picked in person choices: those marked present if attendance
 	// has been taken, otherwise every member and invited guest.
@@ -117,15 +120,38 @@ function ProtocolPage() {
 			</nav>
 			<h1>Protokoll: {protocol.title}</h1>
 
-			<MeetingForm
-				initial={protocol}
-				onSave={async (details) => {
-					await updateProtocol({
-						data: { protocolId: protocol.id, ...details },
-					});
-					await router.invalidate();
-				}}
-			/>
+			{editingDetails ? (
+				<>
+					<MeetingForm
+						initial={protocol}
+						onSave={async (details) => {
+							await updateProtocol({
+								data: { protocolId: protocol.id, ...details },
+							});
+							await router.invalidate();
+							setEditingDetails(false);
+						}}
+					/>
+					<p>
+						<button type="button" onClick={() => setEditingDetails(false)}>
+							Avbryt
+						</button>
+					</p>
+				</>
+			) : (
+				<section aria-labelledby="meeting">
+					<h2 id="meeting">Mötet</h2>
+					<MeetingDetails
+						meetingAt={protocol.meetingAt}
+						location={protocol.location}
+					/>
+					<p>
+						<button type="button" onClick={() => setEditingDetails(true)}>
+							Ändra mötesuppgifter
+						</button>
+					</p>
+				</section>
+			)}
 
 			<section aria-labelledby="points">
 				<h2 id="points">Punkter</h2>
@@ -137,24 +163,35 @@ function ProtocolPage() {
 					<ol>
 						{items.map((item) => (
 							<li key={item.id}>
-								<ProtocolItemForm
-									item={item}
-									invited={invited}
-									choosable={choosable}
-									onSave={(value) =>
-										run(() =>
-											saveItemValue({ data: { itemId: item.id, value } }),
-										)
-									}
-									onDelete={() => {
-										if (confirm(`Ta bort punkten ”${item.title}”?`))
+								{item.type === "open" || item.type === "close" ? (
+									<MeetingMoment
+										item={item}
+										onSave={(value) =>
 											run(() =>
-												deleteItem({
-													data: { kind: "protocol", itemId: item.id },
-												}),
-											);
-									}}
-								/>
+												saveItemValue({ data: { itemId: item.id, value } }),
+											)
+										}
+									/>
+								) : (
+									<ProtocolItemForm
+										item={item}
+										invited={invited}
+										choosable={choosable}
+										onSave={(value) =>
+											run(() =>
+												saveItemValue({ data: { itemId: item.id, value } }),
+											)
+										}
+										onDelete={() => {
+											if (confirm(`Ta bort punkten ”${item.title}”?`))
+												run(() =>
+													deleteItem({
+														data: { kind: "protocol", itemId: item.id },
+													}),
+												);
+										}}
+									/>
+								)}
 							</li>
 						))}
 					</ol>
@@ -175,6 +212,96 @@ function ProtocolPage() {
 				</button>
 			</section>
 		</main>
+	);
+}
+
+const MOMENT_TEXT = {
+	open: { button: "Öppna mötet", done: "Mötet öppnades" },
+	close: { button: "Avsluta mötet", done: "Mötet avslutades" },
+};
+
+/** The current time, ticking. Null until mounted so server and client agree. */
+function useNow() {
+	const [now, setNow] = useState<Date | null>(null);
+	useEffect(() => {
+		const tick = () => setNow(new Date());
+		tick();
+		const timer = setInterval(tick, 1000);
+		return () => clearInterval(timer);
+	}, []);
+	return now;
+}
+
+/**
+ * Opening or closing the meeting: one button that records the current time,
+ * then the recorded time with a way to correct it.
+ */
+function MeetingMoment({
+	item,
+	onSave,
+}: {
+	item: ProtocolItem;
+	onSave: (value: ProtocolValue) => Promise<boolean>;
+}) {
+	const text = MOMENT_TEXT[item.type === "close" ? "close" : "open"];
+	const at = item.value.at;
+	const now = useNow();
+	const [editing, setEditing] = useState(false);
+	const inputId = `${item.id}-at`;
+
+	async function onCorrect(e: React.FormEvent<HTMLFormElement>) {
+		e.preventDefault();
+		const value = String(new FormData(e.currentTarget).get("at") ?? "");
+		if (await onSave({ at: value })) setEditing(false);
+	}
+
+	return (
+		<fieldset>
+			<legend>{item.title}</legend>
+			{item.description && <p>{item.description}</p>}
+			{editing && at ? (
+				<form onSubmit={onCorrect}>
+					<p>
+						<label htmlFor={inputId}>{text.done}</label>
+						<input
+							id={inputId}
+							name="at"
+							type="datetime-local"
+							defaultValue={at}
+							required
+						/>
+					</p>
+					<button type="submit">Spara</button>{" "}
+					<button type="button" onClick={() => setEditing(false)}>
+						Avbryt
+					</button>
+				</form>
+			) : at ? (
+				<p>
+					{text.done} <time dateTime={at}>{formatMeetingAt(at)}</time>{" "}
+					<button type="button" onClick={() => setEditing(true)}>
+						Ändra
+					</button>
+				</p>
+			) : (
+				<p>
+					{now && (
+						<>
+							Klockan är{" "}
+							<time dateTime={toLocalStamp(now)}>
+								{toLocalStamp(now).slice(11)}
+							</time>{" "}
+						</>
+					)}
+					<button
+						type="button"
+						onClick={() => onSave({ at: toLocalStamp(new Date()) })}
+					>
+						{text.button}
+					</button>
+				</p>
+			)}
+		</fieldset>
 	);
 }
 

@@ -43,6 +43,8 @@ function parseValue(raw: unknown): ProtocolValue {
 	}
 }
 
+const AT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+
 /** Keeps only the fields that make sense for the item's type. */
 export function cleanValue(
 	type: ItemType,
@@ -53,6 +55,11 @@ export function cleanValue(
 	switch (type) {
 		case "toggle":
 			return { ...base, done: input.done === true };
+		case "open":
+		case "close": {
+			const at = (input.at ?? "").trim();
+			return AT.test(at) ? { ...base, at } : base;
+		}
 		case "attendance":
 			return { ...base, present: cleanNames(input.present ?? []) };
 		case "person": {

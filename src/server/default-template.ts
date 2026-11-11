@@ -5,7 +5,7 @@ import type { ItemType } from "./items";
 export const DEFAULT_TEMPLATE_NAME = "Styrelsemöte";
 
 export const DEFAULT_TEMPLATE_ITEMS: { title: string; type: ItemType }[] = [
-	{ title: "Mötets öppnande", type: "toggle" },
+	{ title: "Mötets öppnande", type: "open" },
 	{ title: "Val av ordförande", type: "person" },
 	{ title: "Val av sekreterare", type: "person" },
 	{ title: "Val av justerare", type: "person" },
@@ -16,7 +16,7 @@ export const DEFAULT_TEMPLATE_ITEMS: { title: string; type: ItemType }[] = [
 	{ title: "Driftsfrågor", type: "text" },
 	{ title: "Övriga frågor", type: "text" },
 	{ title: "Nästa möte", type: "text" },
-	{ title: "Mötets avslutande", type: "toggle" },
+	{ title: "Mötets avslutande", type: "close" },
 ];
 
 /** Statements that give a board its own editable copy of the default template. */

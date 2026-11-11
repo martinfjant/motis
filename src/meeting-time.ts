@@ -12,3 +12,10 @@ export function formatMeetingAt(value: string): string {
 	const day = `${d}-${mo}-${y}`;
 	return h ? `${day} ${h}:${mi}` : day;
 }
+
+const pad = (n: number) => String(n).padStart(2, "0");
+
+/** A Date as local wall-clock "YYYY-MM-DDTHH:MM", the format times are stored in. */
+export function toLocalStamp(date: Date): string {
+	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}

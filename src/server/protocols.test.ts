@@ -108,10 +108,17 @@ test("values are stored per type and stray fields dropped", async () => {
 		return item.id;
 	};
 
-	await saveItemValue(db, bo, byTitle("Mötets öppnande"), {
+	await saveItemValue(db, bo, byTitle("Godkännande av dagordning"), {
 		done: true,
 		person: "ska bort",
-		notes: " Ordföranden öppnade mötet. ",
+		notes: " Dagordningen godkändes. ",
+	});
+	await saveItemValue(db, bo, byTitle("Mötets öppnande"), {
+		at: "2026-11-20T18:03",
+		done: true,
+	});
+	await saveItemValue(db, bo, byTitle("Mötets avslutande"), {
+		at: "igår kväll",
 	});
 	await saveItemValue(db, bo, byTitle("Närvarande ledamöter"), {
 		present: ["anna", " bo ", "", "anna", "Revisor Lisa"],
@@ -124,10 +131,12 @@ test("values are stored per type and stray fields dropped", async () => {
 
 	const saved = (await getProtocol(db, anna, protocol.id)).items;
 	const value = (t: string) => saved.find((i) => i.title === t)?.value;
-	expect(value("Mötets öppnande")).toEqual({
+	expect(value("Godkännande av dagordning")).toEqual({
 		done: true,
-		notes: "Ordföranden öppnade mötet.",
+		notes: "Dagordningen godkändes.",
 	});
+	expect(value("Mötets öppnande")).toEqual({ at: "2026-11-20T18:03" });
+	expect(value("Mötets avslutande")).toEqual({});
 	expect(value("Närvarande ledamöter")).toEqual({
 		present: ["anna", "bo", "Revisor Lisa"],
 	});
