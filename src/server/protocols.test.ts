@@ -331,21 +331,30 @@ test("replacing the protocol link revokes the old one, members only", async () =
 test("a meeting can only be started on its day, Swedish time", async () => {
 	const at = (iso: string) => new Date(iso);
 	await expect(
-		createProtocol(db, anna, agendaId, at("2026-11-19T12:00:00Z")),
+		createProtocol(db, anna, agendaId, {
+			now: at("2026-11-19T12:00:00Z"),
+			anyDay: false,
+		}),
 	).rejects.toThrow("Mötet kan startas den 20-11-2026.");
 	await expect(
-		createProtocol(db, anna, agendaId, at("2026-11-21T12:00:00Z")),
+		createProtocol(db, anna, agendaId, {
+			now: at("2026-11-21T12:00:00Z"),
+			anyDay: false,
+		}),
 	).rejects.toThrow("Mötet var satt till 20-11-2026.");
 	// 23:30 UTC on the 19th is already the 20th in Sweden.
-	const protocol = await createProtocol(
-		db,
-		anna,
-		agendaId,
-		at("2026-11-19T23:30:00Z"),
-	);
+	const protocol = await createProtocol(db, anna, agendaId, {
+		now: at("2026-11-19T23:30:00Z"),
+		anyDay: false,
+	});
 	// Opening an already started meeting works any day.
 	expect(
-		(await createProtocol(db, anna, agendaId, at("2027-01-01T12:00:00Z"))).id,
+		(
+			await createProtocol(db, anna, agendaId, {
+				now: at("2027-01-01T12:00:00Z"),
+				anyDay: false,
+			})
+		).id,
 	).toBe(protocol.id);
 
 	const undated = await createAgenda(db, anna, boardId, {
@@ -353,7 +362,15 @@ test("a meeting can only be started on its day, Swedish time", async () => {
 		meetingAt: "",
 		location: "",
 	});
-	await expect(createProtocol(db, anna, undated.id)).rejects.toThrow(
-		"Mötet har inget datum.",
-	);
+	await expect(
+		createProtocol(db, anna, undated.id, { anyDay: false }),
+	).rejects.toThrow("Mötet har inget datum.");
+});
+
+test("in development a meeting can be started any day", async () => {
+	const protocol = await createProtocol(db, anna, agendaId, {
+		now: new Date("2027-01-01T12:00:00Z"),
+		anyDay: true,
+	});
+	expect(protocol.agendaId).toBe(agendaId);
 });

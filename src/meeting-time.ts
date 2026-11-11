@@ -60,6 +60,12 @@ export function daysBetween(from: string, to: string): number {
 }
 
 /**
+ * In development a meeting can be started any day, so it can be tried out
+ * by hand. Vite sets this to false in production builds.
+ */
+export const START_ANY_DAY = import.meta.env.DEV;
+
+/**
  * Why a meeting can't be started today, or null if it can. A meeting is
  * started on the day it is set for; to hold it another day, change the date.
  */

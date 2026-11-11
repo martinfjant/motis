@@ -9,7 +9,7 @@ import { AgendaItems, MeetingDetails } from "#/components/AgendaView";
 import { ItemEditor } from "#/components/ItemEditor";
 import { MeetingForm } from "#/components/MeetingForm";
 import { ShareSection } from "#/components/ShareSection";
-import { cannotStart } from "#/meeting-time";
+import { cannotStart, START_ANY_DAY } from "#/meeting-time";
 import {
 	deleteAgenda,
 	getAgenda,
@@ -42,7 +42,7 @@ function AgendaPage() {
 	const router = useRouter();
 	const [editing, setEditing] = useState(false);
 	const [startError, setStartError] = useState<string | null>(null);
-	const notToday = cannotStart(agenda.meetingAt, today);
+	const notToday = START_ANY_DAY ? null : cannotStart(agenda.meetingAt, today);
 
 	async function onStartProtocol() {
 		setStartError(null);

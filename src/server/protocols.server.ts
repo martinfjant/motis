@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Client, Row } from "@libsql/client";
-import { cannotStart, stockholmStamp } from "../meeting-time";
+import { cannotStart, START_ANY_DAY, stockholmStamp } from "../meeting-time";
 import {
 	type AgendaDetails,
 	cleanMeetingAt,
@@ -126,13 +126,14 @@ export async function listProtocols(
  * Starts the minutes for an agenda by copying its details and points.
  * The agenda itself is left as it was. If the agenda already has a
  * protocol, that one is returned instead of creating a second. A meeting
- * can only be started on the day it is set for (Swedish time).
+ * can only be started on the day it is set for (Swedish time), except in
+ * development (see START_ANY_DAY).
  */
 export async function createProtocol(
 	db: Client,
 	userId: string,
 	agendaId: string,
-	now = new Date(),
+	{ now = new Date(), anyDay = START_ANY_DAY } = {},
 ): Promise<Protocol> {
 	const { row } = await requireParent(db, userId, "agenda", agendaId);
 	const existing = await db.execute({
@@ -140,10 +141,9 @@ export async function createProtocol(
 		args: [agendaId],
 	});
 	if (existing.rows[0]) return toProtocol(existing.rows[0]);
-	const problem = cannotStart(
-		String(row.meeting_at),
-		stockholmStamp(now).slice(0, 10),
-	);
+	const problem =
+		!anyDay &&
+		cannotStart(String(row.meeting_at), stockholmStamp(now).slice(0, 10));
 	if (problem) throw new BoardError(problem);
 
 	const protocol: Protocol = {

@@ -10,6 +10,7 @@ import {
 	daysBetween,
 	daysUntilText,
 	formatMeetingAt,
+	START_ANY_DAY,
 } from "#/meeting-time";
 import { callMeeting, getBoardOverview } from "#/server/agendas.functions";
 import type { MeetingPlan } from "#/server/meetings.server";
@@ -126,15 +127,15 @@ function Board() {
 								</Link>{" "}
 								<When at={a.meetingAt} today={today} />{" "}
 								{/* Startable only on its day; a future date speaks for itself. */}
-								{!a.meetingAt ? (
-									<>– inget datum, ange det för att kunna starta mötet.</>
-								) : a.meetingAt.slice(0, 10) < today ? (
-									<>– datumet har passerat, ändra det för att starta mötet.</>
-								) : cannotStart(a.meetingAt, today) ? null : (
+								{START_ANY_DAY || !cannotStart(a.meetingAt, today) ? (
 									<button type="button" onClick={() => onStartMeeting(a.id)}>
 										Starta möte
 									</button>
-								)}
+								) : !a.meetingAt ? (
+									<>– inget datum, ange det för att kunna starta mötet.</>
+								) : a.meetingAt.slice(0, 10) < today ? (
+									<>– datumet har passerat, ändra det för att starta mötet.</>
+								) : null}
 							</li>
 						))}
 						{plan.nextAt && (
