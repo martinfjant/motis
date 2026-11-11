@@ -21,6 +21,16 @@ export type Member = {
 	title: string;
 };
 
+/** A board member without an account; see board_unregistered_members. */
+export type UnregisteredMember = {
+	id: string;
+	name: string;
+	email: string;
+	title: string;
+	/** Someone has registered with this email and can be linked up. */
+	hasAccount: boolean;
+};
+
 export class BoardError extends Error {}
 
 export async function createBoard(
@@ -163,10 +173,176 @@ export async function addMemberByEmail(
 	});
 	if (existing.rows.length > 0)
 		throw new BoardError("Personen är redan med i styrelsen.");
-	await db.execute({
-		sql: "INSERT INTO board_memberships (board_id, user_id, role, title) VALUES (?, ?, 'member', ?)",
-		args: [boardId, userId, title],
+	// If they were on the board without an account, this replaces that.
+	const unregistered = await db.execute({
+		sql: "SELECT title FROM board_unregistered_members WHERE board_id = ? AND email = ?",
+		args: [boardId, email],
 	});
+	const keptTitle = title || String(unregistered.rows[0]?.title ?? "");
+	await db.batch(
+		[
+			{
+				sql: "INSERT INTO board_memberships (board_id, user_id, role, title) VALUES (?, ?, 'member', ?)",
+				args: [boardId, userId, keptTitle],
+			},
+			{
+				sql: "DELETE FROM board_unregistered_members WHERE board_id = ? AND email = ?",
+				args: [boardId, email],
+			},
+		],
+		"write",
+	);
+}
+
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function cleanPerson(input: { name: string; email: string; title: string }) {
+	const name = input.name.trim();
+	const email = input.email.trim().toLowerCase();
+	if (!name) throw new BoardError("Ange personens namn.");
+	if (name.length > 100) throw new BoardError("Namnet är för långt.");
+	if (email && !EMAIL.test(email))
+		throw new BoardError("Ange en giltig e-postadress.");
+	return { name, email, title: cleanTitle(input.title) };
+}
+
+async function accountExists(db: Client, email: string) {
+	if (!email) return false;
+	const res = await db.execute({
+		sql: "SELECT 1 FROM users WHERE email = ?",
+		args: [email],
+	});
+	return res.rows.length > 0;
+}
+
+/** Throws if the email is already used by someone on the board. */
+async function requireFreeEmail(
+	db: Client,
+	boardId: string,
+	email: string,
+	exceptId = "",
+) {
+	if (!email) return;
+	const res = await db.execute({
+		sql: `SELECT 1 FROM board_unregistered_members WHERE board_id = ? AND email = ? AND id != ?
+          UNION ALL
+          SELECT 1 FROM board_memberships m JOIN users u ON u.id = m.user_id
+          WHERE m.board_id = ? AND u.email = ?`,
+		args: [boardId, email, exceptId, boardId, email],
+	});
+	if (res.rows.length > 0)
+		throw new BoardError("Någon i styrelsen har redan den e-postadressen.");
+}
+
+/**
+ * "Lägg till ledamot": someone with an account (found by email) becomes a
+ * member; anyone else is added without an account, which needs a name.
+ */
+export async function addMember(
+	db: Client,
+	actorId: string,
+	boardId: string,
+	input: { name: string; email: string; title: string },
+): Promise<{ registered: boolean }> {
+	await requireAdmin(db, actorId, boardId);
+	const email = input.email.trim().toLowerCase();
+	if (await accountExists(db, email)) {
+		await addMemberByEmail(db, actorId, boardId, email, input.title);
+		return { registered: true };
+	}
+	const person = cleanPerson(input);
+	await requireFreeEmail(db, boardId, person.email);
+	await db.execute({
+		sql: "INSERT INTO board_unregistered_members (id, board_id, name, email, title) VALUES (?, ?, ?, ?, ?)",
+		args: [randomUUID(), boardId, person.name, person.email, person.title],
+	});
+	return { registered: false };
+}
+
+export async function listUnregistered(
+	db: Client,
+	userId: string,
+	boardId: string,
+): Promise<UnregisteredMember[]> {
+	await requireMember(db, userId, boardId);
+	const res = await db.execute({
+		sql: `SELECT r.*, u.id AS user_id FROM board_unregistered_members r
+          LEFT JOIN users u ON r.email != '' AND u.email = r.email
+          WHERE r.board_id = ? ORDER BY r.name`,
+		args: [boardId],
+	});
+	return res.rows.map((r) => ({
+		id: String(r.id),
+		name: String(r.name),
+		email: String(r.email),
+		title: String(r.title),
+		hasAccount: r.user_id != null,
+	}));
+}
+
+async function requireUnregistered(db: Client, boardId: string, id: string) {
+	const res = await db.execute({
+		sql: "SELECT * FROM board_unregistered_members WHERE id = ? AND board_id = ?",
+		args: [id, boardId],
+	});
+	if (!res.rows[0]) throw new BoardError("Personen finns inte i styrelsen.");
+	return res.rows[0];
+}
+
+export async function updateUnregistered(
+	db: Client,
+	actorId: string,
+	boardId: string,
+	id: string,
+	input: { name: string; email: string; title: string },
+) {
+	await requireAdmin(db, actorId, boardId);
+	await requireUnregistered(db, boardId, id);
+	const person = cleanPerson(input);
+	await requireFreeEmail(db, boardId, person.email, id);
+	await db.execute({
+		sql: "UPDATE board_unregistered_members SET name = ?, email = ?, title = ? WHERE id = ?",
+		args: [person.name, person.email, person.title, id],
+	});
+}
+
+export async function removeUnregistered(
+	db: Client,
+	actorId: string,
+	boardId: string,
+	id: string,
+) {
+	await requireAdmin(db, actorId, boardId);
+	await requireUnregistered(db, boardId, id);
+	await db.execute({
+		sql: "DELETE FROM board_unregistered_members WHERE id = ?",
+		args: [id],
+	});
+}
+
+/**
+ * Makes a member without an account a registered member, once someone has
+ * registered with their email. An admin does this by hand: emails are not
+ * verified, so registering with someone's address must not by itself give
+ * access to the board.
+ */
+export async function linkUnregistered(
+	db: Client,
+	actorId: string,
+	boardId: string,
+	id: string,
+) {
+	await requireAdmin(db, actorId, boardId);
+	const row = await requireUnregistered(db, boardId, id);
+	if (!(await accountExists(db, String(row.email))))
+		throw new BoardError("Det finns inget konto med personens e-postadress.");
+	await addMemberByEmail(
+		db,
+		actorId,
+		boardId,
+		String(row.email),
+		String(row.title),
+	);
 }
 
 export async function setMemberRole(

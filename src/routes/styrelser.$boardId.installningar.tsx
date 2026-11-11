@@ -16,10 +16,14 @@ import {
 	addMember,
 	changeMemberRole,
 	getBoardDetails,
+	linkUnregistered,
 	removeBoardMember,
+	removeUnregistered,
 	setBoardBackground,
 	setMemberTitle,
+	updateUnregistered,
 } from "#/server/boards.functions";
+import type { UnregisteredMember } from "#/server/boards.server";
 import { personLabel } from "#/server/items";
 
 // Board settings: background, templates and members, kept off the overview so that
@@ -46,10 +50,12 @@ export const Route = createFileRoute("/styrelser/$boardId/installningar")({
 });
 
 function Settings() {
-	const { board, members, currentUserId, templates } = Route.useLoaderData();
+	const { board, members, unregistered, currentUserId, templates } =
+		Route.useLoaderData();
 	const router = useRouter();
 	const isAdmin = board.role === "admin";
 	const [error, setError] = useState<string | null>(null);
+	const [added, setAdded] = useState<string | null>(null);
 
 	async function run(action: () => Promise<unknown>, after?: () => void) {
 		setError(null);
@@ -65,13 +71,19 @@ function Settings() {
 	function onAdd(e: React.FormEvent<HTMLFormElement>) {
 		e.preventDefault();
 		const form = e.currentTarget;
-		const f = new FormData(form);
-		const email = String(f.get("email"));
-		const title = String(f.get("title") ?? "");
-		return run(
-			() => addMember({ data: { boardId: board.id, email, title } }),
-			() => form.reset(),
-		);
+		const person = readPerson(form);
+		setAdded(null);
+		return run(async () => {
+			const { registered } = await addMember({
+				data: { boardId: board.id, ...person },
+			});
+			setAdded(
+				registered
+					? "Personen hade ett konto och är nu med i styrelsen."
+					: `${person.name.trim()} lades till utan konto.`,
+			);
+			form.reset();
+		});
 	}
 
 	function onCreateTemplate(e: React.FormEvent<HTMLFormElement>) {
@@ -193,29 +205,42 @@ function Settings() {
 						</li>
 					))}
 				</ul>
+
+				{unregistered.length > 0 && (
+					<>
+						<h3>Utan konto</h3>
+						<p>
+							Kan väljas i närvaro och val i protokollen, men kan inte logga in.
+						</p>
+						<ul>
+							{unregistered.map((m) => (
+								<li key={m.id}>
+									<UnregisteredRow
+										boardId={board.id}
+										member={m}
+										canEdit={isAdmin}
+										run={run}
+									/>
+								</li>
+							))}
+						</ul>
+					</>
+				)}
 			</section>
 
 			{isAdmin && (
 				<section aria-labelledby="add-member">
 					<h2 id="add-member">Lägg till ledamot</h2>
+					<p>
+						Har personen ett konto med e-postadressen blir den ledamot direkt.
+						Annars läggs den till utan konto, och då behövs namnet. Skapar den
+						ett konto senare kan du koppla ihop dem här.
+					</p>
 					<form onSubmit={onAdd}>
-						<p>
-							<label htmlFor="email">E-postadress till personens konto</label>
-							<input id="email" name="email" type="email" required />
-						</p>
-						<p>
-							<label htmlFor="new-member-title">
-								Titel, t.ex. Sekreterare eller Kassör
-							</label>
-							<input
-								id="new-member-title"
-								name="title"
-								list={TITLE_LIST_ID}
-								maxLength={60}
-							/>
-						</p>
+						<PersonFields idPrefix="new-member" nameRequired={false} />
 						<button type="submit">Lägg till</button>
 					</form>
+					{added && <output>{added}</output>}
 				</section>
 			)}
 		</main>
@@ -363,5 +388,156 @@ function MemberTitle({
 				</>
 			)}
 		</span>
+	);
+}
+
+function readPerson(form: HTMLFormElement) {
+	const f = new FormData(form);
+	return {
+		name: String(f.get("name") ?? ""),
+		email: String(f.get("email") ?? ""),
+		title: String(f.get("title") ?? ""),
+	};
+}
+
+/** Name, email and title, for adding or changing a member without account. */
+function PersonFields({
+	idPrefix,
+	nameRequired,
+	person,
+}: {
+	idPrefix: string;
+	nameRequired: boolean;
+	person?: { name: string; email: string; title: string };
+}) {
+	const id = (name: string) => `${idPrefix}-${name}`;
+	return (
+		<>
+			<p>
+				<label htmlFor={id("name")}>
+					Namn{nameRequired ? "" : " (behövs om personen inte har något konto)"}
+				</label>
+				<input
+					id={id("name")}
+					name="name"
+					autoComplete="off"
+					maxLength={100}
+					defaultValue={person?.name}
+					required={nameRequired}
+				/>
+			</p>
+			<p>
+				<label htmlFor={id("email")}>E-postadress</label>
+				<input
+					id={id("email")}
+					name="email"
+					type="email"
+					autoComplete="off"
+					defaultValue={person?.email}
+				/>
+			</p>
+			<p>
+				<label htmlFor={id("title")}>
+					Titel, t.ex. Sekreterare eller Kassör
+				</label>
+				<input
+					id={id("title")}
+					name="title"
+					list={TITLE_LIST_ID}
+					maxLength={60}
+					defaultValue={person?.title}
+				/>
+			</p>
+		</>
+	);
+}
+
+/** A member without an account; admins can change, remove or link them. */
+function UnregisteredRow({
+	boardId,
+	member,
+	canEdit,
+	run,
+}: {
+	boardId: string;
+	member: UnregisteredMember;
+	canEdit: boolean;
+	run: (action: () => Promise<unknown>, after?: () => void) => Promise<void>;
+}) {
+	const [editing, setEditing] = useState(false);
+	const ref = { boardId, id: member.id };
+
+	if (editing)
+		return (
+			<form
+				onSubmit={(e) => {
+					e.preventDefault();
+					const person = readPerson(e.currentTarget);
+					run(
+						() => updateUnregistered({ data: { ...ref, ...person } }),
+						() => setEditing(false),
+					);
+				}}
+			>
+				<PersonFields idPrefix={member.id} nameRequired person={member} />
+				<p>
+					<button type="submit">Spara</button>{" "}
+					<button type="button" onClick={() => setEditing(false)}>
+						Avbryt
+					</button>
+				</p>
+			</form>
+		);
+
+	return (
+		<>
+			{personLabel(member.name, member.title)}
+			{member.email && (
+				<>
+					{" "}
+					<small>{member.email}</small>
+				</>
+			)}
+			{member.hasAccount && (
+				<>
+					{" "}
+					<strong>Har nu ett konto.</strong>
+				</>
+			)}
+			{canEdit && (
+				<>
+					{member.hasAccount && (
+						<>
+							{" "}
+							<button
+								type="button"
+								onClick={() => {
+									if (
+										confirm(
+											`Gör ${member.name} till registrerad ledamot? Kontot med ${member.email} får då tillgång till styrelsen.`,
+										)
+									)
+										run(() => linkUnregistered({ data: ref }));
+								}}
+							>
+								Gör till registrerad ledamot
+							</button>
+						</>
+					)}{" "}
+					<button type="button" onClick={() => setEditing(true)}>
+						Ändra
+					</button>{" "}
+					<button
+						type="button"
+						onClick={() => {
+							if (confirm(`Ta bort ${member.name} från styrelsen?`))
+								run(() => removeUnregistered({ data: ref }));
+						}}
+					>
+						Ta bort
+					</button>
+				</>
+			)}
+		</>
 	);
 }

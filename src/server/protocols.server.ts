@@ -12,7 +12,12 @@ import {
 	requireParent,
 	requireTitle,
 } from "./agendas.server";
-import { BoardError, listMembers, requireMember } from "./boards.server";
+import {
+	BoardError,
+	listMembers,
+	listUnregistered,
+	requireMember,
+} from "./boards.server";
 import {
 	type CarryOverFlags,
 	canCarryOver,
@@ -203,7 +208,10 @@ export async function getProtocol(
 		"protocol",
 		protocolId,
 	);
-	const members = await listMembers(db, userId, board.id);
+	const [members, unregistered] = await Promise.all([
+		listMembers(db, userId, board.id),
+		listUnregistered(db, userId, board.id),
+	]);
 	const edits = await db.execute({
 		sql: "SELECT user_name, edited_at FROM protocol_edits WHERE protocol_id = ? ORDER BY edited_at",
 		args: [protocolId],
@@ -221,10 +229,13 @@ export async function getProtocol(
 		),
 		/**
 		 * Board members as written in the protocol, "Namn (Titel)", for
-		 * attendance and person choices. Saved values keep the label as it
-		 * was, so a protocol shows the titles people had at the meeting.
+		 * attendance and person choices, with and without an account, in one
+		 * list by name. Saved values keep the label as it was, so a protocol
+		 * shows the titles people had at the meeting.
 		 */
-		memberNames: members.map((m) => personLabel(m.name, m.title)),
+		memberNames: [...members, ...unregistered]
+			.map((m) => personLabel(m.name, m.title))
+			.sort((a, b) => a.localeCompare(b, "sv")),
 	};
 }
 

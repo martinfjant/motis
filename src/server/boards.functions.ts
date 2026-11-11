@@ -33,24 +33,47 @@ export const getBoardDetails = createServerFn({ method: "GET" })
 			board,
 			currentUserId: user.id,
 			members: await boards.listMembers(db, user.id, data.boardId),
+			unregistered: await boards.listUnregistered(db, user.id, data.boardId),
 		};
 	});
 
+const person = (d: unknown) => ({
+	name: str(obj(d).name),
+	email: str(obj(d).email),
+	title: str(obj(d).title),
+});
+
 export const addMember = createServerFn({ method: "POST" })
-	.validator((d: unknown) => ({
-		boardId: str(obj(d).boardId),
-		email: str(obj(d).email),
-		title: str(obj(d).title),
-	}))
+	.validator((d: unknown) => ({ ...person(d), boardId: str(obj(d).boardId) }))
 	.handler(async ({ data }) => {
 		const { db, user, boards } = await ctx();
-		await boards.addMemberByEmail(
-			db,
-			user.id,
-			data.boardId,
-			data.email,
-			data.title,
-		);
+		return boards.addMember(db, user.id, data.boardId, data);
+	});
+
+const unregisteredRef = (d: unknown) => ({
+	boardId: str(obj(d).boardId),
+	id: str(obj(d).id),
+});
+
+export const updateUnregistered = createServerFn({ method: "POST" })
+	.validator((d: unknown) => ({ ...person(d), ...unregisteredRef(d) }))
+	.handler(async ({ data }) => {
+		const { db, user, boards } = await ctx();
+		await boards.updateUnregistered(db, user.id, data.boardId, data.id, data);
+	});
+
+export const removeUnregistered = createServerFn({ method: "POST" })
+	.validator(unregisteredRef)
+	.handler(async ({ data }) => {
+		const { db, user, boards } = await ctx();
+		await boards.removeUnregistered(db, user.id, data.boardId, data.id);
+	});
+
+export const linkUnregistered = createServerFn({ method: "POST" })
+	.validator(unregisteredRef)
+	.handler(async ({ data }) => {
+		const { db, user, boards } = await ctx();
+		await boards.linkUnregistered(db, user.id, data.boardId, data.id);
 	});
 
 export const changeMemberRole = createServerFn({ method: "POST" })
