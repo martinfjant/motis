@@ -108,3 +108,47 @@ export async function deleteSession(db: Client, token: string | undefined) {
 		args: [hashToken(token)],
 	});
 }
+
+/**
+ * Changes the user's name and email. The email is what they log in with, so
+ * changing it requires the current password.
+ */
+export async function updateProfile(
+	db: Client,
+	userId: string,
+	input: { name: string; email: string; currentPassword: string },
+): Promise<User> {
+	const name = input.name.trim();
+	const email = input.email.trim().toLowerCase();
+	if (!name) throw new AuthError("Ange ditt namn.");
+	if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+		throw new AuthError("Ange en giltig e-postadress.");
+
+	const res = await db.execute({
+		sql: "SELECT email, password_hash FROM users WHERE id = ?",
+		args: [userId],
+	});
+	const row = res.rows[0];
+	if (!row) throw new AuthError("Kontot finns inte.");
+
+	if (email !== String(row.email)) {
+		if (
+			!(await verifyPassword(input.currentPassword, String(row.password_hash)))
+		)
+			throw new AuthError(
+				"Fel lösenord. Ange ditt nuvarande lösenord för att byta e-postadress.",
+			);
+		const taken = await db.execute({
+			sql: "SELECT 1 FROM users WHERE email = ? AND id != ?",
+			args: [email, userId],
+		});
+		if (taken.rows.length > 0)
+			throw new AuthError("Det finns redan ett konto med den e-postadressen.");
+	}
+
+	await db.execute({
+		sql: "UPDATE users SET name = ?, email = ? WHERE id = ?",
+		args: [name, email, userId],
+	});
+	return { id: userId, name, email };
+}

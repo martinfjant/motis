@@ -7,6 +7,7 @@ import {
 	createUser,
 	deleteSession,
 	getSessionUser,
+	updateProfile,
 } from "./auth.server";
 import { migrate } from "./migrate";
 
@@ -65,4 +66,45 @@ test("expired sessions are rejected", async () => {
 		"UPDATE sessions SET expires_at = '2000-01-01T00:00:00.000Z'",
 	);
 	expect(await getSessionUser(db, token)).toBeNull();
+});
+
+test("profile: name changes freely, email needs the password and must be free", async () => {
+	const anna = await createUser(db, input);
+	await createUser(db, { ...input, name: "Bo", email: "bo@example.se" });
+
+	const renamed = await updateProfile(db, anna.id, {
+		name: " Anna Andersson ",
+		email: "anna@example.se",
+		currentPassword: "",
+	});
+	expect(renamed.name).toBe("Anna Andersson");
+
+	const change = { name: "Anna", email: "ny@example.se", currentPassword: "" };
+	await expect(updateProfile(db, anna.id, change)).rejects.toThrow(AuthError);
+	await expect(
+		updateProfile(db, anna.id, {
+			...change,
+			email: "BO@example.se",
+			currentPassword: "hemligt123",
+		}),
+	).rejects.toThrow(AuthError);
+	await expect(
+		updateProfile(db, anna.id, {
+			...change,
+			name: " ",
+			currentPassword: "hemligt123",
+		}),
+	).rejects.toThrow(AuthError);
+
+	await updateProfile(db, anna.id, {
+		...change,
+		email: " Ny@Example.se ",
+		currentPassword: "hemligt123",
+	});
+	expect((await authenticate(db, "ny@example.se", "hemligt123")).name).toBe(
+		"Anna",
+	);
+	await expect(
+		authenticate(db, "anna@example.se", "hemligt123"),
+	).rejects.toThrow(AuthError);
 });

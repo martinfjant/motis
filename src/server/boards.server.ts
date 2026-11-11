@@ -10,12 +10,15 @@ export type Board = {
 	role: Role;
 	/** Background pattern id, see src/patterns.ts. */
 	background: string;
+	/** The current user's title on this board, e.g. "Kassör" ("" if none). */
+	title: string;
 };
 export type Member = {
 	userId: string;
 	name: string;
 	email: string;
 	role: Role;
+	title: string;
 };
 
 export class BoardError extends Error {}
@@ -42,12 +45,12 @@ export async function createBoard(
 		],
 		"write",
 	);
-	return { id, name, role: "admin", background: DEFAULT_PATTERN };
+	return { id, name, role: "admin", background: DEFAULT_PATTERN, title: "" };
 }
 
 export async function listBoards(db: Client, userId: string): Promise<Board[]> {
 	const res = await db.execute({
-		sql: `SELECT b.id, b.name, b.background, m.role FROM boards b
+		sql: `SELECT b.id, b.name, b.background, m.role, m.title FROM boards b
           JOIN board_memberships m ON m.board_id = b.id
           WHERE m.user_id = ? ORDER BY b.name`,
 		args: [userId],
@@ -57,6 +60,7 @@ export async function listBoards(db: Client, userId: string): Promise<Board[]> {
 		name: String(r.name),
 		role: r.role as Role,
 		background: String(r.background),
+		title: String(r.title),
 	}));
 }
 
@@ -67,7 +71,7 @@ export async function getBoard(
 	boardId: string,
 ): Promise<Board | null> {
 	const res = await db.execute({
-		sql: `SELECT b.id, b.name, b.background, m.role FROM boards b
+		sql: `SELECT b.id, b.name, b.background, m.role, m.title FROM boards b
           JOIN board_memberships m ON m.board_id = b.id
           WHERE b.id = ? AND m.user_id = ?`,
 		args: [boardId, userId],
@@ -79,6 +83,7 @@ export async function getBoard(
 				name: String(r.name),
 				role: r.role as Role,
 				background: String(r.background),
+				title: String(r.title),
 			}
 		: null;
 }
@@ -90,7 +95,7 @@ export async function listMembers(
 ): Promise<Member[]> {
 	await requireMember(db, userId, boardId);
 	const res = await db.execute({
-		sql: `SELECT u.id, u.name, u.email, m.role FROM board_memberships m
+		sql: `SELECT u.id, u.name, u.email, m.role, m.title FROM board_memberships m
           JOIN users u ON u.id = m.user_id
           WHERE m.board_id = ? ORDER BY m.created_at, u.name`,
 		args: [boardId],
@@ -100,6 +105,7 @@ export async function listMembers(
 		name: String(r.name),
 		email: String(r.email),
 		role: r.role as Role,
+		title: String(r.title),
 	}));
 }
 
@@ -216,5 +222,21 @@ export async function setBackground(
 	await db.execute({
 		sql: "UPDATE boards SET background = ? WHERE id = ?",
 		args: [pattern, boardId],
+	});
+}
+
+/** Members set their own title on a board, e.g. "Ordförande". Empty clears it. */
+export async function setMyTitle(
+	db: Client,
+	userId: string,
+	boardId: string,
+	titleInput: string,
+) {
+	await requireMember(db, userId, boardId);
+	const title = titleInput.trim();
+	if (title.length > 60) throw new BoardError("Titeln är för lång.");
+	await db.execute({
+		sql: "UPDATE board_memberships SET title = ? WHERE board_id = ? AND user_id = ?",
+		args: [title, boardId, userId],
 	});
 }

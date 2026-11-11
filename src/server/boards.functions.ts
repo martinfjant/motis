@@ -82,3 +82,13 @@ export const setBoardBackground = createServerFn({ method: "POST" })
 		const { db, user, boards } = await ctx();
 		await boards.setBackground(db, user.id, data.boardId, data.pattern);
 	});
+
+export const setMyTitle = createServerFn({ method: "POST" })
+	.validator((d: unknown) => ({
+		boardId: str(obj(d).boardId),
+		title: str(obj(d).title),
+	}))
+	.handler(async ({ data }) => {
+		const { db, user, boards } = await ctx();
+		await boards.setMyTitle(db, user.id, data.boardId, data.title);
+	});

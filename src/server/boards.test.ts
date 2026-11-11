@@ -11,6 +11,7 @@ import {
 	removeMember,
 	setBackground,
 	setMemberRole,
+	setMyTitle,
 } from "./boards.server";
 import { migrate } from "./migrate";
 
@@ -38,7 +39,13 @@ beforeEach(async () => {
 test("creator becomes admin and board is trimmed", async () => {
 	const boards = await listBoards(db, anna);
 	expect(boards).toEqual([
-		{ id: boardId, name: "BRF Björken", role: "admin", background: "standard" },
+		{
+			id: boardId,
+			name: "BRF Björken",
+			role: "admin",
+			background: "standard",
+			title: "",
+		},
 	]);
 	expect(await listBoards(db, bo)).toEqual([]);
 	await expect(createBoard(db, anna, "  ")).rejects.toThrow(BoardError);
@@ -107,4 +114,23 @@ test("admins choose a known background pattern", async () => {
 	);
 	await setBackground(db, anna, boardId, "standard");
 	expect((await getBoard(db, anna, boardId))?.background).toBe("standard");
+});
+
+test("members set their own title per board", async () => {
+	await addMemberByEmail(db, anna, boardId, "bo@example.se");
+	const other = (await createBoard(db, bo, "BRF Eken")).id;
+	await setMyTitle(db, bo, boardId, " Kassör ");
+	await setMyTitle(db, bo, other, "Ordförande");
+	const title = async (b: string) =>
+		(await listMembers(db, bo, b)).find((m) => m.userId === bo)?.title;
+	expect(await title(boardId)).toBe("Kassör");
+	expect((await getBoard(db, bo, other))?.title).toBe("Ordförande");
+	await expect(setMyTitle(db, cia, boardId, "Ordförande")).rejects.toThrow(
+		BoardError,
+	);
+	await expect(setMyTitle(db, bo, boardId, "x".repeat(61))).rejects.toThrow(
+		BoardError,
+	);
+	await setMyTitle(db, bo, boardId, "");
+	expect(await title(boardId)).toBe("");
 });

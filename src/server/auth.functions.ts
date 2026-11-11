@@ -66,3 +66,19 @@ export const logOut = createServerFn({ method: "POST" }).handler(async () => {
 	await deleteSession(await getDb(), getCookie(COOKIE));
 	deleteCookie(COOKIE, { path: "/" });
 });
+
+export const updateProfile = createServerFn({ method: "POST" })
+	.validator((d: unknown) => {
+		const o = (d ?? {}) as Record<string, unknown>;
+		return {
+			name: str(o.name),
+			email: str(o.email),
+			currentPassword: str(o.currentPassword),
+		};
+	})
+	.handler(async ({ data }) => {
+		const { requireUser } = await import("./session.server");
+		const { updateProfile } = await import("./auth.server");
+		const { db, user } = await requireUser();
+		return updateProfile(db, user.id, data);
+	});

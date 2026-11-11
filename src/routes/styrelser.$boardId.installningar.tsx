@@ -150,7 +150,8 @@ function Settings() {
 					{members.map((m) => (
 						<li key={m.userId}>
 							<span>
-								{m.name} <small>{m.email}</small>
+								{m.name}
+								{m.title && <>, {m.title}</>} <small>{m.email}</small>
 							</span>{" "}
 							<span>{m.role === "admin" ? "Administratör" : "Ledamot"}</span>
 							{isAdmin && (

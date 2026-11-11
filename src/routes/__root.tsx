@@ -51,6 +51,9 @@ function SiteHeader() {
 							<Link to="/styrelser">Styrelser</Link>
 						</li>
 						<li>
+							<Link to="/konto">Mitt konto</Link>
+						</li>
+						<li>
 							<form onSubmit={handleLogOut}>
 								<button type="submit">Logga ut ({user.name})</button>
 							</form>

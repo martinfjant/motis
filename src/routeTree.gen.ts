@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as KontoRouteImport } from './routes/konto'
 import { Route as LoggaInRouteImport } from './routes/logga-in'
 import { Route as RegistreraRouteImport } from './routes/registrera'
 import { Route as StyrelserRouteImport } from './routes/styrelser'
@@ -25,6 +26,11 @@ import { Route as StyrelserBoardIdProtokollProtocolIdRouteImport } from './route
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KontoRoute = KontoRouteImport.update({
+  id: '/konto',
+  path: '/konto',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoggaInRoute = LoggaInRouteImport.update({
@@ -89,6 +95,7 @@ const StyrelserBoardIdProtokollProtocolIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/konto': typeof KontoRoute
   '/logga-in': typeof LoggaInRoute
   '/registrera': typeof RegistreraRoute
   '/styrelser': typeof StyrelserRouteWithChildren
@@ -103,6 +110,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/konto': typeof KontoRoute
   '/logga-in': typeof LoggaInRoute
   '/registrera': typeof RegistreraRoute
   '/api/health': typeof ApiHealthRoute
@@ -117,6 +125,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/konto': typeof KontoRoute
   '/logga-in': typeof LoggaInRoute
   '/registrera': typeof RegistreraRoute
   '/styrelser': typeof StyrelserRouteWithChildren
@@ -133,6 +142,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/konto'
     | '/logga-in'
     | '/registrera'
     | '/styrelser'
@@ -147,6 +157,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/konto'
     | '/logga-in'
     | '/registrera'
     | '/api/health'
@@ -160,6 +171,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/konto'
     | '/logga-in'
     | '/registrera'
     | '/styrelser'
@@ -175,6 +187,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  KontoRoute: typeof KontoRoute
   LoggaInRoute: typeof LoggaInRoute
   RegistreraRoute: typeof RegistreraRoute
   StyrelserRoute: typeof StyrelserRouteWithChildren
@@ -189,6 +202,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/konto': {
+      id: '/konto'
+      path: '/konto'
+      fullPath: '/konto'
+      preLoaderRoute: typeof KontoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/logga-in': {
@@ -297,6 +317,7 @@ const StyrelserRouteWithChildren = StyrelserRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  KontoRoute: KontoRoute,
   LoggaInRoute: LoggaInRoute,
   RegistreraRoute: RegistreraRoute,
   StyrelserRoute: StyrelserRouteWithChildren,
