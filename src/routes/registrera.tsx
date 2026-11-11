@@ -1,5 +1,6 @@
 import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
+import { Button } from "#/components/Button";
 import { signUp } from "#/server/auth.functions";
 
 export const Route = createFileRoute("/registrera")({
@@ -65,9 +66,9 @@ function SignUp() {
 					/>
 				</p>
 				{error && <p role="alert">{error}</p>}
-				<button type="submit" disabled={pending}>
+				<Button type="submit" disabled={pending}>
 					Skapa konto
-				</button>
+				</Button>
 			</form>
 		</main>
 	);

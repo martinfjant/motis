@@ -5,6 +5,7 @@ import {
 	useRouter,
 } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { Button } from "#/components/Button";
 import {
 	TITLE_LIST_ID,
 	TitleForm,
@@ -127,7 +128,7 @@ function Settings() {
 				{templates.length === 0 ? (
 					<p>
 						Inga mallar.{" "}
-						<button
+						<Button
 							type="button"
 							onClick={() =>
 								run(() =>
@@ -138,7 +139,7 @@ function Settings() {
 							}
 						>
 							Lägg till standardmallen
-						</button>
+						</Button>
 					</p>
 				) : (
 					<ul>
@@ -161,7 +162,7 @@ function Settings() {
 						<label htmlFor="templateName">Mallens namn</label>
 						<input id="templateName" name="templateName" required />
 					</p>
-					<button type="submit">Skapa tom mall</button>
+					<Button type="submit">Skapa tom mall</Button>
 				</form>
 			</section>
 
@@ -178,7 +179,7 @@ function Settings() {
 							/>{" "}
 							<span>{m.role === "admin" ? "Administratör" : "Ledamot"}</span>
 							{isAdmin && (
-								<button
+								<Button
 									type="button"
 									onClick={() =>
 										run(() =>
@@ -195,12 +196,12 @@ function Settings() {
 									{m.role === "admin"
 										? "Gör till ledamot"
 										: "Gör till administratör"}
-								</button>
+								</Button>
 							)}
 							{(isAdmin || m.userId === currentUserId) && (
-								<button type="button" onClick={() => onLeave(m.userId)}>
+								<Button type="button" onClick={() => onLeave(m.userId)}>
 									{m.userId === currentUserId ? "Lämna styrelsen" : "Ta bort"}
-								</button>
+								</Button>
 							)}
 						</li>
 					))}
@@ -238,7 +239,7 @@ function Settings() {
 					</p>
 					<form onSubmit={onAdd}>
 						<PersonFields idPrefix="new-member" nameRequired={false} />
-						<button type="submit">Lägg till</button>
+						<Button type="submit">Lägg till</Button>
 					</form>
 					{added && <output>{added}</output>}
 				</section>
@@ -325,10 +326,10 @@ function BackgroundSection({
 						Afif.
 					</p>
 					<p>
-						<button type="submit" disabled={choice === current}>
+						<Button type="submit" disabled={choice === current}>
 							Spara bakgrund
-						</button>{" "}
-						<button
+						</Button>{" "}
+						<Button
 							type="button"
 							disabled={choice === current}
 							onClick={() => {
@@ -337,7 +338,7 @@ function BackgroundSection({
 							}}
 						>
 							Ångra
-						</button>
+						</Button>
 					</p>
 					{status && <output>{status}</output>}
 				</form>
@@ -382,9 +383,9 @@ function MemberTitle({
 			{canEdit && (
 				<>
 					{" "}
-					<button type="button" onClick={() => setEditing(true)}>
+					<Button type="button" onClick={() => setEditing(true)}>
 						{member.title ? "Ändra titel" : "Lägg till titel"}
-					</button>
+					</Button>
 				</>
 			)}
 		</span>
@@ -481,10 +482,10 @@ function UnregisteredRow({
 			>
 				<PersonFields idPrefix={member.id} nameRequired person={member} />
 				<p>
-					<button type="submit">Spara</button>{" "}
-					<button type="button" onClick={() => setEditing(false)}>
+					<Button type="submit">Spara</Button>{" "}
+					<Button type="button" onClick={() => setEditing(false)}>
 						Avbryt
-					</button>
+					</Button>
 				</p>
 			</form>
 		);
@@ -509,7 +510,7 @@ function UnregisteredRow({
 					{member.hasAccount && (
 						<>
 							{" "}
-							<button
+							<Button
 								type="button"
 								onClick={() => {
 									if (
@@ -521,13 +522,13 @@ function UnregisteredRow({
 								}}
 							>
 								Gör till registrerad ledamot
-							</button>
+							</Button>
 						</>
 					)}{" "}
-					<button type="button" onClick={() => setEditing(true)}>
+					<Button type="button" onClick={() => setEditing(true)}>
 						Ändra
-					</button>{" "}
-					<button
+					</Button>{" "}
+					<Button
 						type="button"
 						onClick={() => {
 							if (confirm(`Ta bort ${member.name} från styrelsen?`))
@@ -535,7 +536,7 @@ function UnregisteredRow({
 						}}
 					>
 						Ta bort
-					</button>
+					</Button>
 				</>
 			)}
 		</>

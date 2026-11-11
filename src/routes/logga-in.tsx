@@ -1,5 +1,6 @@
 import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
+import { Button } from "#/components/Button";
 import { logIn } from "#/server/auth.functions";
 
 export const Route = createFileRoute("/logga-in")({
@@ -59,9 +60,9 @@ function LogIn() {
 					/>
 				</p>
 				{error && <p role="alert">{error}</p>}
-				<button type="submit" disabled={pending}>
+				<Button type="submit" disabled={pending}>
 					Logga in
-				</button>
+				</Button>
 			</form>
 		</main>
 	);

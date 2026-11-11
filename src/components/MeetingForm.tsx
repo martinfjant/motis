@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Button } from "#/components/Button";
 
 export type MeetingDetails = {
 	title: string;
@@ -66,7 +67,7 @@ export function MeetingForm({
 				</p>
 				{error && <p role="alert">{error}</p>}
 				{saved && <output>Sparat.</output>}
-				<button type="submit">Spara</button>
+				<Button type="submit">Spara</Button>
 			</form>
 		</section>
 	);

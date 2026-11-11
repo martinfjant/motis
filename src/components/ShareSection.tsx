@@ -1,5 +1,6 @@
 import { useRouter } from "@tanstack/react-router";
 import { useState } from "react";
+import { Button } from "#/components/Button";
 
 /**
  * The "Dela" section for an agenda or a protocol: the public link, copying it,
@@ -50,12 +51,12 @@ export function ShareSection({
 				<a href={path}>{linkText}</a>
 			</p>
 			<p>
-				<button type="button" onClick={onCopy}>
+				<Button type="button" onClick={onCopy}>
 					Kopiera länken
-				</button>{" "}
-				<button type="button" onClick={regenerate}>
+				</Button>{" "}
+				<Button type="button" onClick={regenerate}>
 					Skapa ny länk
-				</button>
+				</Button>
 			</p>
 			{status && <output>{status}</output>}
 		</section>

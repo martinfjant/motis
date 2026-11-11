@@ -5,6 +5,7 @@ import {
 	useRouter,
 } from "@tanstack/react-router";
 import { useRef, useState } from "react";
+import { Button } from "#/components/Button";
 import {
 	cannotStart,
 	daysBetween,
@@ -128,9 +129,9 @@ function Board() {
 								<When at={a.meetingAt} today={today} />{" "}
 								{/* Startable only on its day; a future date speaks for itself. */}
 								{START_ANY_DAY || !cannotStart(a.meetingAt, today) ? (
-									<button type="button" onClick={() => onStartMeeting(a.id)}>
+									<Button type="button" onClick={() => onStartMeeting(a.id)}>
 										Starta möte
-									</button>
+									</Button>
 								) : !a.meetingAt ? (
 									<>– inget datum, ange det för att kunna starta mötet.</>
 								) : a.meetingAt.slice(0, 10) < today ? (
@@ -238,9 +239,9 @@ function CallMeetingDialog({
 	return (
 		<>
 			<p>
-				<button type="button" onClick={() => dialog.current?.showModal()}>
+				<Button type="button" onClick={() => dialog.current?.showModal()}>
 					Kalla till möte
-				</button>
+				</Button>
 			</p>
 			<dialog
 				ref={dialog}
@@ -315,12 +316,12 @@ function CallMeetingDialog({
 					)}
 					{error && <p role="alert">{error}</p>}
 					<p>
-						<button type="submit" disabled={pending}>
+						<Button type="submit" disabled={pending}>
 							Skapa dagordning
-						</button>{" "}
-						<button type="button" onClick={() => dialog.current?.close()}>
+						</Button>{" "}
+						<Button type="button" onClick={() => dialog.current?.close()}>
 							Avbryt
-						</button>
+						</Button>
 					</p>
 				</form>
 			</dialog>

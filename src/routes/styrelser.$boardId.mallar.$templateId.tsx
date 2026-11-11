@@ -5,6 +5,7 @@ import {
 	useRouter,
 } from "@tanstack/react-router";
 import { useState } from "react";
+import { Button } from "#/components/Button";
 import { ItemEditor } from "#/components/ItemEditor";
 import {
 	deleteTemplate,
@@ -88,7 +89,7 @@ function TemplatePage() {
 						/>
 					</p>
 					{error && <p role="alert">{error}</p>}
-					<button type="submit">Spara namn</button>
+					<Button type="submit">Spara namn</Button>
 				</form>
 			</section>
 
@@ -96,9 +97,9 @@ function TemplatePage() {
 
 			<section aria-labelledby="danger">
 				<h2 id="danger">Ta bort</h2>
-				<button type="button" onClick={onDelete}>
+				<Button type="button" onClick={onDelete}>
 					Ta bort mallen
-				</button>
+				</Button>
 			</section>
 		</main>
 	);

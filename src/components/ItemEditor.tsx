@@ -1,5 +1,6 @@
 import { useRouter } from "@tanstack/react-router";
 import { useState } from "react";
+import { Button } from "#/components/Button";
 import {
 	addItem,
 	deleteItem,
@@ -82,7 +83,7 @@ export function ItemEditor({
 								}
 							/>
 							<p>
-								<button
+								<Button
 									type="button"
 									disabled={i === 0}
 									onClick={() =>
@@ -94,8 +95,8 @@ export function ItemEditor({
 									}
 								>
 									Flytta upp
-								</button>{" "}
-								<button
+								</Button>{" "}
+								<Button
 									type="button"
 									disabled={i === items.length - 1}
 									onClick={() =>
@@ -107,8 +108,8 @@ export function ItemEditor({
 									}
 								>
 									Flytta ner
-								</button>{" "}
-								<button
+								</Button>{" "}
+								<Button
 									type="button"
 									onClick={() => {
 										if (confirm(`Ta bort punkten ”${item.title}”?`))
@@ -118,7 +119,7 @@ export function ItemEditor({
 									}}
 								>
 									Ta bort
-								</button>
+								</Button>
 							</p>
 						</li>
 					))}
@@ -128,7 +129,7 @@ export function ItemEditor({
 			<h3>Lägg till punkt</h3>
 			<form key={addFormKey} onSubmit={onAdd}>
 				<ItemFields idPrefix="new-item" />
-				<button type="submit">Lägg till</button>
+				<Button type="submit">Lägg till</Button>
 			</form>
 		</section>
 	);
@@ -151,7 +152,7 @@ function ItemForm({
 			<fieldset>
 				<legend>{item.title}</legend>
 				<ItemFields idPrefix={item.id} item={item} />
-				<button type="submit">Spara</button>
+				<Button type="submit">Spara</Button>
 			</fieldset>
 		</form>
 	);

@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-router";
 import { useState } from "react";
 import { AgendaItems, MeetingDetails } from "#/components/AgendaView";
+import { Button } from "#/components/Button";
 import { ItemEditor } from "#/components/ItemEditor";
 import { MeetingForm } from "#/components/MeetingForm";
 import { ShareSection } from "#/components/ShareSection";
@@ -79,9 +80,9 @@ function AgendaPage() {
 			{editing ? (
 				<>
 					<p>
-						<button type="button" onClick={() => setEditing(false)}>
+						<Button type="button" onClick={() => setEditing(false)}>
 							Klar med redigeringen
-						</button>
+						</Button>
 					</p>
 					<MeetingForm
 						initial={agenda}
@@ -92,23 +93,23 @@ function AgendaPage() {
 					/>
 					<ItemEditor kind="agenda" parentId={agenda.id} items={items} />
 					<p>
-						<button type="button" onClick={() => setEditing(false)}>
+						<Button type="button" onClick={() => setEditing(false)}>
 							Klar med redigeringen
-						</button>
+						</Button>
 					</p>
 					<section aria-labelledby="danger">
 						<h2 id="danger">Ta bort</h2>
-						<button type="button" onClick={onDelete}>
+						<Button type="button" onClick={onDelete}>
 							Ta bort dagordningen
-						</button>
+						</Button>
 					</section>
 				</>
 			) : (
 				<>
 					<p>
-						<button type="button" onClick={() => setEditing(true)}>
+						<Button type="button" onClick={() => setEditing(true)}>
 							Redigera dagordningen
-						</button>
+						</Button>
 					</p>
 					<section aria-labelledby="meeting">
 						<h2 id="meeting">Mötet</h2>
@@ -147,9 +148,9 @@ function AgendaPage() {
 						{notToday ? (
 							<p>{notToday}</p>
 						) : (
-							<button type="button" onClick={onStartProtocol}>
+							<Button type="button" onClick={onStartProtocol}>
 								Starta möte
-							</button>
+							</Button>
 						)}
 						{startError && <p role="alert">{startError}</p>}
 					</>

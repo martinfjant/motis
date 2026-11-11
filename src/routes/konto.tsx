@@ -5,6 +5,7 @@ import {
 	useRouter,
 } from "@tanstack/react-router";
 import { useState } from "react";
+import { Button } from "#/components/Button";
 import { TitleForm, TitleSuggestions } from "#/components/TitleForm";
 import { updateProfile } from "#/server/auth.functions";
 import { getMyBoards, setMyTitle } from "#/server/boards.functions";
@@ -92,7 +93,7 @@ function ProfileSection({ user }: { user: { name: string; email: string } }) {
 					</dl>
 					{saved && <output>Sparat.</output>}
 					<p>
-						<button
+						<Button
 							type="button"
 							onClick={() => {
 								setSaved(false);
@@ -100,7 +101,7 @@ function ProfileSection({ user }: { user: { name: string; email: string } }) {
 							}}
 						>
 							Ändra uppgifter
-						</button>
+						</Button>
 					</p>
 				</>
 			) : (
@@ -147,8 +148,8 @@ function ProfileSection({ user }: { user: { name: string; email: string } }) {
 					)}
 					{error && <p role="alert">{error}</p>}
 					<p>
-						<button type="submit">Spara</button>{" "}
-						<button
+						<Button type="submit">Spara</Button>{" "}
+						<Button
 							type="button"
 							onClick={() => {
 								setEditing(false);
@@ -157,7 +158,7 @@ function ProfileSection({ user }: { user: { name: string; email: string } }) {
 							}}
 						>
 							Avbryt
-						</button>
+						</Button>
 					</p>
 				</form>
 			)}
@@ -198,9 +199,9 @@ function TitleRow({
 				{boardName}
 			</Link>
 			: {title || <em>ingen titel</em>}{" "}
-			<button type="button" onClick={() => setEditing(true)}>
+			<Button type="button" onClick={() => setEditing(true)}>
 				{title ? "Ändra" : "Lägg till titel"}
-			</button>
+			</Button>
 		</p>
 	);
 }

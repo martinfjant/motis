@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Button } from "#/components/Button";
 
 /** Common posts on a BRF board, offered as suggestions; any title is allowed. */
 const TITLE_SUGGESTIONS = [
@@ -62,10 +63,10 @@ export function TitleForm({
 			</p>
 			{error && <p role="alert">{error}</p>}
 			<p>
-				<button type="submit">Spara</button>{" "}
-				<button type="button" onClick={onCancel}>
+				<Button type="submit">Spara</Button>{" "}
+				<Button type="button" onClick={onCancel}>
 					Avbryt
-				</button>
+				</Button>
 			</p>
 		</form>
 	);

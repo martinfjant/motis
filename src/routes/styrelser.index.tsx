@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
+import { Button } from "#/components/Button";
 import { daysUntilText, formatMeetingAt } from "#/meeting-time";
 import { getUpcomingMeetings } from "#/server/agendas.functions";
 import { createBoard, getMyBoards } from "#/server/boards.functions";
@@ -69,9 +70,9 @@ function Boards() {
 						<input id="name" name="name" required />
 					</p>
 					{error && <p role="alert">{error}</p>}
-					<button type="submit" disabled={pending}>
+					<Button type="submit" disabled={pending}>
 						Skapa styrelse
-					</button>
+					</Button>
 				</form>
 			</section>
 		</main>

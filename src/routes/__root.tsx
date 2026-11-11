@@ -7,6 +7,7 @@ import {
 	useMatches,
 	useRouter,
 } from "@tanstack/react-router";
+import { Button } from "#/components/Button";
 import { DEFAULT_PATTERN } from "#/patterns";
 import { getCurrentUser, logOut } from "#/server/auth.functions";
 import patternsCss from "../patterns.css?url";
@@ -57,7 +58,7 @@ function SiteHeader() {
 						</li>
 						<li>
 							<form onSubmit={handleLogOut}>
-								<button type="submit">Logga ut ({user.name})</button>
+								<Button type="submit">Logga ut ({user.name})</Button>
 							</form>
 						</li>
 					</ul>
