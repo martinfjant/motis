@@ -17,6 +17,7 @@ import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as DagordningShareIdRouteImport } from './routes/dagordning.$shareId'
 import { Route as StyrelserIndexRouteImport } from './routes/styrelser.index'
 import { Route as StyrelserBoardIdIndexRouteImport } from './routes/styrelser.$boardId.index'
+import { Route as StyrelserBoardIdInstallningarRouteImport } from './routes/styrelser.$boardId.installningar'
 import { Route as StyrelserBoardIdDagordningarAgendaIdRouteImport } from './routes/styrelser.$boardId.dagordningar.$agendaId'
 import { Route as StyrelserBoardIdMallarTemplateIdRouteImport } from './routes/styrelser.$boardId.mallar.$templateId'
 import { Route as StyrelserBoardIdProtokollProtocolIdRouteImport } from './routes/styrelser.$boardId.protokoll.$protocolId'
@@ -61,6 +62,12 @@ const StyrelserBoardIdIndexRoute = StyrelserBoardIdIndexRouteImport.update({
   path: '/$boardId/',
   getParentRoute: () => StyrelserRoute,
 } as any)
+const StyrelserBoardIdInstallningarRoute =
+  StyrelserBoardIdInstallningarRouteImport.update({
+    id: '/$boardId/installningar',
+    path: '/$boardId/installningar',
+    getParentRoute: () => StyrelserRoute,
+  } as any)
 const StyrelserBoardIdDagordningarAgendaIdRoute =
   StyrelserBoardIdDagordningarAgendaIdRouteImport.update({
     id: '/$boardId/dagordningar/$agendaId',
@@ -88,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/api/health': typeof ApiHealthRoute
   '/dagordning/$shareId': typeof DagordningShareIdRoute
   '/styrelser/': typeof StyrelserIndexRoute
+  '/styrelser/$boardId/installningar': typeof StyrelserBoardIdInstallningarRoute
   '/styrelser/$boardId/': typeof StyrelserBoardIdIndexRoute
   '/styrelser/$boardId/dagordningar/$agendaId': typeof StyrelserBoardIdDagordningarAgendaIdRoute
   '/styrelser/$boardId/mallar/$templateId': typeof StyrelserBoardIdMallarTemplateIdRoute
@@ -100,6 +108,7 @@ export interface FileRoutesByTo {
   '/api/health': typeof ApiHealthRoute
   '/dagordning/$shareId': typeof DagordningShareIdRoute
   '/styrelser': typeof StyrelserIndexRoute
+  '/styrelser/$boardId/installningar': typeof StyrelserBoardIdInstallningarRoute
   '/styrelser/$boardId': typeof StyrelserBoardIdIndexRoute
   '/styrelser/$boardId/dagordningar/$agendaId': typeof StyrelserBoardIdDagordningarAgendaIdRoute
   '/styrelser/$boardId/mallar/$templateId': typeof StyrelserBoardIdMallarTemplateIdRoute
@@ -114,6 +123,7 @@ export interface FileRoutesById {
   '/api/health': typeof ApiHealthRoute
   '/dagordning/$shareId': typeof DagordningShareIdRoute
   '/styrelser/': typeof StyrelserIndexRoute
+  '/styrelser/$boardId/installningar': typeof StyrelserBoardIdInstallningarRoute
   '/styrelser/$boardId/': typeof StyrelserBoardIdIndexRoute
   '/styrelser/$boardId/dagordningar/$agendaId': typeof StyrelserBoardIdDagordningarAgendaIdRoute
   '/styrelser/$boardId/mallar/$templateId': typeof StyrelserBoardIdMallarTemplateIdRoute
@@ -129,6 +139,7 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/dagordning/$shareId'
     | '/styrelser/'
+    | '/styrelser/$boardId/installningar'
     | '/styrelser/$boardId/'
     | '/styrelser/$boardId/dagordningar/$agendaId'
     | '/styrelser/$boardId/mallar/$templateId'
@@ -141,6 +152,7 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/dagordning/$shareId'
     | '/styrelser'
+    | '/styrelser/$boardId/installningar'
     | '/styrelser/$boardId'
     | '/styrelser/$boardId/dagordningar/$agendaId'
     | '/styrelser/$boardId/mallar/$templateId'
@@ -154,6 +166,7 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/dagordning/$shareId'
     | '/styrelser/'
+    | '/styrelser/$boardId/installningar'
     | '/styrelser/$boardId/'
     | '/styrelser/$boardId/dagordningar/$agendaId'
     | '/styrelser/$boardId/mallar/$templateId'
@@ -227,6 +240,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StyrelserBoardIdIndexRouteImport
       parentRoute: typeof StyrelserRoute
     }
+    '/styrelser/$boardId/installningar': {
+      id: '/styrelser/$boardId/installningar'
+      path: '/$boardId/installningar'
+      fullPath: '/styrelser/$boardId/installningar'
+      preLoaderRoute: typeof StyrelserBoardIdInstallningarRouteImport
+      parentRoute: typeof StyrelserRoute
+    }
     '/styrelser/$boardId/dagordningar/$agendaId': {
       id: '/styrelser/$boardId/dagordningar/$agendaId'
       path: '/$boardId/dagordningar/$agendaId'
@@ -253,6 +273,7 @@ declare module '@tanstack/react-router' {
 
 interface StyrelserRouteChildren {
   StyrelserIndexRoute: typeof StyrelserIndexRoute
+  StyrelserBoardIdInstallningarRoute: typeof StyrelserBoardIdInstallningarRoute
   StyrelserBoardIdIndexRoute: typeof StyrelserBoardIdIndexRoute
   StyrelserBoardIdDagordningarAgendaIdRoute: typeof StyrelserBoardIdDagordningarAgendaIdRoute
   StyrelserBoardIdMallarTemplateIdRoute: typeof StyrelserBoardIdMallarTemplateIdRoute
@@ -261,6 +282,7 @@ interface StyrelserRouteChildren {
 
 const StyrelserRouteChildren: StyrelserRouteChildren = {
   StyrelserIndexRoute: StyrelserIndexRoute,
+  StyrelserBoardIdInstallningarRoute: StyrelserBoardIdInstallningarRoute,
   StyrelserBoardIdIndexRoute: StyrelserBoardIdIndexRoute,
   StyrelserBoardIdDagordningarAgendaIdRoute:
     StyrelserBoardIdDagordningarAgendaIdRoute,

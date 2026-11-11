@@ -52,7 +52,7 @@ function TemplatePage() {
 		if (!confirm(`Ta bort mallen ”${template.name}”?`)) return;
 		await deleteTemplate({ data: { templateId: template.id } });
 		await router.navigate({
-			to: "/styrelser/$boardId",
+			to: "/styrelser/$boardId/installningar",
 			params: { boardId: board.id },
 		});
 	}
@@ -63,6 +63,13 @@ function TemplatePage() {
 				<Link to="/styrelser">Styrelser</Link> ›{" "}
 				<Link to="/styrelser/$boardId" params={{ boardId: board.id }}>
 					{board.name}
+				</Link>{" "}
+				›{" "}
+				<Link
+					to="/styrelser/$boardId/installningar"
+					params={{ boardId: board.id }}
+				>
+					Inställningar
 				</Link>
 			</nav>
 			<h1>Mall: {template.name}</h1>
