@@ -1,3 +1,4 @@
+import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import { redact } from "@tanstack/redact/vite";
 
@@ -13,6 +14,7 @@ const config = defineConfig({
 	plugins: [
 		nitro({ rollupConfig: { external: [/^@sentry\//, /^@?libsql/] } }),
 
+		tailwindcss(),
 		tanstackStart(),
 		viteReact(),
 		redact(),

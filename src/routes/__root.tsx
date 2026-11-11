@@ -11,6 +11,7 @@ import { DEFAULT_PATTERN } from "#/patterns";
 import { getCurrentUser, logOut } from "#/server/auth.functions";
 import patternsCss from "../patterns.css?url";
 import appCss from "../styles.css?url";
+import tailwindCss from "../tailwind.css?url";
 
 export const Route = createRootRoute({
 	beforeLoad: async () => ({ user: await getCurrentUser() }),
@@ -21,6 +22,7 @@ export const Route = createRootRoute({
 			{ title: "BRF-protokoll" },
 		],
 		links: [
+			{ rel: "stylesheet", href: tailwindCss },
 			{ rel: "stylesheet", href: appCss },
 			// Board background patterns, chosen per board in its settings.
 			{ rel: "stylesheet", href: patternsCss },
