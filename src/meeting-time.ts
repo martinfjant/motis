@@ -1,7 +1,7 @@
 const PARTS = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?$/;
 
 /**
- * "2026-11-20T18:00" → "20-11-2026 kl. 18:00".
+ * "2026-11-20T18:00" → "20-11-2026 18:00".
  * Meeting times are stored as wall-clock time without a zone, so this only
  * rearranges the parts and server and browser render the same text.
  */
@@ -10,5 +10,5 @@ export function formatMeetingAt(value: string): string {
 	if (!m) return value;
 	const [, y, mo, d, h, mi] = m;
 	const day = `${d}-${mo}-${y}`;
-	return h ? `${day} kl. ${h}:${mi}` : day;
+	return h ? `${day} ${h}:${mi}` : day;
 }
