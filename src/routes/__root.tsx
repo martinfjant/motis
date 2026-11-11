@@ -4,9 +4,12 @@ import {
 	Link,
 	Outlet,
 	Scripts,
+	useMatches,
 	useRouter,
 } from "@tanstack/react-router";
+import { DEFAULT_PATTERN } from "#/patterns";
 import { getCurrentUser, logOut } from "#/server/auth.functions";
+import patternsCss from "../patterns.css?url";
 import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
@@ -21,6 +24,8 @@ export const Route = createRootRoute({
 			// Temporary classless base styles until the app gets its own CSS.
 			{ rel: "stylesheet", href: "https://unpkg.com/mvp.css" },
 			{ rel: "stylesheet", href: appCss },
+			// Board background patterns, chosen per board in its settings.
+			{ rel: "stylesheet", href: patternsCss },
 		],
 	}),
 	shellComponent: RootDocument,
@@ -68,9 +73,29 @@ function SiteHeader() {
 	);
 }
 
+/**
+ * The background pattern of the board being viewed, if any. Board pages (and
+ * the public agenda) return the board in their loader data.
+ */
+function useBoardPattern(): string | undefined {
+	const backgrounds = useMatches({
+		select: (matches) =>
+			matches.map(
+				(m) =>
+					(m.loaderData as { board?: { background?: unknown } } | undefined)
+						?.board?.background,
+			),
+	});
+	const pattern = [...backgrounds]
+		.reverse()
+		.find((b): b is string => typeof b === "string");
+	return pattern && pattern !== DEFAULT_PATTERN ? pattern : undefined;
+}
+
 function RootDocument({ children }: { children: React.ReactNode }) {
+	const pattern = useBoardPattern();
 	return (
-		<html lang="sv">
+		<html lang="sv" data-pattern={pattern}>
 			<head>
 				<HeadContent />
 			</head>

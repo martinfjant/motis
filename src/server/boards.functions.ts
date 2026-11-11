@@ -72,3 +72,13 @@ export const removeBoardMember = createServerFn({ method: "POST" })
 		const { db, user, boards } = await ctx();
 		await boards.removeMember(db, user.id, data.boardId, data.userId);
 	});
+
+export const setBoardBackground = createServerFn({ method: "POST" })
+	.validator((d: unknown) => ({
+		boardId: str(obj(d).boardId),
+		pattern: str(obj(d).pattern),
+	}))
+	.handler(async ({ data }) => {
+		const { db, user, boards } = await ctx();
+		await boards.setBackground(db, user.id, data.boardId, data.pattern);
+	});

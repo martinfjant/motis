@@ -1,9 +1,16 @@
 import { randomUUID } from "node:crypto";
 import type { Client } from "@libsql/client";
+import { DEFAULT_PATTERN, isPattern } from "../patterns";
 import { defaultTemplateStatements } from "./default-template";
 
 export type Role = "admin" | "member";
-export type Board = { id: string; name: string; role: Role };
+export type Board = {
+	id: string;
+	name: string;
+	role: Role;
+	/** Background pattern id, see src/patterns.ts. */
+	background: string;
+};
 export type Member = {
 	userId: string;
 	name: string;
@@ -35,12 +42,12 @@ export async function createBoard(
 		],
 		"write",
 	);
-	return { id, name, role: "admin" };
+	return { id, name, role: "admin", background: DEFAULT_PATTERN };
 }
 
 export async function listBoards(db: Client, userId: string): Promise<Board[]> {
 	const res = await db.execute({
-		sql: `SELECT b.id, b.name, m.role FROM boards b
+		sql: `SELECT b.id, b.name, b.background, m.role FROM boards b
           JOIN board_memberships m ON m.board_id = b.id
           WHERE m.user_id = ? ORDER BY b.name`,
 		args: [userId],
@@ -49,6 +56,7 @@ export async function listBoards(db: Client, userId: string): Promise<Board[]> {
 		id: String(r.id),
 		name: String(r.name),
 		role: r.role as Role,
+		background: String(r.background),
 	}));
 }
 
@@ -59,14 +67,19 @@ export async function getBoard(
 	boardId: string,
 ): Promise<Board | null> {
 	const res = await db.execute({
-		sql: `SELECT b.id, b.name, m.role FROM boards b
+		sql: `SELECT b.id, b.name, b.background, m.role FROM boards b
           JOIN board_memberships m ON m.board_id = b.id
           WHERE b.id = ? AND m.user_id = ?`,
 		args: [boardId, userId],
 	});
 	const r = res.rows[0];
 	return r
-		? { id: String(r.id), name: String(r.name), role: r.role as Role }
+		? {
+				id: String(r.id),
+				name: String(r.name),
+				role: r.role as Role,
+				background: String(r.background),
+			}
 		: null;
 }
 
@@ -188,5 +201,20 @@ export async function removeMember(
 	await db.execute({
 		sql: "DELETE FROM board_memberships WHERE board_id = ? AND user_id = ?",
 		args: [boardId, userId],
+	});
+}
+
+/** Admins choose the board's background pattern. */
+export async function setBackground(
+	db: Client,
+	actorId: string,
+	boardId: string,
+	pattern: string,
+) {
+	await requireAdmin(db, actorId, boardId);
+	if (!isPattern(pattern)) throw new BoardError("Okänt bakgrundsmönster.");
+	await db.execute({
+		sql: "UPDATE boards SET background = ? WHERE id = ?",
+		args: [pattern, boardId],
 	});
 }

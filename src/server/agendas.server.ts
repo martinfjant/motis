@@ -470,7 +470,7 @@ export async function deleteItem(
 export async function getPublicAgenda(db: Client, shareId: string) {
 	if (!shareId) return null;
 	const res = await db.execute({
-		sql: `SELECT a.*, b.name AS board_name FROM agendas a
+		sql: `SELECT a.*, b.name AS board_name, b.background AS board_background FROM agendas a
           JOIN boards b ON b.id = a.board_id WHERE a.share_id = ?`,
 		args: [shareId],
 	});
@@ -480,6 +480,7 @@ export async function getPublicAgenda(db: Client, shareId: string) {
 	const items = await listItems(db, "agenda", String(row.id));
 	return {
 		boardName: String(row.board_name),
+		board: { background: String(row.board_background) },
 		agenda: { title, meetingAt, location },
 		items: items.map(({ id, title, description }) => ({
 			id,

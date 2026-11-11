@@ -4,16 +4,18 @@ import {
 	notFound,
 	useRouter,
 } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { DEFAULT_PATTERN, PATTERNS } from "#/patterns";
 import { createTemplate, getBoardOverview } from "#/server/agendas.functions";
 import {
 	addMember,
 	changeMemberRole,
 	getBoardDetails,
 	removeBoardMember,
+	setBoardBackground,
 } from "#/server/boards.functions";
 
-// Board settings: templates and members, kept off the overview so that
+// Board settings: background, templates and members, kept off the overview so that
 // page can focus on agendas and protocols.
 export const Route = createFileRoute("/styrelser/$boardId/installningar")({
 	loader: async ({ params }) => {
@@ -92,6 +94,12 @@ function Settings() {
 			</nav>
 			<h1>Inställningar</h1>
 			{error && <p role="alert">{error}</p>}
+
+			<BackgroundSection
+				boardId={board.id}
+				current={board.background}
+				canEdit={isAdmin}
+			/>
 
 			<section aria-labelledby="templates">
 				<h2 id="templates">Mallar</h2>
@@ -188,5 +196,104 @@ function Settings() {
 				</section>
 			)}
 		</main>
+	);
+}
+
+/** Shows a pattern on the page without saving it. */
+function setPreview(pattern: string) {
+	const html = document.documentElement;
+	if (pattern === DEFAULT_PATTERN) delete html.dataset.pattern;
+	else html.dataset.pattern = pattern;
+}
+
+/** Choosing the board's background, previewed on the page before saving. */
+function BackgroundSection({
+	boardId,
+	current,
+	canEdit,
+}: {
+	boardId: string;
+	current: string;
+	canEdit: boolean;
+}) {
+	const router = useRouter();
+	const [choice, setChoice] = useState(current);
+	const [status, setStatus] = useState<string | null>(null);
+	const name = (id: string) =>
+		id === DEFAULT_PATTERN
+			? "Standard"
+			: (PATTERNS.find((p) => p.id === id)?.name ?? id);
+
+	// Leaving the page without saving puts the saved background back. Only on
+	// leaving: when a save changes `current`, the root already shows it.
+	const saved = useRef(current);
+	saved.current = current;
+	useEffect(() => () => setPreview(saved.current), []);
+
+	async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+		e.preventDefault();
+		setStatus(null);
+		try {
+			await setBoardBackground({ data: { boardId, pattern: choice } });
+			await router.invalidate();
+			setStatus("Bakgrunden är sparad.");
+		} catch (err) {
+			setStatus(err instanceof Error ? err.message : "Något gick fel.");
+		}
+	}
+
+	return (
+		<section aria-labelledby="background">
+			<h2 id="background">Bakgrund</h2>
+			{!canEdit ? (
+				<p>
+					Styrelsens bakgrund: {name(current)}. Administratörer kan ändra den.
+				</p>
+			) : (
+				<form onSubmit={onSubmit}>
+					<p>
+						<label htmlFor="pattern">Mönster</label>
+						<select
+							id="pattern"
+							name="pattern"
+							value={choice}
+							onChange={(e) => {
+								setChoice(e.currentTarget.value);
+								setPreview(e.currentTarget.value);
+								setStatus(null);
+							}}
+						>
+							<option value={DEFAULT_PATTERN}>Standard</option>
+							{PATTERNS.map((p) => (
+								<option key={p.id} value={p.id}>
+									{p.name}
+								</option>
+							))}
+						</select>
+					</p>
+					<p>
+						Bakgrunden visas direkt medan du väljer. Mönstren kommer från{" "}
+						<a href="https://css-pattern.com">css-pattern.com</a> av Temani
+						Afif.
+					</p>
+					<p>
+						<button type="submit" disabled={choice === current}>
+							Spara bakgrund
+						</button>{" "}
+						<button
+							type="button"
+							disabled={choice === current}
+							onClick={() => {
+								setChoice(current);
+								setPreview(current);
+							}}
+						>
+							Ångra
+						</button>
+					</p>
+					{status && <output>{status}</output>}
+				</form>
+			)}
+		</section>
 	);
 }

@@ -9,6 +9,7 @@ import {
 	listBoards,
 	listMembers,
 	removeMember,
+	setBackground,
 	setMemberRole,
 } from "./boards.server";
 import { migrate } from "./migrate";
@@ -36,7 +37,9 @@ beforeEach(async () => {
 
 test("creator becomes admin and board is trimmed", async () => {
 	const boards = await listBoards(db, anna);
-	expect(boards).toEqual([{ id: boardId, name: "BRF Björken", role: "admin" }]);
+	expect(boards).toEqual([
+		{ id: boardId, name: "BRF Björken", role: "admin", background: "standard" },
+	]);
 	expect(await listBoards(db, bo)).toEqual([]);
 	await expect(createBoard(db, anna, "  ")).rejects.toThrow(BoardError);
 });
@@ -90,4 +93,18 @@ test("members can leave, admins can remove others", async () => {
 	expect((await listMembers(db, anna, boardId)).map((m) => m.userId)).toEqual([
 		anna,
 	]);
+});
+
+test("admins choose a known background pattern", async () => {
+	await addMemberByEmail(db, anna, boardId, "bo@example.se");
+	await setBackground(db, anna, boardId, "honeycomb");
+	expect((await getBoard(db, bo, boardId))?.background).toBe("honeycomb");
+	await expect(setBackground(db, bo, boardId, "hearts")).rejects.toThrow(
+		BoardError,
+	);
+	await expect(setBackground(db, anna, boardId, "url(evil)")).rejects.toThrow(
+		BoardError,
+	);
+	await setBackground(db, anna, boardId, "standard");
+	expect((await getBoard(db, anna, boardId))?.background).toBe("standard");
 });
