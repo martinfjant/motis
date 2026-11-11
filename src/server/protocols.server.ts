@@ -11,7 +11,7 @@ import {
 	requireParent,
 	requireTitle,
 } from "./agendas.server";
-import { listMembers, requireMember } from "./boards.server";
+import { BoardError, listMembers, requireMember } from "./boards.server";
 import type { ItemType, ProtocolItem, ProtocolValue } from "./items";
 
 export type Protocol = {
@@ -222,6 +222,25 @@ export async function deleteProtocol(
 }
 
 /** Records what happened at the meeting for one point. */
+/** Everything except notes is required; returns the problem, if any. */
+export function missingValue(type: ItemType, v: ProtocolValue): string | null {
+	switch (type) {
+		case "toggle":
+			return v.done === undefined ? "Välj ja eller nej." : null;
+		case "open":
+		case "close":
+			return v.at ? null : "Ange en giltig tidpunkt.";
+		case "attendance":
+			return v.present?.length ? null : "Ange minst en närvarande.";
+		case "person":
+			return v.person ? null : "Välj en person.";
+		case "decision":
+			return v.decision ? null : "Skriv beslutet.";
+		default:
+			return null;
+	}
+}
+
 export async function saveItemValue(
 	db: Client,
 	userId: string,
@@ -229,8 +248,11 @@ export async function saveItemValue(
 	input: ProtocolValue,
 ) {
 	const { item } = await requireItem(db, userId, "protocol", itemId);
+	const value = cleanValue(item.type, input);
+	const missing = missingValue(item.type, value);
+	if (missing) throw new BoardError(missing);
 	await db.execute({
 		sql: "UPDATE protocol_items SET value = ? WHERE id = ?",
-		args: [JSON.stringify(cleanValue(item.type, input)), itemId],
+		args: [JSON.stringify(value), itemId],
 	});
 }

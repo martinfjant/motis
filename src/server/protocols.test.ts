@@ -117,9 +117,6 @@ test("values are stored per type and stray fields dropped", async () => {
 		at: "2026-11-20T18:03",
 		done: true,
 	});
-	await saveItemValue(db, bo, byTitle("Mötets avslutande"), {
-		at: "igår kväll",
-	});
 	await saveItemValue(db, bo, byTitle("Närvarande ledamöter"), {
 		present: ["anna", " bo ", "", "anna", "Revisor Lisa"],
 	});
@@ -145,13 +142,15 @@ test("values are stored per type and stray fields dropped", async () => {
 	expect(value("Ekonomi")).toEqual({});
 	expect(value("Föregående protokoll")).toEqual({ done: false });
 
-	// A yes/no point with no answer chosen records nothing.
-	await saveItemValue(db, bo, byTitle("Föregående protokoll"), {});
-	expect(
-		(await getProtocol(db, anna, protocol.id)).items.find(
-			(i) => i.title === "Föregående protokoll",
-		)?.value,
-	).toEqual({});
+	// Everything but notes is required.
+	const rejects = (t: string, v: object) =>
+		expect(saveItemValue(db, bo, byTitle(t), v)).rejects.toThrow(BoardError);
+	await rejects("Föregående protokoll", { notes: "bara anteckning" });
+	await rejects("Mötets avslutande", { at: "igår kväll" });
+	await rejects("Närvarande ledamöter", { present: [" "] });
+	await rejects("Val av sekreterare", { person: "  " });
+	// Text points only have notes, so an empty one is fine.
+	await saveItemValue(db, bo, byTitle("Ekonomi"), {});
 });
 
 test("deleting the agenda keeps the protocol, and vice versa", async () => {

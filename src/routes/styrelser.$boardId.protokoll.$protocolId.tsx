@@ -457,7 +457,30 @@ function ItemValueForm({
 		<form
 			onSubmit={(e) => {
 				e.preventDefault();
-				onSave(read(e.currentTarget));
+				const form = e.currentTarget;
+				const value = read(form);
+				// A checkbox group cannot be "required" in HTML, so check attendance
+				// by hand and report it like the browser reports other fields.
+				if (
+					item.type === "attendance" &&
+					!value.present?.some((n) => n.trim())
+				) {
+					const first = form.querySelector<HTMLInputElement>(
+						'input[name="present"], textarea[name="others"]',
+					);
+					first?.setCustomValidity("Markera minst en närvarande.");
+					first?.reportValidity();
+					return;
+				}
+				onSave(value);
+			}}
+			onChange={(e) => {
+				// Clear the attendance message as soon as something changes.
+				e.currentTarget
+					.querySelector<HTMLInputElement>(
+						'input[name="present"], textarea[name="others"]',
+					)
+					?.setCustomValidity("");
 			}}
 		>
 			{item.type === "toggle" && (
@@ -468,6 +491,7 @@ function ItemValueForm({
 						type="radio"
 						value="yes"
 						defaultChecked={v.done === true}
+						required
 					/>{" "}
 					<label htmlFor={id("done-yes")}>Ja</label>{" "}
 					<input
@@ -476,6 +500,7 @@ function ItemValueForm({
 						type="radio"
 						value="no"
 						defaultChecked={v.done === false}
+						required
 					/>{" "}
 					<label htmlFor={id("done-no")}>Nej</label>
 				</p>
@@ -519,6 +544,7 @@ function ItemValueForm({
 							id={id("person")}
 							name="person"
 							defaultValue={savedIsOther ? OTHER_PERSON : (v.person ?? "")}
+							required
 							onChange={(e) => {
 								const picked = e.currentTarget.value;
 								setOtherPerson(picked === OTHER_PERSON);
@@ -559,6 +585,7 @@ function ItemValueForm({
 						id={id("decision")}
 						name="decision"
 						defaultValue={v.decision}
+						required
 					/>
 				</p>
 			)}
