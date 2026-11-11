@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Field, Textarea } from "#/components/Field";
 import type { ProtocolValue } from "#/server/items";
+import { Checkbox } from "../Choice";
 import { DoneView } from "./DoneView";
 import { NotesField } from "./NotesField";
 import { PointActions } from "./PointActions";
@@ -70,17 +71,15 @@ export function AttendancePoint(props: PointProps & { invited: string[] }) {
 			<fieldset>
 				<legend>Närvarande</legend>
 				{invited.map((name) => (
-					<p key={name}>
-						<input
-							id={id(`present-${name}`)}
-							name="present"
-							type="checkbox"
-							value={name}
-							defaultChecked={(v.present ?? []).includes(name)}
-							onChange={(e) => saveTick(e.currentTarget.form)}
-						/>{" "}
-						<label htmlFor={id(`present-${name}`)}>{name}</label>
-					</p>
+					<Checkbox
+						key={name}
+						id={id(`present-${name}`)}
+						label={name}
+						name="present"
+						value={name}
+						defaultChecked={(v.present ?? []).includes(name)}
+						onChange={(e) => saveTick(e.currentTarget.form)}
+					/>
 				))}
 			</fieldset>
 			<Field id={id("others")} label="Övriga närvarande (ett namn per rad)">

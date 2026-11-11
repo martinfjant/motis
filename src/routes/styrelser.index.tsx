@@ -1,10 +1,12 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "#/components/Button";
+import { MeetingTime } from "#/components/DateTime";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Input } from "#/components/Field";
+import { MeetingItem, MeetingList } from "#/components/MeetingList";
 import { Section } from "#/components/Section";
-import { daysUntilText, formatMeetingAt } from "#/meeting-time";
+import { daysUntilText } from "#/meeting-time";
 import { getUpcomingMeetings } from "#/server/agendas.functions";
 import { createBoard, getMyBoards } from "#/server/boards.functions";
 import type { UpcomingMeeting } from "#/server/meetings.server";
@@ -90,28 +92,31 @@ function Upcoming({ meetings }: { meetings: UpcomingMeeting[] }) {
 				<>
 					<p>
 						Nästa möte är <strong>{daysUntilText(next.daysUntil)}</strong>,{" "}
-						<time dateTime={next.meetingAt}>
-							{formatMeetingAt(next.meetingAt)}
-						</time>
-						, i {next.boardName}.
+						<MeetingTime at={next.meetingAt} />, i {next.boardName}.
 					</p>
-					<ul>
+					<MeetingList>
 						{meetings.map((m) => (
-							<li key={`${m.boardId}-${m.agenda?.id ?? "planned"}`}>
-								<time dateTime={m.meetingAt}>
-									{formatMeetingAt(m.meetingAt)}
-								</time>{" "}
-								({daysUntilText(m.daysUntil)}), {m.boardName}:{" "}
-								{m.agenda ? (
-									<Link
-										to="/styrelser/$boardId/dagordningar/$agendaId"
-										params={{ boardId: m.boardId, agendaId: m.agenda.id }}
-									>
-										{m.agenda.title}
-									</Link>
-								) : (
+							<MeetingItem
+								key={`${m.boardId}-${m.agenda?.id ?? "planned"}`}
+								title={
+									m.agenda ? (
+										<Link
+											to="/styrelser/$boardId/dagordningar/$agendaId"
+											params={{ boardId: m.boardId, agendaId: m.agenda.id }}
+										>
+											{m.agenda.title}
+										</Link>
+									) : (
+										"Nästa möte"
+									)
+								}
+								at={m.meetingAt}
+								daysUntil={m.daysUntil}
+							>
+								– {m.boardName}
+								{!m.agenda && (
 									<>
-										bestämt på förra mötet, ingen kallelse ännu.{" "}
+										, bestämt på förra mötet. Ingen kallelse ännu.{" "}
 										<Link
 											to="/styrelser/$boardId"
 											params={{ boardId: m.boardId }}
@@ -120,9 +125,9 @@ function Upcoming({ meetings }: { meetings: UpcomingMeeting[] }) {
 										</Link>
 									</>
 								)}
-							</li>
+							</MeetingItem>
 						))}
-					</ul>
+					</MeetingList>
 				</>
 			)}
 		</Section>

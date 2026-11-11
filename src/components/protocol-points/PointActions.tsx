@@ -1,5 +1,6 @@
 import { canCarryOver } from "#/server/items";
 import { Button } from "../Button";
+import { Checkbox } from "../Choice";
 import type { PointProps } from "./point";
 
 /**
@@ -36,17 +37,14 @@ export function PointActions({
 	return (
 		<>
 			{carriable && (
-				<p>
-					{/* Keyed on the saved state so it shows what the server has. */}
-					<input
-						key={String(!!item.value.followUp)}
-						id={followUpId}
-						type="checkbox"
-						defaultChecked={!!item.value.followUp}
-						onChange={(e) => carryOver({ followUp: e.currentTarget.checked })}
-					/>{" "}
-					<label htmlFor={followUpId}>Följ upp på nästa möte</label>
-				</p>
+				// Keyed on the saved state so it shows what the server has.
+				<Checkbox
+					key={String(!!item.value.followUp)}
+					id={followUpId}
+					label="Följ upp på nästa möte"
+					defaultChecked={!!item.value.followUp}
+					onChange={(e) => carryOver({ followUp: e.currentTarget.checked })}
+				/>
 			)}
 			<p>
 				{submit && (

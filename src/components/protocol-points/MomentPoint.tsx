@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Field, Input } from "#/components/Field";
-import { formatMeetingAt, toLocalStamp } from "#/meeting-time";
+import { toLocalStamp } from "#/meeting-time";
 import { Button } from "../Button";
+import { MeetingTime } from "../DateTime";
 import { MOMENT_TEXT } from "../ProtocolView";
 import { NotesEditor } from "./NotesEditor";
 import { fieldId, type PointProps } from "./point";
@@ -32,7 +33,7 @@ export function MomentPoint({ item, done, save, edit, cancel }: PointProps) {
 		<>
 			{done && v.at ? (
 				<p>
-					{text.done} <time dateTime={v.at}>{formatMeetingAt(v.at)}</time>{" "}
+					{text.done} <MeetingTime at={v.at} />{" "}
 					<Button onClick={edit}>Ändra</Button>
 				</p>
 			) : v.at ? (

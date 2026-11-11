@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import { formatMeetingAt } from "#/meeting-time";
+import { MeetingTime } from "./DateTime";
 
 /** Time and place as a description list; renders nothing if both are empty. */
 export function MeetingDetails({
@@ -16,7 +16,7 @@ export function MeetingDetails({
 				<>
 					<dt>Tid</dt>
 					<dd>
-						<time dateTime={meetingAt}>{formatMeetingAt(meetingAt)}</time>
+						<MeetingTime at={meetingAt} />
 					</dd>
 				</>
 			)}

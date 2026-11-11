@@ -1,7 +1,7 @@
 import { MeetingDetails, MultilineText } from "#/components/AgendaView";
 import { Section } from "#/components/Section";
-import { formatInstant, formatMeetingAt } from "#/meeting-time";
 import type { ProtocolEdit, ProtocolItem } from "#/server/items";
+import { Instant, MeetingTime } from "./DateTime";
 
 // Read-only protocol, shared by the closed protocol in the app and the public
 // protocol page, so both always show the same thing.
@@ -68,14 +68,11 @@ export function ProtocolHistory({
 		<Section id="history" title="Historik">
 			<ul>
 				<li>
-					Protokollet stängdes{" "}
-					<time dateTime={closedAt}>{formatInstant(closedAt)}</time>.
+					Protokollet stängdes <Instant at={closedAt} />.
 				</li>
 				{edits.map((edit) => (
 					<li key={edit.editedAt + edit.userName}>
-						Redigerat{" "}
-						<time dateTime={edit.editedAt}>{formatInstant(edit.editedAt)}</time>{" "}
-						av {edit.userName}.
+						Redigerat <Instant at={edit.editedAt} /> av {edit.userName}.
 					</li>
 				))}
 			</ul>
@@ -95,8 +92,7 @@ export function RecordedValue({ item }: { item: RecordedItem }) {
 			)}
 			{(item.type === "open" || item.type === "close") && v.at && (
 				<p>
-					{MOMENT_TEXT[item.type].done}{" "}
-					<time dateTime={v.at}>{formatMeetingAt(v.at)}</time>
+					{MOMENT_TEXT[item.type].done} <MeetingTime at={v.at} />
 				</p>
 			)}
 			{item.type === "toggle" && v.done !== undefined && (
@@ -130,7 +126,7 @@ export function RecordedValue({ item }: { item: RecordedItem }) {
 			)}
 			{item.type === "next_meeting" && v.at && (
 				<p>
-					Nästa möte: <time dateTime={v.at}>{formatMeetingAt(v.at)}</time>
+					Nästa möte: <MeetingTime at={v.at} />
 				</p>
 			)}
 			{v.notes && <MultilineText text={v.notes} />}

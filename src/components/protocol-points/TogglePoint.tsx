@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Radio } from "../Choice";
 import { DoneView } from "./DoneView";
 import { NotesField } from "./NotesField";
 import { PointActions } from "./PointActions";
@@ -30,26 +31,24 @@ export function TogglePoint(props: PointProps) {
 			}}
 		>
 			<p>
-				<input
+				<Radio
 					id={id("done-yes")}
+					label="Ja"
 					name="done"
-					type="radio"
 					value="yes"
 					defaultChecked={v.done === true}
 					required
 					onChange={(e) => e.currentTarget.form?.requestSubmit()}
 				/>{" "}
-				<label htmlFor={id("done-yes")}>Ja</label>{" "}
-				<input
+				<Radio
 					id={id("done-no")}
+					label="Nej"
 					name="done"
-					type="radio"
 					value="no"
 					defaultChecked={v.done === false}
 					required
 					onChange={(e) => e.currentTarget.form?.requestSubmit()}
-				/>{" "}
-				<label htmlFor={id("done-no")}>Nej</label>
+				/>
 			</p>
 			<NotesField
 				item={item}
