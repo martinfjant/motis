@@ -168,3 +168,21 @@ export const deleteItem = createServerFn({ method: "POST" })
 		const { db, user, agendas } = await ctx();
 		await agendas.deleteItem(db, user.id, data.kind, data.itemId);
 	});
+
+// ---------- Public sharing ----------
+
+/** No login required: the slug itself is the access token. */
+export const getPublicAgenda = createServerFn({ method: "GET" })
+	.validator((d: unknown) => ({ slug: str(obj(d).slug) }))
+	.handler(async ({ data }) => {
+		const { getDb } = await import("./db");
+		const { getPublicAgenda } = await import("./agendas.server");
+		return getPublicAgenda(await getDb(), data.slug);
+	});
+
+export const regenerateAgendaSlug = createServerFn({ method: "POST" })
+	.validator((d: unknown) => ({ agendaId: str(obj(d).agendaId) }))
+	.handler(async ({ data }) => {
+		const { db, user, agendas } = await ctx();
+		return agendas.regenerateSlug(db, user.id, data.agendaId);
+	});

@@ -9,6 +9,7 @@ import { ItemEditor } from "#/components/ItemEditor";
 import {
 	deleteAgenda,
 	getAgenda,
+	regenerateAgendaSlug,
 	updateAgenda,
 } from "#/server/agendas.functions";
 
@@ -112,6 +113,8 @@ function AgendaPage() {
 				</form>
 			</section>
 
+			<ShareSection agendaId={agenda.id} slug={agenda.slug} />
+
 			<ItemEditor kind="agenda" parentId={agenda.id} items={items} />
 
 			<section aria-labelledby="danger">
@@ -121,5 +124,53 @@ function AgendaPage() {
 				</button>
 			</section>
 		</main>
+	);
+}
+
+function ShareSection({ agendaId, slug }: { agendaId: string; slug: string }) {
+	const router = useRouter();
+	const [status, setStatus] = useState<string | null>(null);
+
+	async function onCopy() {
+		const url = `${window.location.origin}/dagordning/${slug}`;
+		try {
+			await navigator.clipboard.writeText(url);
+			setStatus("Länken är kopierad.");
+		} catch {
+			setStatus(`Kunde inte kopiera. Länken är: ${url}`);
+		}
+	}
+
+	async function onRegenerate() {
+		if (
+			!confirm(
+				"Skapa en ny länk? Den gamla länken slutar fungera för alla som har fått den.",
+			)
+		)
+			return;
+		await regenerateAgendaSlug({ data: { agendaId } });
+		await router.invalidate();
+		setStatus("En ny länk har skapats. Den gamla fungerar inte längre.");
+	}
+
+	return (
+		<section aria-labelledby="share">
+			<h2 id="share">Dela</h2>
+			<p>Alla som har länken kan läsa dagordningen, utan att logga in.</p>
+			<p>
+				<Link to="/dagordning/$slug" params={{ slug }}>
+					Visa den delade dagordningen
+				</Link>
+			</p>
+			<p>
+				<button type="button" onClick={onCopy}>
+					Kopiera länken
+				</button>{" "}
+				<button type="button" onClick={onRegenerate}>
+					Skapa ny länk
+				</button>
+			</p>
+			{status && <output>{status}</output>}
+		</section>
 	);
 }

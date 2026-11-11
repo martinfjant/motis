@@ -14,6 +14,7 @@ import { Route as LoggaInRouteImport } from './routes/logga-in'
 import { Route as RegistreraRouteImport } from './routes/registrera'
 import { Route as StyrelserRouteImport } from './routes/styrelser'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as DagordningSlugRouteImport } from './routes/dagordning.$slug'
 import { Route as StyrelserIndexRouteImport } from './routes/styrelser.index'
 import { Route as StyrelserBoardIdIndexRouteImport } from './routes/styrelser.$boardId.index'
 import { Route as StyrelserBoardIdDagordningarAgendaIdRouteImport } from './routes/styrelser.$boardId.dagordningar.$agendaId'
@@ -42,6 +43,11 @@ const StyrelserRoute = StyrelserRouteImport.update({
 const ApiHealthRoute = ApiHealthRouteImport.update({
   id: '/api/health',
   path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DagordningSlugRoute = DagordningSlugRouteImport.update({
+  id: '/dagordning/$slug',
+  path: '/dagordning/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StyrelserIndexRoute = StyrelserIndexRouteImport.update({
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/registrera': typeof RegistreraRoute
   '/styrelser': typeof StyrelserRouteWithChildren
   '/api/health': typeof ApiHealthRoute
+  '/dagordning/$slug': typeof DagordningSlugRoute
   '/styrelser/': typeof StyrelserIndexRoute
   '/styrelser/$boardId/': typeof StyrelserBoardIdIndexRoute
   '/styrelser/$boardId/dagordningar/$agendaId': typeof StyrelserBoardIdDagordningarAgendaIdRoute
@@ -83,6 +90,7 @@ export interface FileRoutesByTo {
   '/logga-in': typeof LoggaInRoute
   '/registrera': typeof RegistreraRoute
   '/api/health': typeof ApiHealthRoute
+  '/dagordning/$slug': typeof DagordningSlugRoute
   '/styrelser': typeof StyrelserIndexRoute
   '/styrelser/$boardId': typeof StyrelserBoardIdIndexRoute
   '/styrelser/$boardId/dagordningar/$agendaId': typeof StyrelserBoardIdDagordningarAgendaIdRoute
@@ -95,6 +103,7 @@ export interface FileRoutesById {
   '/registrera': typeof RegistreraRoute
   '/styrelser': typeof StyrelserRouteWithChildren
   '/api/health': typeof ApiHealthRoute
+  '/dagordning/$slug': typeof DagordningSlugRoute
   '/styrelser/': typeof StyrelserIndexRoute
   '/styrelser/$boardId/': typeof StyrelserBoardIdIndexRoute
   '/styrelser/$boardId/dagordningar/$agendaId': typeof StyrelserBoardIdDagordningarAgendaIdRoute
@@ -108,6 +117,7 @@ export interface FileRouteTypes {
     | '/registrera'
     | '/styrelser'
     | '/api/health'
+    | '/dagordning/$slug'
     | '/styrelser/'
     | '/styrelser/$boardId/'
     | '/styrelser/$boardId/dagordningar/$agendaId'
@@ -118,6 +128,7 @@ export interface FileRouteTypes {
     | '/logga-in'
     | '/registrera'
     | '/api/health'
+    | '/dagordning/$slug'
     | '/styrelser'
     | '/styrelser/$boardId'
     | '/styrelser/$boardId/dagordningar/$agendaId'
@@ -129,6 +140,7 @@ export interface FileRouteTypes {
     | '/registrera'
     | '/styrelser'
     | '/api/health'
+    | '/dagordning/$slug'
     | '/styrelser/'
     | '/styrelser/$boardId/'
     | '/styrelser/$boardId/dagordningar/$agendaId'
@@ -141,6 +153,7 @@ export interface RootRouteChildren {
   RegistreraRoute: typeof RegistreraRoute
   StyrelserRoute: typeof StyrelserRouteWithChildren
   ApiHealthRoute: typeof ApiHealthRoute
+  DagordningSlugRoute: typeof DagordningSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -178,6 +191,13 @@ declare module '@tanstack/react-router' {
       path: '/api/health'
       fullPath: '/api/health'
       preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dagordning/$slug': {
+      id: '/dagordning/$slug'
+      path: '/dagordning/$slug'
+      fullPath: '/dagordning/$slug'
+      preLoaderRoute: typeof DagordningSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/styrelser/': {
@@ -236,6 +256,7 @@ const rootRouteChildren: RootRouteChildren = {
   RegistreraRoute: RegistreraRoute,
   StyrelserRoute: StyrelserRouteWithChildren,
   ApiHealthRoute: ApiHealthRoute,
+  DagordningSlugRoute: DagordningSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -248,7 +248,7 @@ export async function createAgenda(
 	const agenda: Agenda = {
 		id: randomUUID(),
 		boardId,
-		slug: randomBytes(18).toString("base64url"),
+		slug: newSlug(),
 		title: requireTitle(input.title, "Ange en rubrik för mötet."),
 		meetingAt: cleanMeetingAt(input.meetingAt),
 		location: input.location.trim(),
@@ -427,4 +427,46 @@ export async function deleteItem(
 		sql: `DELETE FROM ${TABLES[kind].items} WHERE id = ?`,
 		args: [itemId],
 	});
+}
+
+// ---------- Public sharing ----------
+
+const newSlug = () => randomBytes(18).toString("base64url");
+
+/** Anyone with the link may read the agenda; no account needed. */
+export async function getPublicAgenda(db: Client, slug: string) {
+	if (!slug) return null;
+	const res = await db.execute({
+		sql: `SELECT a.*, b.name AS board_name FROM agendas a
+          JOIN boards b ON b.id = a.board_id WHERE a.slug = ?`,
+		args: [slug],
+	});
+	const row = res.rows[0];
+	if (!row) return null;
+	const { title, meetingAt, location } = toAgenda(row);
+	const items = await listItems(db, "agenda", String(row.id));
+	return {
+		boardName: String(row.board_name),
+		agenda: { title, meetingAt, location },
+		items: items.map(({ id, title, description }) => ({
+			id,
+			title,
+			description,
+		})),
+	};
+}
+
+/** Replaces the share link, so the old one stops working. */
+export async function regenerateSlug(
+	db: Client,
+	userId: string,
+	agendaId: string,
+) {
+	await requireParent(db, userId, "agenda", agendaId);
+	const slug = newSlug();
+	await db.execute({
+		sql: "UPDATE agendas SET slug = ? WHERE id = ?",
+		args: [slug, agendaId],
+	});
+	return slug;
 }

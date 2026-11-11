@@ -5,6 +5,7 @@ import {
 	useRouter,
 } from "@tanstack/react-router";
 import { useState } from "react";
+import { formatMeetingAt } from "#/meeting-time";
 import {
 	createAgenda,
 	createTemplate,
@@ -131,7 +132,7 @@ function Board() {
 									<>
 										{" "}
 										<time dateTime={a.meetingAt}>
-											{a.meetingAt.replace("T", " ")}
+											{formatMeetingAt(a.meetingAt)}
 										</time>
 									</>
 								)}
