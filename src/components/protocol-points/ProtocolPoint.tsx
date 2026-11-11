@@ -17,16 +17,16 @@ import { TogglePoint } from "./TogglePoint";
 
 /**
  * Where a point is in being dealt with:
- * - "auto": klar once something is recorded (how a point starts).
+ * - "auto": done once something is recorded (how a point starts).
  * - "open": saved but kept open (attendance after a tick).
- * - "reopened": klar, then opened with "Ändra".
- * - "closed": klar, also when nothing was written ("Klar" on empty notes).
+ * - "reopened": done, then opened with "Ändra".
+ * - "closed": done, also when nothing was written ("Klar" on empty notes).
  */
 type Mode = "auto" | "open" | "reopened" | "closed";
 
 /**
  * One point of a protocol during the meeting. Keeps track of whether it is
- * klar and hands that to the component for its kind of point.
+ * done and hands that to the component for its kind of point.
  */
 export function ProtocolPoint({
 	item,
@@ -49,11 +49,11 @@ export function ProtocolPoint({
 
 	const props: PointProps = {
 		item,
-		klar: mode === "closed" || (mode === "auto" && hasValue(item.value)),
+		done: mode === "closed" || (mode === "auto" && hasValue(item.value)),
 		reopened: mode === "reopened",
-		save: async (value, done = true) => {
+		save: async (value, finish = true) => {
 			const ok = await onSave(value);
-			if (ok) setMode((m) => (done ? "closed" : m === "auto" ? "open" : m));
+			if (ok) setMode((m) => (finish ? "closed" : m === "auto" ? "open" : m));
 			return ok;
 		},
 		edit: () => setMode("reopened"),

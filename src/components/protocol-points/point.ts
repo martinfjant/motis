@@ -8,20 +8,20 @@ import type {
 export type PointProps = {
 	item: ProtocolItem;
 	/**
-	 * Dealt with: show what was recorded, with "Ändra". Otherwise show the
-	 * form, with "Klar" (and "Bordlägg" where it applies).
+	 * Dealt with ("Klar" was pressed): show what was recorded, with "Ändra".
+	 * Otherwise show the form, with "Klar" (and "Bordlägg" where it applies).
 	 */
-	klar: boolean;
-	/** Klar, then opened again with "Ändra": offers "Avbryt", not "Bordlägg". */
+	done: boolean;
+	/** Done, then opened again with "Ändra": offers "Avbryt", not "Bordlägg". */
 	reopened: boolean;
 	/**
-	 * Saves the point. With done (the default) the point becomes klar when
+	 * Saves the point. With finish (the default) the point becomes done when
 	 * the save succeeds; without, the form stays open (attendance ticks).
 	 */
-	save: (value: ProtocolValue, done?: boolean) => Promise<boolean>;
+	save: (value: ProtocolValue, finish?: boolean) => Promise<boolean>;
 	/** "Ändra": open the form again. */
 	edit: () => void;
-	/** "Avbryt": back to klar without saving. */
+	/** "Avbryt": back to done without saving. */
 	cancel: () => void;
 	/** Tables the point or marks it for follow-up. */
 	carryOver: (flags: CarryOverFlags) => Promise<boolean>;

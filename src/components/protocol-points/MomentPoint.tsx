@@ -19,9 +19,9 @@ function useNow() {
 
 /**
  * Opening or closing the meeting ("open"/"close"): one button that records
- * the current time. Klar shows the time with "Ändra" to correct it.
+ * the current time. When done it shows the time with "Ändra" to correct it.
  */
-export function MomentPoint({ item, klar, save, edit, cancel }: PointProps) {
+export function MomentPoint({ item, done, save, edit, cancel }: PointProps) {
 	const text = MOMENT_TEXT[item.type === "close" ? "close" : "open"];
 	const v = item.value;
 	const now = useNow();
@@ -29,7 +29,7 @@ export function MomentPoint({ item, klar, save, edit, cancel }: PointProps) {
 
 	return (
 		<>
-			{klar && v.at ? (
+			{done && v.at ? (
 				<p>
 					{text.done} <time dateTime={v.at}>{formatMeetingAt(v.at)}</time>{" "}
 					<Button onClick={edit}>Ändra</Button>

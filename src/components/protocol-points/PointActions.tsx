@@ -5,13 +5,13 @@ import type { PointProps } from "./point";
 /**
  * The bottom of a point. While the point is open: the follow-up checkbox
  * (where it applies), then Klar, Avbryt (if reopened), Bordlägg (only the
- * first time; a point that has been klar can't be tabled) and Ta bort
- * punkten. When klar: just Ändra, since the follow-up choice then shows as
+ * first time; a point that has been done can't be tabled) and Ta bort
+ * punkten. When done: just Ändra, since the follow-up choice then shows as
  * text.
  */
 export function PointActions({
 	item,
-	klar,
+	done,
 	reopened,
 	edit,
 	cancel,
@@ -24,7 +24,7 @@ export function PointActions({
 	submit: boolean;
 	editLabel?: string;
 }) {
-	if (klar)
+	if (done)
 		return (
 			<p>
 				<Button onClick={edit}>{editLabel}</Button>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { ProtocolValue } from "#/server/items";
-import { KlarView } from "./KlarView";
+import { DoneView } from "./DoneView";
 import { NotesField } from "./NotesField";
 import { PointActions } from "./PointActions";
 import { fieldId, type PointProps, readNotes } from "./point";
@@ -13,10 +13,10 @@ const PRESENT = 'input[name="present"], textarea[name="others"]';
  * until "Klar".
  */
 export function AttendancePoint(props: PointProps & { invited: string[] }) {
-	const { item, klar, save, invited } = props;
+	const { item, done, save, invited } = props;
 	const v = item.value;
 	const [notesOpen, setNotesOpen] = useState(!!v.notes);
-	if (klar) return <KlarView {...props} />;
+	if (done) return <DoneView {...props} />;
 
 	const id = (name: string) => fieldId(item, name);
 	// Anyone recorded as present who is not invited (added by hand) goes in

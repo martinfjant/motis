@@ -1,4 +1,4 @@
-import { KlarView } from "./KlarView";
+import { DoneView } from "./DoneView";
 import { NotesField } from "./NotesField";
 import { PointActions } from "./PointActions";
 import { type PointProps, readNotes } from "./point";
@@ -8,8 +8,8 @@ import { type PointProps, readNotes } from "./point";
  * from the start. "Klar" is allowed with nothing written.
  */
 export function TextPoint(props: PointProps) {
-	const { item, klar, save } = props;
-	if (klar) return <KlarView {...props} />;
+	const { item, done, save } = props;
+	if (done) return <DoneView {...props} />;
 	return (
 		<form
 			onSubmit={(e) => {

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { KlarView } from "./KlarView";
+import { DoneView } from "./DoneView";
 import { NotesField } from "./NotesField";
 import { PointActions } from "./PointActions";
 import { fieldId, type PointProps, readNotes } from "./point";
@@ -8,15 +8,15 @@ const OTHER_PERSON = "__other";
 
 /**
  * Val av person ("person"), e.g. the chair. Choosing a name from the list
- * saves it and makes the point klar; "Annan person…" lets you type a name.
+ * saves it and makes the point done; "Annan person…" lets you type a name.
  */
 export function PersonPoint(props: PointProps & { choosable: string[] }) {
-	const { item, klar, save, choosable } = props;
+	const { item, done, save, choosable } = props;
 	const v = item.value;
 	const savedIsOther = !!v.person && !choosable.includes(v.person);
 	const [otherPerson, setOtherPerson] = useState(savedIsOther);
 	const [notesOpen, setNotesOpen] = useState(!!v.notes);
-	if (klar) return <KlarView {...props} />;
+	if (done) return <DoneView {...props} />;
 
 	const id = (name: string) => fieldId(item, name);
 	const read = (form: HTMLFormElement) => {
