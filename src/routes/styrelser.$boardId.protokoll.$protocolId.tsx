@@ -523,7 +523,8 @@ function ProtocolItemForm({
 			</fieldset>
 		);
 
-	// Follow-up is a checkbox before the buttons. A point is dealt with in
+	// Follow-up is a checkbox before the buttons while the point is open; once
+	// klar it shows as text (see RecordedValue). A point is dealt with in
 	// one of two ways: "Klar" or "Bordlägg". Once it is klar it can't be
 	// tabled, not even when reopened with "Ändra".
 	const followUp = carriable && (
@@ -573,8 +574,8 @@ function ProtocolItemForm({
 				/>
 			) : (
 				<>
-					<RecordedValue item={item} showFollowUp={false} />
-					{followUp}
+					{/* Klar closes the follow-up choice too; it shows as text. */}
+					<RecordedValue item={item} />
 					<p>
 						<button type="button" onClick={() => setEditing(true)}>
 							{hasValue(v) ? "Ändra" : "Lägg till anteckning"}

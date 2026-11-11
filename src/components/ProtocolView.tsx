@@ -85,17 +85,8 @@ export function ProtocolHistory({
 	);
 }
 
-/**
- * What was recorded for one point, as text. During the meeting the
- * follow-up flag has its own checkbox, so it can be left out here.
- */
-export function RecordedValue({
-	item,
-	showFollowUp = true,
-}: {
-	item: RecordedItem;
-	showFollowUp?: boolean;
-}) {
+/** What was recorded for one point, as text. */
+export function RecordedValue({ item }: { item: RecordedItem }) {
 	const v = item.value;
 	return (
 		<>
@@ -145,7 +136,7 @@ export function RecordedValue({
 				</p>
 			)}
 			{v.notes && <MultilineText text={v.notes} />}
-			{showFollowUp && v.followUp && <p>Följs upp på nästa möte.</p>}
+			{v.followUp && <p>Kommer följas upp på nästa möte.</p>}
 		</>
 	);
 }
