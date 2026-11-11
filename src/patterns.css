@@ -1107,7 +1107,7 @@ html[data-pattern="leafs"] {
     radial-gradient(var(--s) at 0    0   ,var(--c)) calc(2*var(--s)) 0
     var(--c2);
   background-size: calc(3*var(--s)) calc(5*var(--s)/2);
-}}
+}
 
 /* Lines Dots */
 html[data-pattern="lines-dots"] {
@@ -1208,7 +1208,7 @@ html[data-pattern="maze"] {
     calc(5*var(--s)/4) calc(var(--s)/-4) var(--g),
     linear-gradient(90deg,var(--c)) 0/var(--s) var(--s)
     var(--c2);
-}}
+}
 
 /* Meander */
 html[data-pattern="meander"] {
@@ -1322,7 +1322,6 @@ html[data-pattern="nested-rhombus"] {
     var(--c2); /* second color */
   background-position: 0 0,var(--s) var(--s);
   background-size: calc(2*var(--s)) calc(2*var(--s));
-}
 }
 
 /* Nested Squares */
@@ -2515,7 +2514,7 @@ html[data-pattern="wavy-lines-circles"] {
      0 0/calc(2*var(--s)) calc(3*var(--s)),
     repeating-conic-gradient(var(--c3) 0 25%,var(--c4) 0 50%)
      0 0/calc(4*var(--s)) calc(6*var(--s));
-}}
+}
 
 /* Z Shape */
 html[data-pattern="z-shape"] {
