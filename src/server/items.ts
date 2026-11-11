@@ -74,6 +74,18 @@ export type ProtocolValue = {
 	followUp?: boolean;
 };
 
+/**
+ * Where a point is at the meeting: still to be dealt with ("open"), dealt
+ * with ("done") or moved to the next meeting ("tabled").
+ */
+export type PointState = "open" | "done" | "tabled";
+
+export function pointState(v: ProtocolValue): PointState {
+	if (v.tabled) return "tabled";
+	if (v.done) return "done";
+	return "open";
+}
+
 /** The flags that carry a point over to the next meeting. */
 export type CarryOverFlags = Pick<ProtocolValue, "tabled" | "followUp">;
 
