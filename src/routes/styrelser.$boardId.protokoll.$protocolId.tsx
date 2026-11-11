@@ -5,7 +5,7 @@ import {
 	useRouter,
 } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { MeetingDetails } from "#/components/AgendaView";
+import { MeetingDetails, MultilineText } from "#/components/AgendaView";
 import { ItemFields } from "#/components/ItemEditor";
 import { MeetingForm } from "#/components/MeetingForm";
 import { formatMeetingAt, toLocalStamp } from "#/meeting-time";
@@ -155,7 +155,6 @@ function ProtocolPage() {
 
 			<section aria-labelledby="points">
 				<h2 id="points">Punkter</h2>
-				<p>Spara varje punkt när du har fyllt i den.</p>
 				{error && <p role="alert">{error}</p>}
 				{items.length === 0 ? (
 					<p>Inga punkter ännu.</p>
@@ -309,6 +308,17 @@ function unique(names: string[]) {
 	return [...new Set(names.map((n) => n.trim()).filter(Boolean))];
 }
 
+const OTHER_PERSON = "__other";
+
+/** Whether anything has been recorded for the point yet. */
+function hasValue(v: ProtocolValue) {
+	return Object.keys(v).length > 0;
+}
+
+/**
+ * One protocol point. Shows what was recorded as text with an "Ändra"
+ * button; shows the form when nothing is recorded yet or while editing.
+ */
 function ProtocolItemForm({
 	item,
 	invited,
@@ -322,7 +332,92 @@ function ProtocolItemForm({
 	onSave: (value: ProtocolValue) => Promise<boolean>;
 	onDelete: () => void;
 }) {
-	const [saved, setSaved] = useState(false);
+	const v = item.value;
+	const [editing, setEditing] = useState(false);
+	const showForm = editing || !hasValue(v);
+
+	return (
+		<fieldset>
+			<legend>{item.title}</legend>
+			{item.description && <MultilineText text={item.description} />}
+			{showForm ? (
+				<ItemValueForm
+					item={item}
+					invited={invited}
+					choosable={choosable}
+					onSave={async (value) => {
+						const ok = await onSave(value);
+						if (ok) setEditing(false);
+						return ok;
+					}}
+					onCancel={editing ? () => setEditing(false) : undefined}
+					onDelete={onDelete}
+				/>
+			) : (
+				<>
+					<RecordedValue item={item} />
+					<p>
+						<button type="button" onClick={() => setEditing(true)}>
+							Ändra
+						</button>
+					</p>
+				</>
+			)}
+		</fieldset>
+	);
+}
+
+function RecordedValue({ item }: { item: ProtocolItem }) {
+	const v = item.value;
+	return (
+		<>
+			{item.type === "toggle" && <p>{v.done ? "Ja" : "Nej"}</p>}
+			{item.type === "attendance" &&
+				((v.present ?? []).length === 0 ? (
+					<p>Ingen närvaro registrerad.</p>
+				) : (
+					<>
+						<p>Närvarande:</p>
+						<ul>
+							{(v.present ?? []).map((name) => (
+								<li key={name}>{name}</li>
+							))}
+						</ul>
+					</>
+				))}
+			{item.type === "person" && v.person && (
+				<p>
+					Vald: <strong>{v.person}</strong>
+				</p>
+			)}
+			{item.type === "decision" && v.decision && (
+				<>
+					<p>Beslut:</p>
+					<blockquote>
+						<MultilineText text={v.decision} />
+					</blockquote>
+				</>
+			)}
+			{v.notes && <MultilineText text={v.notes} />}
+		</>
+	);
+}
+
+function ItemValueForm({
+	item,
+	invited,
+	choosable,
+	onSave,
+	onCancel,
+	onDelete,
+}: {
+	item: ProtocolItem;
+	invited: string[];
+	choosable: string[];
+	onSave: (value: ProtocolValue) => Promise<boolean>;
+	onCancel?: () => void;
+	onDelete: () => void;
+}) {
 	const id = (name: string) => `${item.id}-${name}`;
 	const v = item.value;
 
@@ -330,104 +425,145 @@ function ProtocolItemForm({
 	// who is not on that list (added by hand) goes in the free-text field.
 	const others = (v.present ?? []).filter((n) => !invited.includes(n));
 
-	async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-		e.preventDefault();
-		const f = new FormData(e.currentTarget);
-		setSaved(false);
-		const ok = await onSave({
+	// Person: pick from the list, or "Annan person" to type a name.
+	const savedIsOther = !!v.person && !choosable.includes(v.person);
+	const [otherPerson, setOtherPerson] = useState(savedIsOther);
+
+	function read(form: HTMLFormElement): ProtocolValue {
+		const f = new FormData(form);
+		const picked = String(f.get("person") ?? "");
+		return {
 			done: f.get("done") === "on",
 			present: [
 				...f.getAll("present").map(String),
 				...String(f.get("others") ?? "").split("\n"),
 			],
-			person: String(f.get("person") ?? ""),
+			person:
+				picked === OTHER_PERSON ? String(f.get("personOther") ?? "") : picked,
 			decision: String(f.get("decision") ?? ""),
 			notes: String(f.get("notes") ?? ""),
-		});
-		setSaved(ok);
+		};
 	}
 
 	return (
-		<form onSubmit={onSubmit} onChange={() => setSaved(false)}>
-			<fieldset>
-				<legend>{item.title}</legend>
-				{item.description && <p>{item.description}</p>}
-				{item.type === "toggle" && (
+		<form
+			onSubmit={(e) => {
+				e.preventDefault();
+				onSave(read(e.currentTarget));
+			}}
+		>
+			{item.type === "toggle" && (
+				<p>
+					<input
+						id={id("done")}
+						name="done"
+						type="checkbox"
+						defaultChecked={v.done === true}
+					/>{" "}
+					<label htmlFor={id("done")}>Ja</label>
+				</p>
+			)}
+
+			{item.type === "attendance" && (
+				<>
+					<fieldset>
+						<legend>Närvarande</legend>
+						{invited.map((name) => (
+							<p key={name}>
+								<input
+									id={id(`present-${name}`)}
+									name="present"
+									type="checkbox"
+									value={name}
+									defaultChecked={(v.present ?? []).includes(name)}
+								/>{" "}
+								<label htmlFor={id(`present-${name}`)}>{name}</label>
+							</p>
+						))}
+					</fieldset>
 					<p>
-						<input
-							id={id("done")}
-							name="done"
-							type="checkbox"
-							defaultChecked={v.done === true}
-						/>{" "}
-						<label htmlFor={id("done")}>Ja</label>
+						<label htmlFor={id("others")}>
+							Övriga närvarande (ett namn per rad)
+						</label>
+						<textarea
+							id={id("others")}
+							name="others"
+							defaultValue={others.join("\n")}
+						/>
 					</p>
-				)}
-				{item.type === "attendance" && (
-					<>
-						<fieldset>
-							<legend>Närvarande</legend>
-							{invited.map((name) => (
-								<p key={name}>
-									<input
-										id={id(`present-${name}`)}
-										name="present"
-										type="checkbox"
-										value={name}
-										defaultChecked={(v.present ?? []).includes(name)}
-									/>{" "}
-									<label htmlFor={id(`present-${name}`)}>{name}</label>
-								</p>
-							))}
-						</fieldset>
-						<p>
-							<label htmlFor={id("others")}>
-								Övriga närvarande (ett namn per rad)
-							</label>
-							<textarea
-								id={id("others")}
-								name="others"
-								defaultValue={others.join("\n")}
-							/>
-						</p>
-					</>
-				)}
-				{item.type === "person" && (
+				</>
+			)}
+
+			{item.type === "person" && (
+				<>
 					<p>
 						<label htmlFor={id("person")}>Vald</label>
-						<input
+						<select
 							id={id("person")}
 							name="person"
-							list={id("people")}
-							defaultValue={v.person}
-						/>
-						<datalist id={id("people")}>
+							defaultValue={savedIsOther ? OTHER_PERSON : (v.person ?? "")}
+							onChange={(e) => {
+								const picked = e.currentTarget.value;
+								setOtherPerson(picked === OTHER_PERSON);
+								// Choosing a name from the list saves right away.
+								if (picked && picked !== OTHER_PERSON)
+									onSave(read(e.currentTarget.form as HTMLFormElement));
+							}}
+						>
+							<option value="" disabled>
+								Välj person
+							</option>
 							{choosable.map((name) => (
-								<option key={name} value={name} />
+								<option key={name} value={name}>
+									{name}
+								</option>
 							))}
-						</datalist>
+							<option value={OTHER_PERSON}>Annan person…</option>
+						</select>
 					</p>
-				)}
-				{item.type === "decision" && (
-					<p>
-						<label htmlFor={id("decision")}>Beslut</label>
-						<textarea
-							id={id("decision")}
-							name="decision"
-							defaultValue={v.decision}
-						/>
-					</p>
-				)}
+					{otherPerson && (
+						<p>
+							<label htmlFor={id("personOther")}>Namn</label>
+							<input
+								id={id("personOther")}
+								name="personOther"
+								defaultValue={savedIsOther ? v.person : ""}
+								required
+							/>
+						</p>
+					)}
+				</>
+			)}
+
+			{item.type === "decision" && (
 				<p>
-					<label htmlFor={id("notes")}>Anteckningar</label>
-					<textarea id={id("notes")} name="notes" defaultValue={v.notes} />
+					<label htmlFor={id("decision")}>Beslut</label>
+					<textarea
+						id={id("decision")}
+						name="decision"
+						defaultValue={v.decision}
+					/>
 				</p>
+			)}
+
+			<p>
+				<label htmlFor={id("notes")}>Anteckningar</label>
+				<textarea id={id("notes")} name="notes" defaultValue={v.notes} />
+			</p>
+
+			<p>
 				<button type="submit">Spara</button>{" "}
+				{onCancel && (
+					<>
+						<button type="button" onClick={onCancel}>
+							Avbryt
+						</button>{" "}
+					</>
+				)}
 				<button type="button" onClick={onDelete}>
 					Ta bort punkten
-				</button>{" "}
-				{saved && <output>Sparat.</output>}
-			</fieldset>
+				</button>
+			</p>
 		</form>
 	);
 }
