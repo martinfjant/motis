@@ -83,8 +83,10 @@ test("the default template has a next-meeting point", async () => {
 test("a tabled point needs no decision and keeps its flag when notes are saved", async () => {
 	const { Takreparation } = await points();
 	await setCarryOver(db, anna, Takreparation.id, { tabled: true });
+	// A tabled point is not dealt with, even if the notes come with "Klar".
 	await saveItemValue(db, anna, Takreparation.id, {
 		notes: "Väntar på en tredje offert.",
+		done: true,
 	});
 	expect((await points()).Takreparation.value).toEqual({
 		tabled: true,
@@ -99,9 +101,13 @@ test("a tabled point needs no decision and keeps its flag when notes are saved",
 test("follow-up survives saving the decision; a decided point can't be tabled", async () => {
 	const { Cykelrum, Takreparation } = await points();
 	await setCarryOver(db, anna, Cykelrum.id, { followUp: true });
-	await saveItemValue(db, anna, Cykelrum.id, { decision: "Vi rensar i maj." });
+	await saveItemValue(db, anna, Cykelrum.id, {
+		decision: "Vi rensar i maj.",
+		done: true,
+	});
 	expect((await points()).Cykelrum.value).toEqual({
 		decision: "Vi rensar i maj.",
+		done: true,
 		followUp: true,
 	});
 	await expect(

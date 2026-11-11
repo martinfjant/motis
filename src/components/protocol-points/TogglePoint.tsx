@@ -16,9 +16,9 @@ export function TogglePoint(props: PointProps) {
 	const read = (form: HTMLFormElement) => {
 		const f = new FormData(form);
 		// Neither radio chosen means no answer yet, not "Nej".
-		const answer = f.get("done");
+		const answer = f.get("answer");
 		return {
-			done: answer === "yes" ? true : answer === "no" ? false : undefined,
+			answer: answer === "yes" ? true : answer === "no" ? false : undefined,
 			notes: readNotes(f),
 		};
 	};
@@ -32,20 +32,20 @@ export function TogglePoint(props: PointProps) {
 		>
 			<p>
 				<Radio
-					id={id("done-yes")}
+					id={id("answer-yes")}
 					label="Ja"
-					name="done"
+					name="answer"
 					value="yes"
-					defaultChecked={v.done === true}
+					defaultChecked={v.answer === true}
 					required
 					onChange={(e) => e.currentTarget.form?.requestSubmit()}
 				/>{" "}
 				<Radio
-					id={id("done-no")}
+					id={id("answer-no")}
 					label="Nej"
-					name="done"
+					name="answer"
 					value="no"
-					defaultChecked={v.done === false}
+					defaultChecked={v.answer === false}
 					required
 					onChange={(e) => e.currentTarget.form?.requestSubmit()}
 				/>

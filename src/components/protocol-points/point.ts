@@ -8,7 +8,8 @@ import type {
 export type PointProps = {
 	item: ProtocolItem;
 	/**
-	 * Dealt with ("Klar" was pressed): show what was recorded, with "Ändra".
+	 * Dealt with (value.done, set by "Klar"), and not opened again with
+	 * "Ändra": show what was recorded, with "Ändra".
 	 * Otherwise show the form, with "Klar" (and "Bordlägg" where it applies).
 	 */
 	done: boolean;
@@ -29,9 +30,9 @@ export type PointProps = {
 	remove: () => void;
 };
 
-/** Whether anything has been recorded for the point yet (flags aside). */
+/** Whether anything has been recorded for the point (flags aside). */
 export function hasValue(v: ProtocolValue) {
-	const { tabled: _t, followUp: _f, ...recorded } = v;
+	const { done: _d, tabled: _t, followUp: _f, ...recorded } = v;
 	return Object.keys(recorded).length > 0;
 }
 

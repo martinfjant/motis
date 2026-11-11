@@ -10,23 +10,15 @@ import { DecisionPoint } from "./DecisionPoint";
 import { MomentPoint } from "./MomentPoint";
 import { NextMeetingPoint } from "./NextMeetingPoint";
 import { PersonPoint } from "./PersonPoint";
-import { hasValue, type PointProps } from "./point";
+import type { PointProps } from "./point";
 import { TabledPoint } from "./TabledPoint";
 import { TextPoint } from "./TextPoint";
 import { TogglePoint } from "./TogglePoint";
 
 /**
- * Where a point is in being dealt with:
- * - "auto": done once something is recorded (how a point starts).
- * - "open": saved but kept open (attendance after a tick).
- * - "reopened": done, then opened with "Ändra".
- * - "closed": done, also when nothing was written ("Klar" on empty notes).
- */
-type Mode = "auto" | "open" | "reopened" | "closed";
-
-/**
- * One point of a protocol during the meeting. Keeps track of whether it is
- * done and hands that to the component for its kind of point.
+ * One point of a protocol during the meeting. Whether it is done is stored
+ * with the point (value.done, set by "Klar"); "Ändra" opens a done point
+ * again here until it is saved or cancelled.
  */
 export function ProtocolPoint({
 	item,
@@ -45,19 +37,19 @@ export function ProtocolPoint({
 	onCarryOver: (flags: CarryOverFlags) => Promise<boolean>;
 	onDelete: () => void;
 }) {
-	const [mode, setMode] = useState<Mode>("auto");
+	const [reopened, setReopened] = useState(false);
 
 	const props: PointProps = {
 		item,
-		done: mode === "closed" || (mode === "auto" && hasValue(item.value)),
-		reopened: mode === "reopened",
+		done: !!item.value.done && !reopened,
+		reopened,
 		save: async (value, finish = true) => {
-			const ok = await onSave(value);
-			if (ok) setMode((m) => (finish ? "closed" : m === "auto" ? "open" : m));
+			const ok = await onSave({ ...value, done: finish });
+			if (ok && finish) setReopened(false);
 			return ok;
 		},
-		edit: () => setMode("reopened"),
-		cancel: () => setMode("closed"),
+		edit: () => setReopened(true),
+		cancel: () => setReopened(false),
 		carryOver: onCarryOver,
 		remove: onDelete,
 	};

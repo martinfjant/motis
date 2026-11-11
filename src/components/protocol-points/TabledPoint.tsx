@@ -13,7 +13,7 @@ export function TabledPoint({ item, save, carryOver }: PointProps) {
 			<NotesEditor
 				idPrefix={item.id}
 				notes={v.notes}
-				onSave={(notes) => save({ ...v, notes })}
+				onSave={(notes) => save({ ...v, notes }, false)}
 			/>
 			<p>
 				<Button onClick={() => carryOver({ tabled: false })}>

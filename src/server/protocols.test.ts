@@ -114,7 +114,7 @@ test("non-members cannot create, read or fill in protocols", async () => {
 	await expect(getProtocol(db, cia, protocol.id)).rejects.toThrow(BoardError);
 	const [first] = (await getProtocol(db, anna, protocol.id)).items;
 	await expect(
-		saveItemValue(db, cia, first.id, { done: true }),
+		saveItemValue(db, cia, first.id, { answer: true }),
 	).rejects.toThrow(BoardError);
 });
 
@@ -128,13 +128,13 @@ test("values are stored per type and stray fields dropped", async () => {
 	};
 
 	await saveItemValue(db, bo, byTitle("Godkännande av dagordning"), {
-		done: true,
+		answer: true,
 		person: "ska bort",
 		notes: " Dagordningen godkändes. ",
 	});
 	await saveItemValue(db, bo, byTitle("Mötets öppnande"), {
 		at: "2026-11-20T18:03",
-		done: true,
+		answer: true,
 	});
 	await saveItemValue(db, bo, byTitle("Närvarande ledamöter"), {
 		present: ["anna", " bo ", "", "anna", "Revisor Lisa"],
@@ -143,13 +143,15 @@ test("values are stored per type and stray fields dropped", async () => {
 		person: " anna ",
 		decision: "ska bort",
 	});
-	await saveItemValue(db, bo, byTitle("Ekonomi"), { done: true, notes: "" });
-	await saveItemValue(db, bo, byTitle("Föregående protokoll"), { done: false });
+	await saveItemValue(db, bo, byTitle("Ekonomi"), { answer: true, notes: "" });
+	await saveItemValue(db, bo, byTitle("Föregående protokoll"), {
+		answer: false,
+	});
 
 	const saved = (await getProtocol(db, anna, protocol.id)).items;
 	const value = (t: string) => saved.find((i) => i.title === t)?.value;
 	expect(value("Godkännande av dagordning")).toEqual({
-		done: true,
+		answer: true,
 		notes: "Dagordningen godkändes.",
 	});
 	expect(value("Mötets öppnande")).toEqual({ at: "2026-11-20T18:03" });
@@ -159,7 +161,7 @@ test("values are stored per type and stray fields dropped", async () => {
 	});
 	expect(value("Val av ordförande")).toEqual({ person: "anna" });
 	expect(value("Ekonomi")).toEqual({});
-	expect(value("Föregående protokoll")).toEqual({ done: false });
+	expect(value("Föregående protokoll")).toEqual({ answer: false });
 
 	// Everything but notes is required.
 	const rejects = (t: string, v: object) =>
@@ -170,6 +172,47 @@ test("values are stored per type and stray fields dropped", async () => {
 	await rejects("Val av sekreterare", { person: "  " });
 	// Text points only have notes, so an empty one is fine.
 	await saveItemValue(db, bo, byTitle("Ekonomi"), {});
+});
+
+test("every kind of point is marked done by Klar, and stays done", async () => {
+	const protocol = await createProtocol(db, anna, agendaId);
+	const items = (await getProtocol(db, anna, protocol.id)).items;
+	const id = (t: string) => {
+		const item = items.find((i) => i.title === t);
+		if (!item) throw new Error(t);
+		return item.id;
+	};
+	const value = async (t: string) =>
+		(await getProtocol(db, anna, protocol.id)).items.find((i) => i.title === t)
+			?.value;
+
+	// Opening the meeting, attendance and an empty text point alike.
+	await saveItemValue(db, bo, id("Mötets öppnande"), {
+		at: "2026-11-20T18:03",
+		done: true,
+	});
+	expect(await value("Mötets öppnande")).toEqual({
+		at: "2026-11-20T18:03",
+		done: true,
+	});
+	await saveItemValue(db, bo, id("Ekonomi"), { done: true });
+	expect(await value("Ekonomi")).toEqual({ done: true });
+
+	// Attendance ticks are saved before Klar without making it done…
+	await saveItemValue(db, bo, id("Närvarande ledamöter"), {
+		present: ["anna"],
+	});
+	expect((await value("Närvarande ledamöter"))?.done).toBeUndefined();
+	await saveItemValue(db, bo, id("Närvarande ledamöter"), {
+		present: ["anna", "bo"],
+		done: true,
+	});
+	// …and a tick after Ändra keeps it done.
+	await saveItemValue(db, bo, id("Närvarande ledamöter"), { present: ["bo"] });
+	expect(await value("Närvarande ledamöter")).toEqual({
+		present: ["bo"],
+		done: true,
+	});
 });
 
 test("deleting the agenda keeps the protocol, and vice versa", async () => {

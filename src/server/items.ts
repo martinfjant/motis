@@ -48,8 +48,13 @@ export function isItemType(v: unknown): v is ItemType {
 
 /** What was recorded for a point at the meeting. Which fields apply depends on the type. */
 export type ProtocolValue = {
-	/** toggle: e.g. the agenda was approved. */
+	/**
+	 * Dealt with: "Klar" was pressed, or the point was settled by a choice.
+	 * Not set on tabled points, which were not dealt with.
+	 */
 	done?: boolean;
+	/** toggle: the answer, e.g. whether the agenda was approved. */
+	answer?: boolean;
 	/**
 	 * open/close: when it happened; next_meeting: when the next meeting is.
 	 * Local wall-clock "YYYY-MM-DDTHH:MM".

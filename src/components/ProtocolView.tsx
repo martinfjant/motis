@@ -95,8 +95,8 @@ export function RecordedValue({ item }: { item: RecordedItem }) {
 					{MOMENT_TEXT[item.type].done} <MeetingTime at={v.at} />
 				</p>
 			)}
-			{item.type === "toggle" && v.done !== undefined && (
-				<p>{v.done ? "Ja" : "Nej"}</p>
+			{item.type === "toggle" && v.answer !== undefined && (
+				<p>{v.answer ? "Ja" : "Nej"}</p>
 			)}
 			{item.type === "attendance" &&
 				((v.present ?? []).length === 0 ? (

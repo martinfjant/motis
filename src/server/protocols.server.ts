@@ -72,8 +72,8 @@ export function cleanValue(
 	const base = notes ? { notes } : {};
 	switch (type) {
 		case "toggle":
-			return typeof input.done === "boolean"
-				? { ...base, done: input.done }
+			return typeof input.answer === "boolean"
+				? { ...base, answer: input.answer }
 				: base;
 		case "open":
 		case "close":
@@ -283,7 +283,7 @@ export function missingValue(type: ItemType, v: ProtocolValue): string | null {
 	if (v.tabled) return null;
 	switch (type) {
 		case "toggle":
-			return v.done === undefined ? "Välj ja eller nej." : null;
+			return v.answer === undefined ? "Välj ja eller nej." : null;
 		case "open":
 		case "close":
 			return v.at ? null : "Ange en giltig tidpunkt.";
@@ -317,8 +317,10 @@ function flagsOf(v: ProtocolValue): CarryOverFlags {
 }
 
 /**
- * Records what happened at the meeting for one point. Whether the point is
- * tabled or followed up is kept as it was; see setCarryOver.
+ * Records what happened at the meeting for one point. With input.done the
+ * point becomes dealt with; without, it stays as it was (attendance ticks
+ * are saved before "Klar"). Whether the point is tabled or followed up is
+ * kept as it was; see setCarryOver.
  */
 export async function saveItemValue(
 	db: Client,
@@ -328,8 +330,14 @@ export async function saveItemValue(
 	editSession?: string,
 ) {
 	const { item, parentId } = await requireItem(db, userId, "protocol", itemId);
-	const flags = flagsOf(await storedValue(db, itemId));
-	const value = { ...cleanValue(item.type, input), ...flags };
+	const stored = await storedValue(db, itemId);
+	const flags = flagsOf(stored);
+	const done = !flags.tabled && (input.done === true || stored.done === true);
+	const value = {
+		...cleanValue(item.type, input),
+		...(done ? { done } : {}),
+		...flags,
+	};
 	const missing = missingValue(item.type, value);
 	if (missing) throw new BoardError(missing);
 	await guardProtocolEdit(db, userId, parentId, editSession);
@@ -363,7 +371,7 @@ export async function setCarryOver(
 	const stored = await storedValue(db, itemId);
 	const { tabled: _t, followUp: _f, ...recorded } = stored;
 	// A point is either dealt with ("Klar") or tabled, not both.
-	if (input.tabled && !stored.tabled && Object.keys(recorded).length > 0)
+	if (input.tabled && !stored.tabled && stored.done)
 		throw new BoardError("Punkten är redan klar och kan inte bordläggas.");
 	const tabled = input.tabled ?? !!stored.tabled;
 	const followUp = !tabled && (input.followUp ?? !!stored.followUp);
