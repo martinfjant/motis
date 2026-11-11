@@ -5,6 +5,7 @@ import {
 	useRouter,
 } from "@tanstack/react-router";
 import { useState } from "react";
+import { AgendaItems, MeetingDetails } from "#/components/AgendaView";
 import { ItemEditor } from "#/components/ItemEditor";
 import { MeetingForm } from "#/components/MeetingForm";
 import {
@@ -37,6 +38,7 @@ export const Route = createFileRoute(
 function AgendaPage() {
 	const { board, agenda, items, protocolId } = Route.useLoaderData();
 	const router = useRouter();
+	const [editing, setEditing] = useState(false);
 
 	async function onStartProtocol() {
 		const protocol = await createProtocol({ data: { agendaId: agenda.id } });
@@ -65,13 +67,56 @@ function AgendaPage() {
 			</nav>
 			<h1>Dagordning: {agenda.title}</h1>
 
-			<MeetingForm
-				initial={agenda}
-				onSave={async (details) => {
-					await updateAgenda({ data: { agendaId: agenda.id, ...details } });
-					await router.invalidate();
-				}}
-			/>
+			{editing ? (
+				<>
+					<p>
+						<button type="button" onClick={() => setEditing(false)}>
+							Klar med redigeringen
+						</button>
+					</p>
+					<MeetingForm
+						initial={agenda}
+						onSave={async (details) => {
+							await updateAgenda({ data: { agendaId: agenda.id, ...details } });
+							await router.invalidate();
+						}}
+					/>
+					<ItemEditor kind="agenda" parentId={agenda.id} items={items} />
+					<p>
+						<button type="button" onClick={() => setEditing(false)}>
+							Klar med redigeringen
+						</button>
+					</p>
+					<section aria-labelledby="danger">
+						<h2 id="danger">Ta bort</h2>
+						<button type="button" onClick={onDelete}>
+							Ta bort dagordningen
+						</button>
+					</section>
+				</>
+			) : (
+				<>
+					<p>
+						<button type="button" onClick={() => setEditing(true)}>
+							Redigera dagordningen
+						</button>
+					</p>
+					<section aria-labelledby="meeting">
+						<h2 id="meeting">Mötet</h2>
+						<MeetingDetails
+							meetingAt={agenda.meetingAt}
+							location={agenda.location}
+						/>
+						{!agenda.meetingAt && !agenda.location && (
+							<p>Tid och plats är inte angivna.</p>
+						)}
+					</section>
+					<section aria-labelledby="points">
+						<h2 id="points">Punkter</h2>
+						<AgendaItems items={items} headingLevel={3} />
+					</section>
+				</>
+			)}
 
 			<section aria-labelledby="protocol">
 				<h2 id="protocol">Protokoll</h2>
@@ -98,15 +143,6 @@ function AgendaPage() {
 			</section>
 
 			<ShareSection agendaId={agenda.id} shareId={agenda.shareId} />
-
-			<ItemEditor kind="agenda" parentId={agenda.id} items={items} />
-
-			<section aria-labelledby="danger">
-				<h2 id="danger">Ta bort</h2>
-				<button type="button" onClick={onDelete}>
-					Ta bort dagordningen
-				</button>
-			</section>
 		</main>
 	);
 }

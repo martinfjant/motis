@@ -1,6 +1,5 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { Fragment } from "react";
-import { formatMeetingAt } from "#/meeting-time";
+import { AgendaItems, MeetingDetails } from "#/components/AgendaView";
 import { getPublicAgenda } from "#/server/agendas.functions";
 
 // Public, read-only agenda. Anyone with the link can see it, so it only
@@ -45,53 +44,12 @@ function PublicAgenda() {
 				<header>
 					<p>{boardName}</p>
 					<h1>Dagordning: {agenda.title}</h1>
-					{(agenda.meetingAt || agenda.location) && (
-						<dl>
-							{agenda.meetingAt && (
-								<>
-									<dt>Tid</dt>
-									<dd>
-										<time dateTime={agenda.meetingAt}>
-											{formatMeetingAt(agenda.meetingAt)}
-										</time>
-									</dd>
-								</>
-							)}
-							{agenda.location && (
-								<>
-									<dt>Plats</dt>
-									<dd>{agenda.location}</dd>
-								</>
-							)}
-						</dl>
-					)}
+					<MeetingDetails
+						meetingAt={agenda.meetingAt}
+						location={agenda.location}
+					/>
 				</header>
-				{items.length === 0 ? (
-					<p>Dagordningen har inga punkter ännu.</p>
-				) : (
-					<ol>
-						{items.map((item) => (
-							<li key={item.id}>
-								<h2>{item.title}</h2>
-								{item.description
-									.split(/\n{2,}/)
-									.filter(Boolean)
-									.map((para, i) => (
-										// biome-ignore lint/suspicious/noArrayIndexKey: static text paragraphs
-										<p key={i}>
-											{para.split("\n").map((line, j) => (
-												// biome-ignore lint/suspicious/noArrayIndexKey: static text lines
-												<Fragment key={j}>
-													{j > 0 && <br />}
-													{line}
-												</Fragment>
-											))}
-										</p>
-									))}
-							</li>
-						))}
-					</ol>
-				)}
+				<AgendaItems items={items} headingLevel={2} />
 			</article>
 		</main>
 	);
