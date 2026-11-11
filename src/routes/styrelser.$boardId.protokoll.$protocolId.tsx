@@ -4,7 +4,7 @@ import {
 	notFound,
 	useRouter,
 } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { MeetingDetails, MultilineText } from "#/components/AgendaView";
 import { ItemFields } from "#/components/ItemEditor";
 import { MeetingForm } from "#/components/MeetingForm";
@@ -523,6 +523,28 @@ function ProtocolItemForm({
 			</fieldset>
 		);
 
+	// Follow-up is a checkbox before the buttons; "Bordlägg" sits among them.
+	const followUp = carriable && (
+		<p>
+			{/* Keyed on the saved state so it shows what the server has. */}
+			<input
+				key={String(!!v.followUp)}
+				id={`${item.id}-followup`}
+				type="checkbox"
+				defaultChecked={!!v.followUp}
+				onChange={(e) => onCarryOver({ followUp: e.currentTarget.checked })}
+			/>{" "}
+			<label htmlFor={`${item.id}-followup`}>Följ upp på nästa möte</label>
+		</p>
+	);
+	const table = carriable && (
+		<>
+			<button type="button" onClick={() => onCarryOver({ tabled: true })}>
+				Bordlägg
+			</button>{" "}
+		</>
+	);
+
 	return (
 		<fieldset>
 			<legend>{item.title}</legend>
@@ -544,32 +566,20 @@ function ProtocolItemForm({
 					}
 					onClose={() => setEditing(false)}
 					onDelete={onDelete}
+					beforeActions={followUp}
+					extraAction={table}
 				/>
 			) : (
 				<>
 					<RecordedValue item={item} showFollowUp={false} />
+					{followUp}
 					<p>
 						<button type="button" onClick={() => setEditing(true)}>
 							{hasValue(v) ? "Ändra" : "Lägg till anteckning"}
-						</button>
+						</button>{" "}
+						{table}
 					</p>
 				</>
-			)}
-			{carriable && (
-				<p>
-					{/* Keyed on the saved state so it shows what the server has. */}
-					<input
-						key={String(!!v.followUp)}
-						id={`${item.id}-followup`}
-						type="checkbox"
-						defaultChecked={!!v.followUp}
-						onChange={(e) => onCarryOver({ followUp: e.currentTarget.checked })}
-					/>{" "}
-					<label htmlFor={`${item.id}-followup`}>Följ upp på nästa möte</label>{" "}
-					<button type="button" onClick={() => onCarryOver({ tabled: true })}>
-						Bordlägg
-					</button>
-				</p>
 			)}
 		</fieldset>
 	);
@@ -583,6 +593,8 @@ function ItemValueForm({
 	closeLabel,
 	onClose,
 	onDelete,
+	beforeActions,
+	extraAction,
 }: {
 	item: ProtocolItem;
 	invited: string[];
@@ -591,6 +603,10 @@ function ItemValueForm({
 	closeLabel: string | null;
 	onClose: () => void;
 	onDelete: () => void;
+	/** Shown after the fields, before the buttons (the follow-up checkbox). */
+	beforeActions?: ReactNode;
+	/** A button between Klar/Avbryt and "Ta bort punkten" (Bordlägg). */
+	extraAction?: ReactNode;
 }) {
 	const id = (name: string) => `${item.id}-${name}`;
 	const v = item.value;
@@ -815,6 +831,8 @@ function ItemValueForm({
 				</p>
 			)}
 
+			{beforeActions}
+
 			<p>
 				{showSave && (
 					<>
@@ -830,6 +848,7 @@ function ItemValueForm({
 						</button>{" "}
 					</>
 				)}
+				{extraAction}
 				<button type="button" onClick={onDelete}>
 					Ta bort punkten
 				</button>
