@@ -373,7 +373,7 @@ function MeetingMoment({
 							required
 						/>
 					</p>
-					<button type="submit">Spara</button>{" "}
+					<button type="submit">Klar</button>{" "}
 					<button type="button" onClick={() => setEditing(false)}>
 						Avbryt
 					</button>
@@ -452,7 +452,7 @@ function NotesEditor({
 				{/* biome-ignore lint/a11y/noAutofocus: opened by an explicit click */}
 				<textarea id={id} name="notes" defaultValue={notes} autoFocus />
 			</p>
-			<button type="submit">Spara</button>{" "}
+			<button type="submit">Klar</button>{" "}
 			<button type="button" onClick={() => setOpen(false)}>
 				Avbryt
 			</button>
@@ -495,7 +495,10 @@ function ProtocolItemForm({
 }) {
 	const v = item.value;
 	const [editing, setEditing] = useState(false);
-	const showForm = editing || !hasValue(v);
+	// "Klar" closes the form even if nothing was written (a free-text point
+	// may have nothing to note); until then an empty point shows its form.
+	const [closed, setClosed] = useState(false);
+	const showForm = editing || (!hasValue(v) && !closed);
 	const carriable = canCarryOver(item.type);
 
 	if (v.tabled)
@@ -533,6 +536,7 @@ function ProtocolItemForm({
 						const ok = await onSave(value);
 						// Attendance saves on every tick, so it stays open until "Klar".
 						if (ok) setEditing(stayOpen);
+						if (ok && !stayOpen) setClosed(true);
 						return ok;
 					}}
 					closeLabel={
@@ -546,7 +550,7 @@ function ProtocolItemForm({
 					<RecordedValue item={item} showFollowUp={false} />
 					<p>
 						<button type="button" onClick={() => setEditing(true)}>
-							Ändra
+							{hasValue(v) ? "Ändra" : "Lägg till anteckning"}
 						</button>
 					</p>
 				</>
@@ -814,10 +818,12 @@ function ItemValueForm({
 			<p>
 				{showSave && (
 					<>
-						<button type="submit">Spara</button>{" "}
+						<button type="submit">Klar</button>{" "}
 					</>
 				)}
-				{closeLabel && (
+				{/* Attendance's "Klar" closes; when a note is open the submit
+				    "Klar" does that (and saves), so don't show it twice. */}
+				{closeLabel && !(showSave && closeLabel === "Klar") && (
 					<>
 						<button type="button" onClick={onClose}>
 							{closeLabel}
