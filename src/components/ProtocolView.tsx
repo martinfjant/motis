@@ -1,4 +1,5 @@
 import { MeetingDetails, MultilineText } from "#/components/AgendaView";
+import { Section } from "#/components/Section";
 import { formatInstant, formatMeetingAt } from "#/meeting-time";
 import type { ProtocolEdit, ProtocolItem } from "#/server/items";
 
@@ -28,15 +29,13 @@ export function ProtocolDisplay({
 }) {
 	return (
 		<>
-			<section aria-labelledby="meeting">
-				<h2 id="meeting">Mötet</h2>
+			<Section id="meeting" title="Mötet">
 				<MeetingDetails
 					meetingAt={protocol.meetingAt}
 					location={protocol.location}
 				/>
-			</section>
-			<section aria-labelledby="points">
-				<h2 id="points">Punkter</h2>
+			</Section>
+			<Section id="points" title="Punkter">
 				{items.length === 0 ? (
 					<p>Inga punkter.</p>
 				) : (
@@ -50,7 +49,7 @@ export function ProtocolDisplay({
 						))}
 					</ol>
 				)}
-			</section>
+			</Section>
 			<ProtocolHistory closedAt={protocol.closedAt} edits={edits} />
 		</>
 	);
@@ -66,8 +65,7 @@ export function ProtocolHistory({
 }) {
 	if (!closedAt) return null;
 	return (
-		<section aria-labelledby="history">
-			<h2 id="history">Historik</h2>
+		<Section id="history" title="Historik">
 			<ul>
 				<li>
 					Protokollet stängdes{" "}
@@ -81,7 +79,7 @@ export function ProtocolHistory({
 					</li>
 				))}
 			</ul>
-		</section>
+		</Section>
 	);
 }
 

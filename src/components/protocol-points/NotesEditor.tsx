@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Field } from "#/components/Field";
 import { MultilineText } from "../AgendaView";
 import { Button } from "../Button";
 import { MentionTextarea } from "../MentionTextarea";
@@ -40,11 +41,10 @@ export function NotesEditor({
 				if (await onSave(value)) setOpen(false);
 			}}
 		>
-			<p>
-				<label htmlFor={id}>Anteckningar</label>
+			<Field id={id} label="Anteckningar">
 				{/* Opened by an explicit click, so focus goes straight to it. */}
-				<MentionTextarea id={id} name="notes" defaultValue={notes} autoFocus />
-			</p>
+				<MentionTextarea name="notes" defaultValue={notes} autoFocus />
+			</Field>
 			<Button type="submit">Klar</Button>{" "}
 			<Button onClick={() => setOpen(false)}>Avbryt</Button>
 		</form>

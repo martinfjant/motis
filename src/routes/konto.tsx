@@ -6,6 +6,10 @@ import {
 } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "#/components/Button";
+import { ErrorMessage } from "#/components/ErrorMessage";
+import { Field, Input } from "#/components/Field";
+import { Notice } from "#/components/Notice";
+import { Section } from "#/components/Section";
 import { TitleForm, TitleSuggestions } from "#/components/TitleForm";
 import { updateProfile } from "#/server/auth.functions";
 import { getMyBoards, setMyTitle } from "#/server/boards.functions";
@@ -26,8 +30,7 @@ function Account() {
 		<main>
 			<h1>Mitt konto</h1>
 			<ProfileSection user={user} />
-			<section aria-labelledby="titles">
-				<h2 id="titles">Titlar i styrelser</h2>
+			<Section id="titles" title="Titlar i styrelser">
 				{boards.length === 0 ? (
 					<p>Du är inte med i någon styrelse ännu.</p>
 				) : (
@@ -47,7 +50,7 @@ function Account() {
 						</ul>
 					</>
 				)}
-			</section>
+			</Section>
 		</main>
 	);
 }
@@ -81,8 +84,7 @@ function ProfileSection({ user }: { user: { name: string; email: string } }) {
 	}
 
 	return (
-		<section aria-labelledby="profile">
-			<h2 id="profile">Dina uppgifter</h2>
+		<Section id="profile" title="Dina uppgifter">
 			{!editing ? (
 				<>
 					<dl>
@@ -91,7 +93,7 @@ function ProfileSection({ user }: { user: { name: string; email: string } }) {
 						<dt>E-post</dt>
 						<dd>{user.email}</dd>
 					</dl>
-					{saved && <output>Sparat.</output>}
+					{saved && <Notice>Sparat.</Notice>}
 					<p>
 						<Button
 							type="button"
@@ -106,20 +108,16 @@ function ProfileSection({ user }: { user: { name: string; email: string } }) {
 				</>
 			) : (
 				<form onSubmit={onSubmit}>
-					<p>
-						<label htmlFor="name">Namn</label>
-						<input
-							id="name"
+					<Field id="name" label="Namn">
+						<Input
 							name="name"
 							autoComplete="name"
 							defaultValue={user.name}
 							required
 						/>
-					</p>
-					<p>
-						<label htmlFor="email">E-post</label>
-						<input
-							id="email"
+					</Field>
+					<Field id="email" label="E-post">
+						<Input
 							name="email"
 							type="email"
 							autoComplete="email"
@@ -131,22 +129,21 @@ function ProfileSection({ user }: { user: { name: string; email: string } }) {
 								)
 							}
 						/>
-					</p>
+					</Field>
 					{emailChanged && (
-						<p>
-							<label htmlFor="currentPassword">
-								Nuvarande lösenord (krävs för att byta e-postadress)
-							</label>
-							<input
-								id="currentPassword"
+						<Field
+							id="currentPassword"
+							label="Nuvarande lösenord (krävs för att byta e-postadress)"
+						>
+							<Input
 								name="currentPassword"
 								type="password"
 								autoComplete="current-password"
 								required
 							/>
-						</p>
+						</Field>
 					)}
-					{error && <p role="alert">{error}</p>}
+					<ErrorMessage error={error} />
 					<p>
 						<Button type="submit">Spara</Button>{" "}
 						<Button
@@ -162,7 +159,7 @@ function ProfileSection({ user }: { user: { name: string; email: string } }) {
 					</p>
 				</form>
 			)}
-		</section>
+		</Section>
 	);
 }
 

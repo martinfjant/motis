@@ -6,12 +6,15 @@ import {
 } from "@tanstack/react-router";
 import { useState } from "react";
 import { MeetingDetails } from "#/components/AgendaView";
+import { Breadcrumbs } from "#/components/Breadcrumbs";
 import { Button } from "#/components/Button";
+import { ErrorMessage } from "#/components/ErrorMessage";
 import { ItemFields } from "#/components/ItemEditor";
 import { MeetingForm } from "#/components/MeetingForm";
 import { MentionNames } from "#/components/MentionTextarea";
 import { ProtocolDisplay, ProtocolHistory } from "#/components/ProtocolView";
 import { ProtocolPoint } from "#/components/protocol-points/ProtocolPoint";
+import { Section } from "#/components/Section";
 import { ShareSection } from "#/components/ShareSection";
 import { addItem, deleteItem } from "#/server/agendas.functions";
 import type { CarryOverFlags, ProtocolValue } from "#/server/items";
@@ -170,12 +173,12 @@ function ProtocolPage() {
 	return (
 		<MentionNames.Provider value={mentionable}>
 			<main>
-				<nav aria-label="Brödsmula">
-					<Link to="/styrelser">Styrelser</Link> ›{" "}
+				<Breadcrumbs>
+					<Link to="/styrelser">Styrelser</Link>
 					<Link to="/styrelser/$boardId" params={{ boardId: board.id }}>
 						{board.name}
 					</Link>
-				</nav>
+				</Breadcrumbs>
 				<h1>Protokoll: {protocol.title}</h1>
 				{/* The protocol sits next to its agenda, not under it. */}
 				{protocol.agendaId && (
@@ -241,8 +244,7 @@ function ProtocolPage() {
 								</p>
 							</>
 						) : (
-							<section aria-labelledby="meeting">
-								<h2 id="meeting">Mötet</h2>
+							<Section id="meeting" title="Mötet">
 								<MeetingDetails
 									meetingAt={protocol.meetingAt}
 									location={protocol.location}
@@ -252,12 +254,11 @@ function ProtocolPage() {
 										Ändra mötesuppgifter
 									</Button>
 								</p>
-							</section>
+							</Section>
 						)}
 
-						<section aria-labelledby="points">
-							<h2 id="points">Punkter</h2>
-							{error && <p role="alert">{error}</p>}
+						<Section id="points" title="Punkter">
+							<ErrorMessage error={error} />
 							{items.length === 0 ? (
 								<p>Inga punkter ännu.</p>
 							) : (
@@ -293,7 +294,7 @@ function ProtocolPage() {
 								<ItemFields idPrefix="new-item" />
 								<Button type="submit">Lägg till</Button>
 							</form>
-						</section>
+						</Section>
 
 						{!closed && !hasClosePoint && (
 							<p>
@@ -312,13 +313,12 @@ function ProtocolPage() {
 
 						{share}
 
-						<section aria-labelledby="danger">
-							<h2 id="danger">Ta bort</h2>
+						<Section id="danger" title="Ta bort">
 							<p>Dagordningen påverkas inte.</p>
 							<Button type="button" onClick={onDelete}>
 								Ta bort protokollet
 							</Button>
-						</section>
+						</Section>
 					</>
 				)}
 			</main>

@@ -1,6 +1,8 @@
 import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "#/components/Button";
+import { ErrorMessage } from "#/components/ErrorMessage";
+import { Field, Input } from "#/components/Field";
 import { logIn } from "#/server/auth.functions";
 
 export const Route = createFileRoute("/logga-in")({
@@ -39,27 +41,18 @@ function LogIn() {
 		<main>
 			<h1>Logga in</h1>
 			<form onSubmit={onSubmit}>
-				<p>
-					<label htmlFor="email">E-post</label>
-					<input
-						id="email"
-						name="email"
-						type="email"
-						autoComplete="email"
-						required
-					/>
-				</p>
-				<p>
-					<label htmlFor="password">Lösenord</label>
-					<input
-						id="password"
+				<Field id="email" label="E-post">
+					<Input name="email" type="email" autoComplete="email" required />
+				</Field>
+				<Field id="password" label="Lösenord">
+					<Input
 						name="password"
 						type="password"
 						autoComplete="current-password"
 						required
 					/>
-				</p>
-				{error && <p role="alert">{error}</p>}
+				</Field>
+				<ErrorMessage error={error} />
 				<Button type="submit" disabled={pending}>
 					Logga in
 				</Button>

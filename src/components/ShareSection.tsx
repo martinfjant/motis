@@ -1,6 +1,8 @@
 import { useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "#/components/Button";
+import { Notice } from "#/components/Notice";
+import { Section } from "#/components/Section";
 
 /**
  * The "Dela" section for an agenda or a protocol: the public link, copying it,
@@ -44,8 +46,7 @@ export function ShareSection({
 	}
 
 	return (
-		<section aria-labelledby="share">
-			<h2 id="share">Dela</h2>
+		<Section id="share" title="Dela">
 			{intro}
 			<p>
 				<a href={path}>{linkText}</a>
@@ -58,7 +59,7 @@ export function ShareSection({
 					Skapa ny länk
 				</Button>
 			</p>
-			{status && <output>{status}</output>}
-		</section>
+			{status && <Notice>{status}</Notice>}
+		</Section>
 	);
 }

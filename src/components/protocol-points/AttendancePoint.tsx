@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Field, Textarea } from "#/components/Field";
 import type { ProtocolValue } from "#/server/items";
 import { DoneView } from "./DoneView";
 import { NotesField } from "./NotesField";
@@ -82,17 +83,13 @@ export function AttendancePoint(props: PointProps & { invited: string[] }) {
 					</p>
 				))}
 			</fieldset>
-			<p>
-				<label htmlFor={id("others")}>
-					Övriga närvarande (ett namn per rad)
-				</label>
-				<textarea
-					id={id("others")}
+			<Field id={id("others")} label="Övriga närvarande (ett namn per rad)">
+				<Textarea
 					name="others"
 					defaultValue={others.join("\n")}
 					onBlur={(e) => saveTick(e.currentTarget.form)}
 				/>
-			</p>
+			</Field>
 			<NotesField
 				item={item}
 				open={notesOpen}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Field, Input } from "#/components/Field";
 import { DoneView } from "./DoneView";
 import { NotesField } from "./NotesField";
 import { PointActions } from "./PointActions";
@@ -19,16 +20,14 @@ export function NextMeetingPoint(props: PointProps) {
 				save({ at: String(f.get("at") ?? ""), notes: readNotes(f) });
 			}}
 		>
-			<p>
-				<label htmlFor={id}>Datum och tid</label>
-				<input
-					id={id}
+			<Field id={id} label="Datum och tid">
+				<Input
 					name="at"
 					type="datetime-local"
 					defaultValue={item.value.at}
 					required
 				/>
-			</p>
+			</Field>
 			<NotesField
 				item={item}
 				open={notesOpen}

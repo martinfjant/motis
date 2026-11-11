@@ -1,6 +1,9 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "#/components/Button";
+import { ErrorMessage } from "#/components/ErrorMessage";
+import { Field, Input } from "#/components/Field";
+import { Section } from "#/components/Section";
 import { daysUntilText, formatMeetingAt } from "#/meeting-time";
 import { getUpcomingMeetings } from "#/server/agendas.functions";
 import { createBoard, getMyBoards } from "#/server/boards.functions";
@@ -45,8 +48,7 @@ function Boards() {
 		<main>
 			<h1>Styrelser</h1>
 			{boards.length > 0 && <Upcoming meetings={upcoming} />}
-			<section aria-labelledby="my-boards">
-				<h2 id="my-boards">Dina styrelser</h2>
+			<Section id="my-boards" title="Dina styrelser">
 				{boards.length === 0 ? (
 					<p>Du är inte med i någon styrelse ännu.</p>
 				) : (
@@ -61,20 +63,18 @@ function Boards() {
 						))}
 					</ul>
 				)}
-			</section>
-			<section aria-labelledby="new-board">
-				<h2 id="new-board">Skapa ny styrelse</h2>
+			</Section>
+			<Section id="new-board" title="Skapa ny styrelse">
 				<form onSubmit={onSubmit}>
-					<p>
-						<label htmlFor="name">Föreningens namn</label>
-						<input id="name" name="name" required />
-					</p>
-					{error && <p role="alert">{error}</p>}
+					<Field id="name" label="Föreningens namn">
+						<Input name="name" required />
+					</Field>
+					<ErrorMessage error={error} />
 					<Button type="submit" disabled={pending}>
 						Skapa styrelse
 					</Button>
 				</form>
-			</section>
+			</Section>
 		</main>
 	);
 }
@@ -83,8 +83,7 @@ function Boards() {
 function Upcoming({ meetings }: { meetings: UpcomingMeeting[] }) {
 	const [next] = meetings;
 	return (
-		<section aria-labelledby="upcoming">
-			<h2 id="upcoming">Dina kommande möten</h2>
+		<Section id="upcoming" title="Dina kommande möten">
 			{!next ? (
 				<p>Inga möten är inplanerade just nu.</p>
 			) : (
@@ -126,6 +125,6 @@ function Upcoming({ meetings }: { meetings: UpcomingMeeting[] }) {
 					</ul>
 				</>
 			)}
-		</section>
+		</Section>
 	);
 }

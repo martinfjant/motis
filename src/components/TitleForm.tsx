@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Button } from "#/components/Button";
+import { ErrorMessage } from "#/components/ErrorMessage";
+import { Field, Input } from "#/components/Field";
 
 /** Common posts on a BRF board, offered as suggestions; any title is allowed. */
 const TITLE_SUGGESTIONS = [
@@ -51,17 +53,15 @@ export function TitleForm({
 				}
 			}}
 		>
-			<p>
-				<label htmlFor={id}>{label}</label>
-				<input
-					id={id}
+			<Field id={id} label={label}>
+				<Input
 					name="title"
 					list={TITLE_LIST_ID}
 					maxLength={60}
 					defaultValue={title}
 				/>
-			</p>
-			{error && <p role="alert">{error}</p>}
+			</Field>
+			<ErrorMessage error={error} />
 			<p>
 				<Button type="submit">Spara</Button>{" "}
 				<Button type="button" onClick={onCancel}>

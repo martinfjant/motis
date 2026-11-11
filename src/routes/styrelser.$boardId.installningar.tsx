@@ -5,7 +5,12 @@ import {
 	useRouter,
 } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { Breadcrumbs } from "#/components/Breadcrumbs";
 import { Button } from "#/components/Button";
+import { ErrorMessage } from "#/components/ErrorMessage";
+import { Field, Input, Select } from "#/components/Field";
+import { Notice } from "#/components/Notice";
+import { Section } from "#/components/Section";
 import {
 	TITLE_LIST_ID,
 	TitleForm,
@@ -108,14 +113,14 @@ function Settings() {
 
 	return (
 		<main>
-			<nav aria-label="Brödsmula">
-				<Link to="/styrelser">Styrelser</Link> ›{" "}
+			<Breadcrumbs>
+				<Link to="/styrelser">Styrelser</Link>
 				<Link to="/styrelser/$boardId" params={{ boardId: board.id }}>
 					{board.name}
 				</Link>
-			</nav>
+			</Breadcrumbs>
 			<h1>Inställningar</h1>
-			{error && <p role="alert">{error}</p>}
+			<ErrorMessage error={error} />
 
 			<BackgroundSection
 				boardId={board.id}
@@ -123,8 +128,7 @@ function Settings() {
 				canEdit={isAdmin}
 			/>
 
-			<section aria-labelledby="templates">
-				<h2 id="templates">Mallar</h2>
+			<Section id="templates" title="Mallar">
 				{templates.length === 0 ? (
 					<p>
 						Inga mallar.{" "}
@@ -158,16 +162,14 @@ function Settings() {
 
 				<h3>Ny mall</h3>
 				<form onSubmit={onCreateTemplate}>
-					<p>
-						<label htmlFor="templateName">Mallens namn</label>
-						<input id="templateName" name="templateName" required />
-					</p>
+					<Field id="templateName" label="Mallens namn">
+						<Input name="templateName" required />
+					</Field>
 					<Button type="submit">Skapa tom mall</Button>
 				</form>
-			</section>
+			</Section>
 
-			<section aria-labelledby="members">
-				<h2 id="members">Ledamöter</h2>
+			<Section id="members" title="Ledamöter">
 				<TitleSuggestions />
 				<ul>
 					{members.map((m) => (
@@ -227,11 +229,10 @@ function Settings() {
 						</ul>
 					</>
 				)}
-			</section>
+			</Section>
 
 			{isAdmin && (
-				<section aria-labelledby="add-member">
-					<h2 id="add-member">Lägg till ledamot</h2>
+				<Section id="add-member" title="Lägg till ledamot">
 					<p>
 						Har personen ett konto med e-postadressen blir den ledamot direkt.
 						Annars läggs den till utan konto, och då behövs namnet. Skapar den
@@ -241,8 +242,8 @@ function Settings() {
 						<PersonFields idPrefix="new-member" nameRequired={false} />
 						<Button type="submit">Lägg till</Button>
 					</form>
-					{added && <output>{added}</output>}
-				</section>
+					{added && <Notice>{added}</Notice>}
+				</Section>
 			)}
 		</main>
 	);
@@ -292,18 +293,15 @@ function BackgroundSection({
 	}
 
 	return (
-		<section aria-labelledby="background">
-			<h2 id="background">Bakgrund</h2>
+		<Section id="background" title="Bakgrund">
 			{!canEdit ? (
 				<p>
 					Styrelsens bakgrund: {name(current)}. Administratörer kan ändra den.
 				</p>
 			) : (
 				<form onSubmit={onSubmit}>
-					<p>
-						<label htmlFor="pattern">Mönster</label>
-						<select
-							id="pattern"
+					<Field id="pattern" label="Mönster">
+						<Select
 							name="pattern"
 							value={choice}
 							onChange={(e) => {
@@ -318,8 +316,8 @@ function BackgroundSection({
 									{p.name}
 								</option>
 							))}
-						</select>
-					</p>
+						</Select>
+					</Field>
 					<p>
 						Bakgrunden visas direkt medan du väljer. Mönstren kommer från{" "}
 						<a href="https://css-pattern.com">css-pattern.com</a> av Temani
@@ -340,10 +338,10 @@ function BackgroundSection({
 							Ångra
 						</Button>
 					</p>
-					{status && <output>{status}</output>}
+					{status && <Notice>{status}</Notice>}
 				</form>
 			)}
-		</section>
+		</Section>
 	);
 }
 
@@ -414,41 +412,39 @@ function PersonFields({
 	const id = (name: string) => `${idPrefix}-${name}`;
 	return (
 		<>
-			<p>
-				<label htmlFor={id("name")}>
-					Namn{nameRequired ? "" : " (behövs om personen inte har något konto)"}
-				</label>
-				<input
-					id={id("name")}
+			<Field
+				id={id("name")}
+				label={
+					<>
+						Namn
+						{nameRequired ? "" : " (behövs om personen inte har något konto)"}
+					</>
+				}
+			>
+				<Input
 					name="name"
 					autoComplete="off"
 					maxLength={100}
 					defaultValue={person?.name}
 					required={nameRequired}
 				/>
-			</p>
-			<p>
-				<label htmlFor={id("email")}>E-postadress</label>
-				<input
-					id={id("email")}
+			</Field>
+			<Field id={id("email")} label="E-postadress">
+				<Input
 					name="email"
 					type="email"
 					autoComplete="off"
 					defaultValue={person?.email}
 				/>
-			</p>
-			<p>
-				<label htmlFor={id("title")}>
-					Titel, t.ex. Sekreterare eller Kassör
-				</label>
-				<input
-					id={id("title")}
+			</Field>
+			<Field id={id("title")} label="Titel, t.ex. Sekreterare eller Kassör">
+				<Input
 					name="title"
 					list={TITLE_LIST_ID}
 					maxLength={60}
 					defaultValue={person?.title}
 				/>
-			</p>
+			</Field>
 		</>
 	);
 }

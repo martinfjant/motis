@@ -6,9 +6,12 @@ import {
 } from "@tanstack/react-router";
 import { useState } from "react";
 import { AgendaItems, MeetingDetails } from "#/components/AgendaView";
+import { Breadcrumbs } from "#/components/Breadcrumbs";
 import { Button } from "#/components/Button";
+import { ErrorMessage } from "#/components/ErrorMessage";
 import { ItemEditor } from "#/components/ItemEditor";
 import { MeetingForm } from "#/components/MeetingForm";
+import { Section } from "#/components/Section";
 import { ShareSection } from "#/components/ShareSection";
 import { cannotStart, START_ANY_DAY } from "#/meeting-time";
 import {
@@ -69,12 +72,12 @@ function AgendaPage() {
 
 	return (
 		<main>
-			<nav aria-label="Brödsmula">
-				<Link to="/styrelser">Styrelser</Link> ›{" "}
+			<Breadcrumbs>
+				<Link to="/styrelser">Styrelser</Link>
 				<Link to="/styrelser/$boardId" params={{ boardId: board.id }}>
 					{board.name}
 				</Link>
-			</nav>
+			</Breadcrumbs>
 			<h1>Dagordning: {agenda.title}</h1>
 
 			{editing ? (
@@ -97,12 +100,11 @@ function AgendaPage() {
 							Klar med redigeringen
 						</Button>
 					</p>
-					<section aria-labelledby="danger">
-						<h2 id="danger">Ta bort</h2>
+					<Section id="danger" title="Ta bort">
 						<Button type="button" onClick={onDelete}>
 							Ta bort dagordningen
 						</Button>
-					</section>
+					</Section>
 				</>
 			) : (
 				<>
@@ -111,8 +113,7 @@ function AgendaPage() {
 							Redigera dagordningen
 						</Button>
 					</p>
-					<section aria-labelledby="meeting">
-						<h2 id="meeting">Mötet</h2>
+					<Section id="meeting" title="Mötet">
 						<MeetingDetails
 							meetingAt={agenda.meetingAt}
 							location={agenda.location}
@@ -120,16 +121,14 @@ function AgendaPage() {
 						{!agenda.meetingAt && !agenda.location && (
 							<p>Tid och plats är inte angivna.</p>
 						)}
-					</section>
-					<section aria-labelledby="points">
-						<h2 id="points">Punkter</h2>
+					</Section>
+					<Section id="points" title="Punkter">
 						<AgendaItems items={items} headingLevel={3} />
-					</section>
+					</Section>
 				</>
 			)}
 
-			<section aria-labelledby="protocol">
-				<h2 id="protocol">Protokoll</h2>
+			<Section id="protocol" title="Protokoll">
 				{protocolId ? (
 					<p>
 						<Link
@@ -152,10 +151,10 @@ function AgendaPage() {
 								Starta möte
 							</Button>
 						)}
-						{startError && <p role="alert">{startError}</p>}
+						<ErrorMessage error={startError} />
 					</>
 				)}
-			</section>
+			</Section>
 
 			<ShareSection
 				path={`/dagordning/${agenda.shareId}`}

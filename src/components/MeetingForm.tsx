@@ -1,5 +1,9 @@
 import { useState } from "react";
 import { Button } from "#/components/Button";
+import { ErrorMessage } from "#/components/ErrorMessage";
+import { Field, Input } from "#/components/Field";
+import { Notice } from "#/components/Notice";
+import { Section } from "#/components/Section";
 
 export type MeetingDetails = {
 	title: string;
@@ -36,39 +40,25 @@ export function MeetingForm({
 	}
 
 	return (
-		<section aria-labelledby="meeting">
-			<h2 id="meeting">Mötet</h2>
+		<Section id="meeting" title="Mötet">
 			<form onSubmit={onSubmit}>
-				<p>
-					<label htmlFor="title">Rubrik</label>
-					<input
-						id="title"
-						name="title"
-						defaultValue={initial.title}
-						required
-					/>
-				</p>
-				<p>
-					<label htmlFor="meetingAt">Datum och tid</label>
-					<input
-						id="meetingAt"
+				<Field id="title" label="Rubrik">
+					<Input name="title" defaultValue={initial.title} required />
+				</Field>
+				<Field id="meetingAt" label="Datum och tid">
+					<Input
 						name="meetingAt"
 						type="datetime-local"
 						defaultValue={initial.meetingAt}
 					/>
-				</p>
-				<p>
-					<label htmlFor="location">Plats</label>
-					<input
-						id="location"
-						name="location"
-						defaultValue={initial.location}
-					/>
-				</p>
-				{error && <p role="alert">{error}</p>}
-				{saved && <output>Sparat.</output>}
+				</Field>
+				<Field id="location" label="Plats">
+					<Input name="location" defaultValue={initial.location} />
+				</Field>
+				<ErrorMessage error={error} />
+				{saved && <Notice>Sparat.</Notice>}
 				<Button type="submit">Spara</Button>
 			</form>
-		</section>
+		</Section>
 	);
 }

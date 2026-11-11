@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Field, Input, Select } from "#/components/Field";
 import { DoneView } from "./DoneView";
 import { NotesField } from "./NotesField";
 import { PointActions } from "./PointActions";
@@ -36,10 +37,8 @@ export function PersonPoint(props: PointProps & { choosable: string[] }) {
 				save(read(e.currentTarget));
 			}}
 		>
-			<p>
-				<label htmlFor={id("person")}>Vald</label>
-				<select
-					id={id("person")}
+			<Field id={id("person")} label="Vald">
+				<Select
 					name="person"
 					defaultValue={savedIsOther ? OTHER_PERSON : (v.person ?? "")}
 					required
@@ -60,18 +59,16 @@ export function PersonPoint(props: PointProps & { choosable: string[] }) {
 						</option>
 					))}
 					<option value={OTHER_PERSON}>Annan person…</option>
-				</select>
-			</p>
+				</Select>
+			</Field>
 			{otherPerson && (
-				<p>
-					<label htmlFor={id("personOther")}>Namn</label>
-					<input
-						id={id("personOther")}
+				<Field id={id("personOther")} label="Namn">
+					<Input
 						name="personOther"
 						defaultValue={savedIsOther ? v.person : ""}
 						required
 					/>
-				</p>
+				</Field>
 			)}
 			<NotesField
 				item={item}

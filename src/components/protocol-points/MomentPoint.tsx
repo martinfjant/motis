@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Field, Input } from "#/components/Field";
 import { formatMeetingAt, toLocalStamp } from "#/meeting-time";
 import { Button } from "../Button";
 import { MOMENT_TEXT } from "../ProtocolView";
@@ -42,16 +43,14 @@ export function MomentPoint({ item, done, save, edit, cancel }: PointProps) {
 						save({ ...v, at });
 					}}
 				>
-					<p>
-						<label htmlFor={inputId}>{text.done}</label>
-						<input
-							id={inputId}
+					<Field id={inputId} label={text.done}>
+						<Input
 							name="at"
 							type="datetime-local"
 							defaultValue={v.at}
 							required
 						/>
-					</p>
+					</Field>
 					<Button type="submit">Klar</Button>{" "}
 					<Button onClick={cancel}>Avbryt</Button>
 				</form>

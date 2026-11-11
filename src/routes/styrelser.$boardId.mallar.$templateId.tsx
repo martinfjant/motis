@@ -5,8 +5,12 @@ import {
 	useRouter,
 } from "@tanstack/react-router";
 import { useState } from "react";
+import { Breadcrumbs } from "#/components/Breadcrumbs";
 import { Button } from "#/components/Button";
+import { ErrorMessage } from "#/components/ErrorMessage";
+import { Field, Input } from "#/components/Field";
 import { ItemEditor } from "#/components/ItemEditor";
+import { Section } from "#/components/Section";
 import {
 	deleteTemplate,
 	getTemplate,
@@ -60,47 +64,38 @@ function TemplatePage() {
 
 	return (
 		<main>
-			<nav aria-label="Brödsmula">
-				<Link to="/styrelser">Styrelser</Link> ›{" "}
+			<Breadcrumbs>
+				<Link to="/styrelser">Styrelser</Link>
 				<Link to="/styrelser/$boardId" params={{ boardId: board.id }}>
 					{board.name}
-				</Link>{" "}
-				›{" "}
+				</Link>
 				<Link
 					to="/styrelser/$boardId/installningar"
 					params={{ boardId: board.id }}
 				>
 					Inställningar
 				</Link>
-			</nav>
+			</Breadcrumbs>
 			<h1>Mall: {template.name}</h1>
 			<p>Ändringar i mallen påverkar bara dagordningar som skapas efteråt.</p>
 
-			<section aria-labelledby="template-settings">
-				<h2 id="template-settings">Namn</h2>
+			<Section id="template-settings" title="Namn">
 				<form onSubmit={onRename}>
-					<p>
-						<label htmlFor="name">Mallens namn</label>
-						<input
-							id="name"
-							name="name"
-							defaultValue={template.name}
-							required
-						/>
-					</p>
-					{error && <p role="alert">{error}</p>}
+					<Field id="name" label="Mallens namn">
+						<Input name="name" defaultValue={template.name} required />
+					</Field>
+					<ErrorMessage error={error} />
 					<Button type="submit">Spara namn</Button>
 				</form>
-			</section>
+			</Section>
 
 			<ItemEditor kind="template" parentId={template.id} items={items} />
 
-			<section aria-labelledby="danger">
-				<h2 id="danger">Ta bort</h2>
+			<Section id="danger" title="Ta bort">
 				<Button type="button" onClick={onDelete}>
 					Ta bort mallen
 				</Button>
-			</section>
+			</Section>
 		</main>
 	);
 }

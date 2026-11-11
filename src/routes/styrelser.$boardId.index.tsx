@@ -5,7 +5,11 @@ import {
 	useRouter,
 } from "@tanstack/react-router";
 import { useRef, useState } from "react";
+import { Breadcrumbs } from "#/components/Breadcrumbs";
 import { Button } from "#/components/Button";
+import { ErrorMessage } from "#/components/ErrorMessage";
+import { Field, Input, Select } from "#/components/Field";
+import { Section } from "#/components/Section";
 import {
 	cannotStart,
 	daysBetween,
@@ -78,9 +82,9 @@ function Board() {
 
 	return (
 		<main>
-			<nav aria-label="Brödsmula">
+			<Breadcrumbs>
 				<Link to="/styrelser">Styrelser</Link>
-			</nav>
+			</Breadcrumbs>
 			<h1>{board.name}</h1>
 			<p>
 				<Link
@@ -92,8 +96,7 @@ function Board() {
 			</p>
 
 			{ongoing.length > 0 && (
-				<section aria-labelledby="ongoing">
-					<h2 id="ongoing">Pågående möten</h2>
+				<Section id="ongoing" title="Pågående möten">
 					<ul>
 						{ongoing.map((p) => (
 							<li key={p.id}>
@@ -108,11 +111,10 @@ function Board() {
 							</li>
 						))}
 					</ul>
-				</section>
+				</Section>
 			)}
 
-			<section aria-labelledby="upcoming">
-				<h2 id="upcoming">Kommande möten</h2>
+			<Section id="upcoming" title="Kommande möten">
 				{called.length === 0 && !plan.nextAt && (
 					<p>Inga möten är inplanerade.</p>
 				)}
@@ -147,16 +149,15 @@ function Board() {
 						)}
 					</ul>
 				)}
-				{error && <p role="alert">{error}</p>}
+				<ErrorMessage error={error} />
 				<CallMeetingDialog
 					boardId={board.id}
 					templates={templates}
 					plan={plan}
 				/>
-			</section>
+			</Section>
 
-			<section aria-labelledby="held">
-				<h2 id="held">Tidigare möten</h2>
+			<Section id="held" title="Tidigare möten">
 				{held.length === 0 ? (
 					<p>Inga hållna möten ännu.</p>
 				) : (
@@ -181,7 +182,7 @@ function Board() {
 						))}
 					</ul>
 				)}
-			</section>
+			</Section>
 		</main>
 	);
 }
@@ -254,43 +255,33 @@ function CallMeetingDialog({
 				<h2 id="call-meeting">Kalla till möte</h2>
 				<p>Du gör dagordningen nu och kan ändra den fram till mötet.</p>
 				<form onSubmit={onSubmit}>
-					<p>
-						<label htmlFor="templateId">Mall</label>
-						<select id="templateId" name="templateId">
+					<Field id="templateId" label="Mall">
+						<Select name="templateId">
 							{templates.map((t) => (
 								<option key={t.id} value={t.id}>
 									{t.name}
 								</option>
 							))}
 							<option value="">Ingen mall (tom dagordning)</option>
-						</select>
-					</p>
-					<p>
-						<label htmlFor="title">Rubrik</label>
-						<input
-							id="title"
-							name="title"
-							defaultValue="Styrelsemöte"
-							required
-						/>
-					</p>
-					<p>
-						<label htmlFor="meetingAt">Datum och tid</label>
-						<input
-							id="meetingAt"
+						</Select>
+					</Field>
+					<Field id="title" label="Rubrik">
+						<Input name="title" defaultValue="Styrelsemöte" required />
+					</Field>
+					<Field
+						id="meetingAt"
+						label="Datum och tid"
+						hint={plan.nextAt && "Enligt protokollet från förra mötet."}
+					>
+						<Input
 							name="meetingAt"
 							type="datetime-local"
 							defaultValue={plan.nextAt}
-							aria-describedby={plan.nextAt ? "meetingAt-hint" : undefined}
 						/>
-					</p>
-					{plan.nextAt && (
-						<p id="meetingAt-hint">Enligt protokollet från förra mötet.</p>
-					)}
-					<p>
-						<label htmlFor="location">Plats</label>
-						<input id="location" name="location" defaultValue={plan.location} />
-					</p>
+					</Field>
+					<Field id="location" label="Plats">
+						<Input name="location" defaultValue={plan.location} />
+					</Field>
 					{plan.carryOver.length > 0 && (
 						<fieldset>
 							<legend>Från förra mötet</legend>
@@ -314,7 +305,7 @@ function CallMeetingDialog({
 							))}
 						</fieldset>
 					)}
-					{error && <p role="alert">{error}</p>}
+					<ErrorMessage error={error} />
 					<p>
 						<Button type="submit" disabled={pending}>
 							Skapa dagordning

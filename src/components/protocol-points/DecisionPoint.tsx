@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Field } from "#/components/Field";
 import { MentionTextarea } from "../MentionTextarea";
 import { DoneView } from "./DoneView";
 import { NotesField } from "./NotesField";
@@ -24,15 +25,9 @@ export function DecisionPoint(props: PointProps) {
 				});
 			}}
 		>
-			<p>
-				<label htmlFor={id}>Beslut</label>
-				<MentionTextarea
-					id={id}
-					name="decision"
-					defaultValue={v.decision}
-					required
-				/>
-			</p>
+			<Field id={id} label="Beslut">
+				<MentionTextarea name="decision" defaultValue={v.decision} required />
+			</Field>
 			<NotesField
 				item={item}
 				open={notesOpen}

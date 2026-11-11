@@ -7,6 +7,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { useFieldProps } from "./Field";
 
 /** Someone who can be mentioned: inserted as `name`, listed as `label`. */
 export type Mentionable = { name: string; label: string };
@@ -110,6 +111,7 @@ export function MentionTextarea(props: ComponentProps<"textarea">) {
 		<>
 			<textarea
 				{...props}
+				{...useFieldProps(props)}
 				ref={textarea}
 				aria-autocomplete="list"
 				aria-controls={listId}

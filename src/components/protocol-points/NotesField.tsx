@@ -1,3 +1,4 @@
+import { Field } from "#/components/Field";
 import type { ProtocolItem } from "#/server/items";
 import { Button } from "../Button";
 import { MentionTextarea } from "../MentionTextarea";
@@ -24,9 +25,8 @@ export function NotesField({
 			</p>
 		);
 	return (
-		<p>
-			<label htmlFor={id}>Anteckningar</label>
-			<MentionTextarea id={id} name="notes" defaultValue={item.value.notes} />
-		</p>
+		<Field id={id} label="Anteckningar">
+			<MentionTextarea name="notes" defaultValue={item.value.notes} />
+		</Field>
 	);
 }
