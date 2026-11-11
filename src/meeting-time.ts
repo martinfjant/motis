@@ -19,3 +19,24 @@ const pad = (n: number) => String(n).padStart(2, "0");
 export function toLocalStamp(date: Date): string {
 	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
+
+// Instants (stored as UTC) are shown in Swedish time, so server and browser
+// render the same text wherever they run.
+const STOCKHOLM = new Intl.DateTimeFormat("sv-SE", {
+	timeZone: "Europe/Stockholm",
+	year: "numeric",
+	month: "2-digit",
+	day: "2-digit",
+	hour: "2-digit",
+	minute: "2-digit",
+	hourCycle: "h23",
+});
+
+/** "2026-11-11T01:47:31.000Z" → "11-11-2026 02:47" (Swedish time). */
+export function formatInstant(iso: string): string {
+	const date = new Date(iso);
+	if (Number.isNaN(date.getTime())) return iso;
+	const part = (type: Intl.DateTimeFormatPartTypes) =>
+		STOCKHOLM.formatToParts(date).find((p) => p.type === type)?.value ?? "";
+	return `${part("day")}-${part("month")}-${part("year")} ${part("hour")}:${part("minute")}`;
+}

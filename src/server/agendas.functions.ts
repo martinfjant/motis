@@ -121,6 +121,9 @@ export const deleteAgenda = createServerFn({ method: "POST" })
 
 // ---------- Items ----------
 
+/** Set while editing a closed protocol; see guardProtocolEdit. */
+const editSession = (d: unknown) => str(obj(d).editSession) || undefined;
+
 const itemInput = (d: unknown) => ({
 	title: str(obj(d).title),
 	type: str(obj(d).type),
@@ -132,43 +135,74 @@ export const addItem = createServerFn({ method: "POST" })
 	.validator((d: unknown) => ({
 		...itemInput(d),
 		kind: kind(obj(d).kind),
+		editSession: editSession(d),
 		parentId: str(obj(d).parentId),
 	}))
 	.handler(async ({ data }) => {
 		const { db, user, agendas } = await ctx();
-		await agendas.addItem(db, user.id, data.kind, data.parentId, data);
+		await agendas.addItem(
+			db,
+			user.id,
+			data.kind,
+			data.parentId,
+			data,
+			data.editSession,
+		);
 	});
 
 export const updateItem = createServerFn({ method: "POST" })
 	.validator((d: unknown) => ({
 		...itemInput(d),
 		kind: kind(obj(d).kind),
+		editSession: editSession(d),
 		itemId: str(obj(d).itemId),
 	}))
 	.handler(async ({ data }) => {
 		const { db, user, agendas } = await ctx();
-		await agendas.updateItem(db, user.id, data.kind, data.itemId, data);
+		await agendas.updateItem(
+			db,
+			user.id,
+			data.kind,
+			data.itemId,
+			data,
+			data.editSession,
+		);
 	});
 
 export const moveItem = createServerFn({ method: "POST" })
 	.validator((d: unknown) => ({
 		kind: kind(obj(d).kind),
+		editSession: editSession(d),
 		itemId: str(obj(d).itemId),
 		direction: (obj(d).direction === -1 ? -1 : 1) as -1 | 1,
 	}))
 	.handler(async ({ data }) => {
 		const { db, user, agendas } = await ctx();
-		await agendas.moveItem(db, user.id, data.kind, data.itemId, data.direction);
+		await agendas.moveItem(
+			db,
+			user.id,
+			data.kind,
+			data.itemId,
+			data.direction,
+			data.editSession,
+		);
 	});
 
 export const deleteItem = createServerFn({ method: "POST" })
 	.validator((d: unknown) => ({
 		kind: kind(obj(d).kind),
+		editSession: editSession(d),
 		itemId: str(obj(d).itemId),
 	}))
 	.handler(async ({ data }) => {
 		const { db, user, agendas } = await ctx();
-		await agendas.deleteItem(db, user.id, data.kind, data.itemId);
+		await agendas.deleteItem(
+			db,
+			user.id,
+			data.kind,
+			data.itemId,
+			data.editSession,
+		);
 	});
 
 // ---------- Public sharing ----------

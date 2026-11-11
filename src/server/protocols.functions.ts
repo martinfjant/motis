@@ -39,13 +39,20 @@ export const getProtocol = createServerFn({ method: "GET" })
 export const updateProtocol = createServerFn({ method: "POST" })
 	.validator((d: unknown) => ({
 		protocolId: str(obj(d).protocolId),
+		editSession: str(obj(d).editSession) || undefined,
 		title: str(obj(d).title),
 		meetingAt: str(obj(d).meetingAt),
 		location: str(obj(d).location),
 	}))
 	.handler(async ({ data }) => {
 		const { db, user, protocols } = await ctx();
-		await protocols.updateProtocol(db, user.id, data.protocolId, data);
+		await protocols.updateProtocol(
+			db,
+			user.id,
+			data.protocolId,
+			data,
+			data.editSession,
+		);
 	});
 
 export const deleteProtocol = createServerFn({ method: "POST" })
@@ -60,6 +67,7 @@ export const saveItemValue = createServerFn({ method: "POST" })
 		const v = obj(obj(d).value);
 		return {
 			itemId: str(obj(d).itemId),
+			editSession: str(obj(d).editSession) || undefined,
 			value: {
 				done: typeof v.done === "boolean" ? v.done : undefined,
 				at: str(v.at),
@@ -72,5 +80,18 @@ export const saveItemValue = createServerFn({ method: "POST" })
 	})
 	.handler(async ({ data }) => {
 		const { db, user, protocols } = await ctx();
-		await protocols.saveItemValue(db, user.id, data.itemId, data.value);
+		await protocols.saveItemValue(
+			db,
+			user.id,
+			data.itemId,
+			data.value,
+			data.editSession,
+		);
+	});
+
+export const closeProtocol = createServerFn({ method: "POST" })
+	.validator((d: unknown) => ({ protocolId: str(obj(d).protocolId) }))
+	.handler(async ({ data }) => {
+		const { db, user, protocols } = await ctx();
+		await protocols.closeProtocol(db, user.id, data.protocolId);
 	});

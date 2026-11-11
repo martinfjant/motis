@@ -3,6 +3,7 @@ import type { Client, InStatement, Row } from "@libsql/client";
 import { type Board, BoardError, requireMember } from "./boards.server";
 import { defaultTemplateStatements } from "./default-template";
 import { type Item, type ItemType, isItemType } from "./items";
+import { guardProtocolEdit } from "./protocol-edits.server";
 
 export type Template = { id: string; boardId: string; name: string };
 export type Agenda = {
@@ -380,8 +381,11 @@ export async function addItem(
 	kind: ItemKind,
 	parentId: string,
 	input: ItemInput,
+	editSession?: string,
 ) {
 	await requireParent(db, userId, kind, parentId);
+	if (kind === "protocol")
+		await guardProtocolEdit(db, userId, parentId, editSession);
 	const t = TABLES[kind];
 	const item = cleanItem(input);
 	await db.execute({
@@ -405,8 +409,11 @@ export async function updateItem(
 	kind: ItemKind,
 	itemId: string,
 	input: ItemInput,
+	editSession?: string,
 ) {
-	await requireItem(db, userId, kind, itemId);
+	const { parentId } = await requireItem(db, userId, kind, itemId);
+	if (kind === "protocol")
+		await guardProtocolEdit(db, userId, parentId, editSession);
 	const item = cleanItem(input);
 	await db.execute({
 		sql: `UPDATE ${TABLES[kind].items} SET title = ?, type = ?, description = ?, config = ? WHERE id = ?`,
@@ -421,8 +428,11 @@ export async function moveItem(
 	kind: ItemKind,
 	itemId: string,
 	direction: -1 | 1,
+	editSession?: string,
 ) {
 	const { parentId } = await requireItem(db, userId, kind, itemId);
+	if (kind === "protocol")
+		await guardProtocolEdit(db, userId, parentId, editSession);
 	const items = await listItems(db, kind, parentId);
 	const i = items.findIndex((it) => it.id === itemId);
 	const j = i + direction;
@@ -443,8 +453,11 @@ export async function deleteItem(
 	userId: string,
 	kind: ItemKind,
 	itemId: string,
+	editSession?: string,
 ) {
-	await requireItem(db, userId, kind, itemId);
+	const { parentId } = await requireItem(db, userId, kind, itemId);
+	if (kind === "protocol")
+		await guardProtocolEdit(db, userId, parentId, editSession);
 	await db.execute({
 		sql: `DELETE FROM ${TABLES[kind].items} WHERE id = ?`,
 		args: [itemId],

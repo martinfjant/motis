@@ -4,6 +4,7 @@ import {
 	addItem,
 	createAgenda,
 	deleteAgenda,
+	deleteItem,
 	getAgenda,
 	listAgendas,
 	listTemplates,
@@ -12,11 +13,13 @@ import { createUser } from "./auth.server";
 import { addMemberByEmail, BoardError, createBoard } from "./boards.server";
 import { migrate } from "./migrate";
 import {
+	closeProtocol,
 	createProtocol,
 	deleteProtocol,
 	getProtocol,
 	listProtocols,
 	saveItemValue,
+	updateProtocol,
 } from "./protocols.server";
 
 let db: ReturnType<typeof createClient>;
@@ -163,4 +166,84 @@ test("deleting the agenda keeps the protocol, and vice versa", async () => {
 	const kept = await getProtocol(db, anna, again.id);
 	expect(kept.protocol.agendaId).toBeNull();
 	expect(kept.items.length).toBeGreaterThan(0);
+});
+
+test("closing the meeting closes the protocol; later edits need a session and are logged", async () => {
+	const protocol = await createProtocol(db, anna, agendaId);
+	const items = (await getProtocol(db, anna, protocol.id)).items;
+	const id = (t: string) => items.find((i) => i.title === t)?.id ?? "";
+
+	await saveItemValue(db, anna, id("Mötets öppnande"), {
+		at: "2026-11-20T18:00",
+	});
+	expect(
+		(await getProtocol(db, anna, protocol.id)).protocol.closedAt,
+	).toBeNull();
+
+	await saveItemValue(db, anna, id("Mötets avslutande"), {
+		at: "2026-11-20T19:30",
+	});
+	const closed = await getProtocol(db, anna, protocol.id);
+	expect(closed.protocol.closedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+	expect(closed.edits).toEqual([]);
+
+	// Without an editing session nothing can change any more.
+	const details = { title: "X", meetingAt: "", location: "" };
+	await expect(
+		saveItemValue(db, anna, id("Val av ordförande"), { person: "anna" }),
+	).rejects.toThrow(BoardError);
+	await expect(updateProtocol(db, anna, protocol.id, details)).rejects.toThrow(
+		BoardError,
+	);
+	await expect(deleteItem(db, anna, "protocol", id("Ekonomi"))).rejects.toThrow(
+		BoardError,
+	);
+	await expect(
+		saveItemValue(db, anna, id("Val av ordförande"), { person: "anna" }, "nej"),
+	).rejects.toThrow(BoardError);
+
+	// One session = one logged edit, however many saves it makes.
+	const session = "11111111-2222-4333-8444-555555555555";
+	await saveItemValue(
+		db,
+		bo,
+		id("Val av ordförande"),
+		{ person: "anna" },
+		session,
+	);
+	await addItem(
+		db,
+		bo,
+		"protocol",
+		protocol.id,
+		{ title: "Tillägg", type: "text", description: "", extraNames: [] },
+		session,
+	);
+	const other = "66666666-7777-4888-9999-000000000000";
+	await updateProtocol(db, anna, protocol.id, details, other);
+
+	const edited = await getProtocol(db, anna, protocol.id);
+	expect(edited.edits.map((e) => e.userName)).toEqual(["bo", "anna"]);
+	expect(edited.protocol.closedAt).toBe(closed.protocol.closedAt);
+
+	// Someone else cannot reuse bo's session id to slip in an unlogged change.
+	await expect(
+		saveItemValue(
+			db,
+			anna,
+			id("Val av sekreterare"),
+			{ person: "bo" },
+			session,
+		),
+	).rejects.toThrow(BoardError);
+	expect((await getProtocol(db, anna, protocol.id)).edits).toHaveLength(2);
+});
+
+test("a protocol without a closing point can be closed by hand", async () => {
+	const protocol = await createProtocol(db, anna, agendaId);
+	await expect(closeProtocol(db, cia, protocol.id)).rejects.toThrow(BoardError);
+	await closeProtocol(db, bo, protocol.id);
+	expect(
+		(await getProtocol(db, anna, protocol.id)).protocol.closedAt,
+	).not.toBeNull();
 });

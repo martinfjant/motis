@@ -8,15 +8,17 @@ import { useEffect, useState } from "react";
 import { MeetingDetails, MultilineText } from "#/components/AgendaView";
 import { ItemFields } from "#/components/ItemEditor";
 import { MeetingForm } from "#/components/MeetingForm";
-import { formatMeetingAt, toLocalStamp } from "#/meeting-time";
+import { formatInstant, formatMeetingAt, toLocalStamp } from "#/meeting-time";
 import { addItem, deleteItem } from "#/server/agendas.functions";
 import type { ProtocolItem, ProtocolValue } from "#/server/items";
 import {
+	closeProtocol,
 	deleteProtocol,
 	getProtocol,
 	saveItemValue,
 	updateProtocol,
 } from "#/server/protocols.functions";
+import type { ProtocolEdit } from "#/server/protocols.server";
 
 export const Route = createFileRoute(
 	"/styrelser/$boardId/protokoll/$protocolId",
@@ -40,11 +42,19 @@ export const Route = createFileRoute(
 });
 
 function ProtocolPage() {
-	const { board, protocol, items, memberNames } = Route.useLoaderData();
+	const { board, protocol, items, memberNames, edits } = Route.useLoaderData();
 	const router = useRouter();
 	const [error, setError] = useState<string | null>(null);
 	const [addFormKey, setAddFormKey] = useState(0);
 	const [editingDetails, setEditingDetails] = useState(false);
+
+	// A closed protocol is shown read-only. "Redigera protokollet" starts an
+	// editing session; the server records it at the end of the protocol.
+	const closed = protocol.closedAt !== null;
+	const [editSession, setEditSession] = useState<string | null>(null);
+	const editable = !closed || editSession !== null;
+	const session = editSession ?? undefined;
+	const hasClosePoint = items.some((i) => i.type === "close");
 
 	// Who can be picked in person choices: those marked present if attendance
 	// has been taken, otherwise every member and invited guest.
@@ -71,6 +81,9 @@ function ProtocolPage() {
 		}
 	}
 
+	const saveValue = (itemId: string) => (value: ProtocolValue) =>
+		run(() => saveItemValue({ data: { itemId, value, editSession: session } }));
+
 	async function onAdd(e: React.FormEvent<HTMLFormElement>) {
 		e.preventDefault();
 		const f = new FormData(e.currentTarget);
@@ -79,6 +92,7 @@ function ProtocolPage() {
 				data: {
 					kind: "protocol",
 					parentId: protocol.id,
+					editSession: session,
 					title: String(f.get("title") ?? ""),
 					type: String(f.get("type") ?? ""),
 					description: String(f.get("description") ?? ""),
@@ -97,6 +111,22 @@ function ProtocolPage() {
 			params: { boardId: board.id },
 		});
 	}
+
+	function onCloseProtocol() {
+		if (
+			!confirm("Stäng protokollet? Ändringar efter det noteras i protokollet.")
+		)
+			return;
+		run(() => closeProtocol({ data: { protocolId: protocol.id } }));
+	}
+
+	const doneEditing = (
+		<p>
+			<button type="button" onClick={() => setEditSession(null)}>
+				Klar med redigeringen
+			</button>
+		</p>
+	);
 
 	return (
 		<main>
@@ -120,97 +150,204 @@ function ProtocolPage() {
 			</nav>
 			<h1>Protokoll: {protocol.title}</h1>
 
-			{editingDetails ? (
+			{!editable ? (
 				<>
-					<MeetingForm
-						initial={protocol}
-						onSave={async (details) => {
-							await updateProtocol({
-								data: { protocolId: protocol.id, ...details },
-							});
-							await router.invalidate();
-							setEditingDetails(false);
-						}}
-					/>
 					<p>
-						<button type="button" onClick={() => setEditingDetails(false)}>
-							Avbryt
+						<button
+							type="button"
+							onClick={() => setEditSession(crypto.randomUUID())}
+						>
+							Redigera protokollet
 						</button>
 					</p>
+					<ProtocolDisplay protocol={protocol} items={items} edits={edits} />
 				</>
 			) : (
-				<section aria-labelledby="meeting">
-					<h2 id="meeting">Mötet</h2>
-					<MeetingDetails
-						meetingAt={protocol.meetingAt}
-						location={protocol.location}
-					/>
-					<p>
-						<button type="button" onClick={() => setEditingDetails(true)}>
-							Ändra mötesuppgifter
-						</button>
-					</p>
-				</section>
-			)}
+				<>
+					{closed && (
+						<>
+							<p>
+								<strong>Du redigerar ett stängt protokoll.</strong> Att det har
+								redigerats, av vem och när, noteras i slutet av protokollet.
+							</p>
+							{doneEditing}
+						</>
+					)}
 
+					{editingDetails ? (
+						<>
+							<MeetingForm
+								initial={protocol}
+								onSave={async (details) => {
+									await updateProtocol({
+										data: {
+											protocolId: protocol.id,
+											editSession: session,
+											...details,
+										},
+									});
+									await router.invalidate();
+									setEditingDetails(false);
+								}}
+							/>
+							<p>
+								<button type="button" onClick={() => setEditingDetails(false)}>
+									Avbryt
+								</button>
+							</p>
+						</>
+					) : (
+						<section aria-labelledby="meeting">
+							<h2 id="meeting">Mötet</h2>
+							<MeetingDetails
+								meetingAt={protocol.meetingAt}
+								location={protocol.location}
+							/>
+							<p>
+								<button type="button" onClick={() => setEditingDetails(true)}>
+									Ändra mötesuppgifter
+								</button>
+							</p>
+						</section>
+					)}
+
+					<section aria-labelledby="points">
+						<h2 id="points">Punkter</h2>
+						{error && <p role="alert">{error}</p>}
+						{items.length === 0 ? (
+							<p>Inga punkter ännu.</p>
+						) : (
+							<ol>
+								{items.map((item) => (
+									<li key={item.id}>
+										{item.type === "open" || item.type === "close" ? (
+											<MeetingMoment item={item} onSave={saveValue(item.id)} />
+										) : (
+											<ProtocolItemForm
+												item={item}
+												invited={invited}
+												choosable={choosable}
+												onSave={saveValue(item.id)}
+												onDelete={() => {
+													if (confirm(`Ta bort punkten ”${item.title}”?`))
+														run(() =>
+															deleteItem({
+																data: {
+																	kind: "protocol",
+																	itemId: item.id,
+																	editSession: session,
+																},
+															}),
+														);
+												}}
+											/>
+										)}
+									</li>
+								))}
+							</ol>
+						)}
+
+						<h3>Lägg till punkt</h3>
+						<form key={addFormKey} onSubmit={onAdd}>
+							<ItemFields idPrefix="new-item" />
+							<button type="submit">Lägg till</button>
+						</form>
+					</section>
+
+					{!closed && !hasClosePoint && (
+						<p>
+							<button type="button" onClick={onCloseProtocol}>
+								Stäng protokollet
+							</button>
+						</p>
+					)}
+
+					{closed && (
+						<>
+							<ProtocolHistory closedAt={protocol.closedAt} edits={edits} />
+							{doneEditing}
+						</>
+					)}
+
+					<section aria-labelledby="danger">
+						<h2 id="danger">Ta bort</h2>
+						<p>Dagordningen påverkas inte.</p>
+						<button type="button" onClick={onDelete}>
+							Ta bort protokollet
+						</button>
+					</section>
+				</>
+			)}
+		</main>
+	);
+}
+
+/** A closed protocol, read-only. */
+function ProtocolDisplay({
+	protocol,
+	items,
+	edits,
+}: {
+	protocol: { meetingAt: string; location: string; closedAt: string | null };
+	items: ProtocolItem[];
+	edits: ProtocolEdit[];
+}) {
+	return (
+		<>
+			<section aria-labelledby="meeting">
+				<h2 id="meeting">Mötet</h2>
+				<MeetingDetails
+					meetingAt={protocol.meetingAt}
+					location={protocol.location}
+				/>
+			</section>
 			<section aria-labelledby="points">
 				<h2 id="points">Punkter</h2>
-				{error && <p role="alert">{error}</p>}
 				{items.length === 0 ? (
-					<p>Inga punkter ännu.</p>
+					<p>Inga punkter.</p>
 				) : (
 					<ol>
 						{items.map((item) => (
 							<li key={item.id}>
-								{item.type === "open" || item.type === "close" ? (
-									<MeetingMoment
-										item={item}
-										onSave={(value) =>
-											run(() =>
-												saveItemValue({ data: { itemId: item.id, value } }),
-											)
-										}
-									/>
-								) : (
-									<ProtocolItemForm
-										item={item}
-										invited={invited}
-										choosable={choosable}
-										onSave={(value) =>
-											run(() =>
-												saveItemValue({ data: { itemId: item.id, value } }),
-											)
-										}
-										onDelete={() => {
-											if (confirm(`Ta bort punkten ”${item.title}”?`))
-												run(() =>
-													deleteItem({
-														data: { kind: "protocol", itemId: item.id },
-													}),
-												);
-										}}
-									/>
-								)}
+								<h3>{item.title}</h3>
+								{item.description && <MultilineText text={item.description} />}
+								<RecordedValue item={item} />
 							</li>
 						))}
 					</ol>
 				)}
-
-				<h3>Lägg till punkt</h3>
-				<form key={addFormKey} onSubmit={onAdd}>
-					<ItemFields idPrefix="new-item" />
-					<button type="submit">Lägg till</button>
-				</form>
 			</section>
+			<ProtocolHistory closedAt={protocol.closedAt} edits={edits} />
+		</>
+	);
+}
 
-			<section aria-labelledby="danger">
-				<h2 id="danger">Ta bort</h2>
-				<p>Dagordningen påverkas inte.</p>
-				<button type="button" onClick={onDelete}>
-					Ta bort protokollet
-				</button>
-			</section>
-		</main>
+/** When the protocol was closed, and every editing session after that. */
+function ProtocolHistory({
+	closedAt,
+	edits,
+}: {
+	closedAt: string | null;
+	edits: ProtocolEdit[];
+}) {
+	if (!closedAt) return null;
+	return (
+		<section aria-labelledby="history">
+			<h2 id="history">Historik</h2>
+			<ul>
+				<li>
+					Protokollet stängdes{" "}
+					<time dateTime={closedAt}>{formatInstant(closedAt)}</time>.
+				</li>
+				{edits.map((edit) => (
+					<li key={edit.editedAt + edit.userName}>
+						Redigerat{" "}
+						<time dateTime={edit.editedAt}>{formatInstant(edit.editedAt)}</time>{" "}
+						av {edit.userName}.
+					</li>
+				))}
+			</ul>
+		</section>
 	);
 }
 
@@ -429,6 +566,12 @@ function RecordedValue({ item }: { item: ProtocolItem }) {
 	const v = item.value;
 	return (
 		<>
+			{(item.type === "open" || item.type === "close") && v.at && (
+				<p>
+					{MOMENT_TEXT[item.type].done}{" "}
+					<time dateTime={v.at}>{formatMeetingAt(v.at)}</time>
+				</p>
+			)}
 			{item.type === "toggle" && v.done !== undefined && (
 				<p>{v.done ? "Ja" : "Nej"}</p>
 			)}

@@ -13,6 +13,7 @@ import {
 } from "./agendas.server";
 import { BoardError, listMembers, requireMember } from "./boards.server";
 import type { ItemType, ProtocolItem, ProtocolValue } from "./items";
+import { guardProtocolEdit } from "./protocol-edits.server";
 
 export type Protocol = {
 	id: string;
@@ -22,7 +23,11 @@ export type Protocol = {
 	title: string;
 	meetingAt: string;
 	location: string;
+	/** ISO 8601 UTC, or null while the meeting is going on. */
+	closedAt: string | null;
 };
+
+export type ProtocolEdit = { userName: string; editedAt: string };
 
 const toProtocol = (r: Row): Protocol => ({
 	id: String(r.id),
@@ -32,6 +37,7 @@ const toProtocol = (r: Row): Protocol => ({
 	title: String(r.title),
 	meetingAt: String(r.meeting_at),
 	location: String(r.location),
+	closedAt: r.closed_at == null ? null : String(r.closed_at),
 });
 
 function parseValue(raw: unknown): ProtocolValue {
@@ -133,6 +139,7 @@ export async function createProtocol(
 		title: String(row.title),
 		meetingAt: String(row.meeting_at),
 		location: String(row.location),
+		closedAt: null,
 	};
 	const items = await listItems(db, "agenda", agendaId);
 	await db.batch(
@@ -182,10 +189,21 @@ export async function getProtocol(
 		protocolId,
 	);
 	const members = await listMembers(db, userId, board.id);
+	const edits = await db.execute({
+		sql: "SELECT user_name, edited_at FROM protocol_edits WHERE protocol_id = ? ORDER BY edited_at",
+		args: [protocolId],
+	});
 	return {
 		board,
 		protocol: toProtocol(row),
 		items: await listProtocolItems(db, protocolId),
+		/** Changes made after the protocol was closed, oldest first. */
+		edits: edits.rows.map(
+			(r): ProtocolEdit => ({
+				userName: String(r.user_name),
+				editedAt: String(r.edited_at),
+			}),
+		),
 		/** Board members' names, for attendance and person choices. */
 		memberNames: members.map((m) => m.name),
 	};
@@ -196,8 +214,10 @@ export async function updateProtocol(
 	userId: string,
 	protocolId: string,
 	input: AgendaDetails,
+	editSession?: string,
 ) {
 	await requireParent(db, userId, "protocol", protocolId);
+	await guardProtocolEdit(db, userId, protocolId, editSession);
 	await db.execute({
 		sql: "UPDATE protocols SET title = ?, meeting_at = ?, location = ? WHERE id = ?",
 		args: [
@@ -246,13 +266,34 @@ export async function saveItemValue(
 	userId: string,
 	itemId: string,
 	input: ProtocolValue,
+	editSession?: string,
 ) {
-	const { item } = await requireItem(db, userId, "protocol", itemId);
+	const { item, parentId } = await requireItem(db, userId, "protocol", itemId);
 	const value = cleanValue(item.type, input);
 	const missing = missingValue(item.type, value);
 	if (missing) throw new BoardError(missing);
+	await guardProtocolEdit(db, userId, parentId, editSession);
 	await db.execute({
 		sql: "UPDATE protocol_items SET value = ? WHERE id = ?",
 		args: [JSON.stringify(value), itemId],
 	});
+	// Closing the meeting closes the protocol.
+	if (item.type === "close") await markClosed(db, parentId);
+}
+
+async function markClosed(db: Client, protocolId: string) {
+	await db.execute({
+		sql: "UPDATE protocols SET closed_at = ? WHERE id = ? AND closed_at IS NULL",
+		args: [new Date().toISOString(), protocolId],
+	});
+}
+
+/** For protocols without a closing point: close it by hand. */
+export async function closeProtocol(
+	db: Client,
+	userId: string,
+	protocolId: string,
+) {
+	await requireParent(db, userId, "protocol", protocolId);
+	await markClosed(db, protocolId);
 }
