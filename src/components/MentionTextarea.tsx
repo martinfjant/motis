@@ -37,9 +37,8 @@ export function matchPeople(people: Mentionable[], query: string) {
 /**
  * A textarea where typing @ lists the board's people in a popover, narrowed
  * as more letters are typed. Arrow keys move, Enter or Tab picks, Escape
- * closes; picking replaces "@query" with the name. The popover is opened
- * with the textarea as its anchor, so it can be placed next to it with CSS
- * anchor positioning.
+ * closes; picking replaces "@query" with the name. The popover is placed
+ * just below the @ with inline styles.
  */
 export function MentionTextarea(props: ComponentProps<"textarea">) {
 	const people = useContext(MentionNames);
@@ -84,15 +83,28 @@ export function MentionTextarea(props: ComponentProps<"textarea">) {
 		setMention(null);
 	}
 
-	// Show or hide the popover to match.
+	// Show or hide the popover to match, placed just below the @.
+	const start = mention?.start;
 	useEffect(() => {
 		const popover = list.current;
-		if (!popover) return;
+		const el = textarea.current;
+		if (!popover || !el) return;
 		const shown = popover.matches(":popover-open");
-		if (open && !shown)
-			popover.showPopover({ source: textarea.current ?? undefined });
-		if (!open && shown) popover.hidePopover();
-	}, [open]);
+		if (!open || start === undefined) {
+			if (shown) popover.hidePopover();
+			return;
+		}
+		if (!shown) popover.showPopover({ source: el });
+		const place = () => placeAtCaret(popover, el, start);
+		place();
+		// Popovers are fixed to the viewport, so follow the page when it moves.
+		window.addEventListener("scroll", place, true);
+		window.addEventListener("resize", place);
+		return () => {
+			window.removeEventListener("scroll", place, true);
+			window.removeEventListener("resize", place);
+		};
+	}, [open, start]);
 
 	return (
 		<>
@@ -168,4 +180,84 @@ export function MentionTextarea(props: ComponentProps<"textarea">) {
 			</div>
 		</>
 	);
+}
+
+/** Puts the popover just below the given character of the textarea. */
+function placeAtCaret(
+	popover: HTMLElement,
+	textarea: HTMLTextAreaElement,
+	position: number,
+) {
+	const caret = caretCoordinates(textarea, position);
+	const box = textarea.getBoundingClientRect();
+	// Popovers are centred by default; place it by hand instead.
+	popover.style.margin = "0";
+	popover.style.inset = "auto";
+	popover.style.top = `${box.top + caret.top - textarea.scrollTop + caret.height}px`;
+	popover.style.left = `${box.left + caret.left - textarea.scrollLeft}px`;
+}
+
+// Styles that decide where text wraps and how big it is.
+const MIRRORED = [
+	"boxSizing",
+	"width",
+	"height",
+	"overflowX",
+	"overflowY",
+	"borderTopWidth",
+	"borderRightWidth",
+	"borderBottomWidth",
+	"borderLeftWidth",
+	"paddingTop",
+	"paddingRight",
+	"paddingBottom",
+	"paddingLeft",
+	"fontStyle",
+	"fontVariant",
+	"fontWeight",
+	"fontStretch",
+	"fontSize",
+	"lineHeight",
+	"fontFamily",
+	"textAlign",
+	"textTransform",
+	"textIndent",
+	"letterSpacing",
+	"wordSpacing",
+	"tabSize",
+	"direction",
+] as const;
+
+/**
+ * Where a character is inside a textarea, relative to its border box.
+ * Textareas don't tell, so the text up to it is laid out in a hidden copy
+ * with the same styles, and a marker after it is measured.
+ */
+export function caretCoordinates(
+	textarea: HTMLTextAreaElement,
+	position: number,
+) {
+	const style = getComputedStyle(textarea);
+	const mirror = document.createElement("div");
+	for (const prop of MIRRORED) mirror.style[prop] = style[prop];
+	mirror.style.position = "absolute";
+	mirror.style.visibility = "hidden";
+	mirror.style.top = "0";
+	mirror.style.left = "-9999px";
+	mirror.style.whiteSpace = "pre-wrap";
+	mirror.style.overflowWrap = "break-word";
+	mirror.textContent = textarea.value.slice(0, position);
+	const marker = document.createElement("span");
+	marker.textContent = textarea.value.slice(position) || ".";
+	mirror.append(marker);
+	document.body.append(mirror);
+	const coordinates = {
+		top: marker.offsetTop + Number.parseFloat(style.borderTopWidth),
+		left: marker.offsetLeft + Number.parseFloat(style.borderLeftWidth),
+		height:
+			Number.parseFloat(style.lineHeight) ||
+			Number.parseFloat(style.fontSize) * 1.2,
+	};
+	mirror.remove();
+	return coordinates;
 }
