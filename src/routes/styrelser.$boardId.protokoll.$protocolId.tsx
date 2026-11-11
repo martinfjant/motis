@@ -135,20 +135,19 @@ function ProtocolPage() {
 				<Link to="/styrelser/$boardId" params={{ boardId: board.id }}>
 					{board.name}
 				</Link>
-				{protocol.agendaId && (
-					<>
-						{" "}
-						›{" "}
-						<Link
-							to="/styrelser/$boardId/dagordningar/$agendaId"
-							params={{ boardId: board.id, agendaId: protocol.agendaId }}
-						>
-							Dagordning
-						</Link>
-					</>
-				)}
 			</nav>
 			<h1>Protokoll: {protocol.title}</h1>
+			{/* The protocol sits next to its agenda, not under it. */}
+			{protocol.agendaId && (
+				<p>
+					<Link
+						to="/styrelser/$boardId/dagordningar/$agendaId"
+						params={{ boardId: board.id, agendaId: protocol.agendaId }}
+					>
+						Se dagordningen
+					</Link>
+				</p>
+			)}
 
 			{!editable ? (
 				<>
