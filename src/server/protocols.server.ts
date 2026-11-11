@@ -14,6 +14,7 @@ import {
 import { BoardError, listMembers, requireMember } from "./boards.server";
 import {
 	type ItemType,
+	type ProtocolEdit,
 	type ProtocolItem,
 	type ProtocolValue,
 	personLabel,
@@ -31,8 +32,6 @@ export type Protocol = {
 	/** ISO 8601 UTC, or null while the meeting is going on. */
 	closedAt: string | null;
 };
-
-export type ProtocolEdit = { userName: string; editedAt: string };
 
 const toProtocol = (r: Row): Protocol => ({
 	id: String(r.id),
@@ -305,4 +304,74 @@ export async function closeProtocol(
 ) {
 	await requireParent(db, userId, "protocol", protocolId);
 	await markClosed(db, protocolId);
+}
+
+// ---------- Public sharing ----------
+
+/**
+ * Anyone with the link may read a closed protocol; no account needed. Until
+ * it is closed the link only says so, since the minutes may still change.
+ */
+export async function getPublicProtocol(db: Client, shareId: string) {
+	if (!shareId) return null;
+	const res = await db.execute({
+		sql: `SELECT p.*, b.name AS board_name, b.background AS board_background
+          FROM protocols p JOIN boards b ON b.id = p.board_id
+          WHERE p.share_id = ?`,
+		args: [shareId],
+	});
+	const row = res.rows[0];
+	if (!row) return null;
+	const protocol = toProtocol(row);
+	const board = {
+		name: String(row.board_name),
+		background: String(row.board_background),
+	};
+	if (!protocol.closedAt) return { status: "open" as const, board };
+
+	const [items, edits] = await Promise.all([
+		listProtocolItems(db, protocol.id),
+		db.execute({
+			sql: "SELECT user_name, edited_at FROM protocol_edits WHERE protocol_id = ? ORDER BY edited_at",
+			args: [protocol.id],
+		}),
+	]);
+	return {
+		status: "closed" as const,
+		board,
+		protocol: {
+			title: protocol.title,
+			meetingAt: protocol.meetingAt,
+			location: protocol.location,
+			closedAt: protocol.closedAt,
+		},
+		items: items.map(({ id, title, description, type, value }) => ({
+			id,
+			title,
+			description,
+			type,
+			value,
+		})),
+		edits: edits.rows.map(
+			(r): ProtocolEdit => ({
+				userName: String(r.user_name),
+				editedAt: String(r.edited_at),
+			}),
+		),
+	};
+}
+
+/** Replaces the protocol's share link, so the old one stops working. */
+export async function regenerateProtocolShareId(
+	db: Client,
+	userId: string,
+	protocolId: string,
+) {
+	await requireParent(db, userId, "protocol", protocolId);
+	const shareId = newShareId();
+	await db.execute({
+		sql: "UPDATE protocols SET share_id = ? WHERE id = ?",
+		args: [shareId, protocolId],
+	});
+	return shareId;
 }

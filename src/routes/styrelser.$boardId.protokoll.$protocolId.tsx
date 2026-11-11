@@ -8,17 +8,24 @@ import { useEffect, useState } from "react";
 import { MeetingDetails, MultilineText } from "#/components/AgendaView";
 import { ItemFields } from "#/components/ItemEditor";
 import { MeetingForm } from "#/components/MeetingForm";
-import { formatInstant, formatMeetingAt, toLocalStamp } from "#/meeting-time";
+import {
+	MOMENT_TEXT,
+	ProtocolDisplay,
+	ProtocolHistory,
+	RecordedValue,
+} from "#/components/ProtocolView";
+import { ShareSection } from "#/components/ShareSection";
+import { formatMeetingAt, toLocalStamp } from "#/meeting-time";
 import { addItem, deleteItem } from "#/server/agendas.functions";
 import type { ProtocolItem, ProtocolValue } from "#/server/items";
 import {
 	closeProtocol,
 	deleteProtocol,
 	getProtocol,
+	regenerateProtocolShareId,
 	saveItemValue,
 	updateProtocol,
 } from "#/server/protocols.functions";
-import type { ProtocolEdit } from "#/server/protocols.server";
 
 export const Route = createFileRoute(
 	"/styrelser/$boardId/protokoll/$protocolId",
@@ -120,6 +127,24 @@ function ProtocolPage() {
 		run(() => closeProtocol({ data: { protocolId: protocol.id } }));
 	}
 
+	const share = (
+		<ShareSection
+			path={`/protokoll/${protocol.shareId}`}
+			intro={
+				<p>
+					Alla som har länken kan läsa protokollet, utan att logga in
+					{closed
+						? "."
+						: ", men först när protokollet är stängt. Innan dess visar länken bara att det inte är klart."}
+				</p>
+			}
+			linkText="Visa det delade protokollet"
+			onRegenerate={() =>
+				regenerateProtocolShareId({ data: { protocolId: protocol.id } })
+			}
+		/>
+	);
+
 	const doneEditing = (
 		<p>
 			<button type="button" onClick={() => setEditSession(null)}>
@@ -160,6 +185,7 @@ function ProtocolPage() {
 						</button>
 					</p>
 					<ProtocolDisplay protocol={protocol} items={items} edits={edits} />
+					{share}
 				</>
 			) : (
 				<>
@@ -268,6 +294,8 @@ function ProtocolPage() {
 						</>
 					)}
 
+					{share}
+
 					<section aria-labelledby="danger">
 						<h2 id="danger">Ta bort</h2>
 						<p>Dagordningen påverkas inte.</p>
@@ -280,80 +308,6 @@ function ProtocolPage() {
 		</main>
 	);
 }
-
-/** A closed protocol, read-only. */
-function ProtocolDisplay({
-	protocol,
-	items,
-	edits,
-}: {
-	protocol: { meetingAt: string; location: string; closedAt: string | null };
-	items: ProtocolItem[];
-	edits: ProtocolEdit[];
-}) {
-	return (
-		<>
-			<section aria-labelledby="meeting">
-				<h2 id="meeting">Mötet</h2>
-				<MeetingDetails
-					meetingAt={protocol.meetingAt}
-					location={protocol.location}
-				/>
-			</section>
-			<section aria-labelledby="points">
-				<h2 id="points">Punkter</h2>
-				{items.length === 0 ? (
-					<p>Inga punkter.</p>
-				) : (
-					<ol>
-						{items.map((item) => (
-							<li key={item.id}>
-								<h3>{item.title}</h3>
-								{item.description && <MultilineText text={item.description} />}
-								<RecordedValue item={item} />
-							</li>
-						))}
-					</ol>
-				)}
-			</section>
-			<ProtocolHistory closedAt={protocol.closedAt} edits={edits} />
-		</>
-	);
-}
-
-/** When the protocol was closed, and every editing session after that. */
-function ProtocolHistory({
-	closedAt,
-	edits,
-}: {
-	closedAt: string | null;
-	edits: ProtocolEdit[];
-}) {
-	if (!closedAt) return null;
-	return (
-		<section aria-labelledby="history">
-			<h2 id="history">Historik</h2>
-			<ul>
-				<li>
-					Protokollet stängdes{" "}
-					<time dateTime={closedAt}>{formatInstant(closedAt)}</time>.
-				</li>
-				{edits.map((edit) => (
-					<li key={edit.editedAt + edit.userName}>
-						Redigerat{" "}
-						<time dateTime={edit.editedAt}>{formatInstant(edit.editedAt)}</time>{" "}
-						av {edit.userName}.
-					</li>
-				))}
-			</ul>
-		</section>
-	);
-}
-
-const MOMENT_TEXT = {
-	open: { button: "Öppna mötet", done: "Mötet öppnades" },
-	close: { button: "Avsluta mötet", done: "Mötet avslutades" },
-};
 
 /** The current time, ticking. Null until mounted so server and client agree. */
 function useNow() {
@@ -558,50 +512,6 @@ function ProtocolItemForm({
 				</>
 			)}
 		</fieldset>
-	);
-}
-
-function RecordedValue({ item }: { item: ProtocolItem }) {
-	const v = item.value;
-	return (
-		<>
-			{(item.type === "open" || item.type === "close") && v.at && (
-				<p>
-					{MOMENT_TEXT[item.type].done}{" "}
-					<time dateTime={v.at}>{formatMeetingAt(v.at)}</time>
-				</p>
-			)}
-			{item.type === "toggle" && v.done !== undefined && (
-				<p>{v.done ? "Ja" : "Nej"}</p>
-			)}
-			{item.type === "attendance" &&
-				((v.present ?? []).length === 0 ? (
-					<p>Ingen närvaro registrerad.</p>
-				) : (
-					<>
-						<p>Närvarande:</p>
-						<ul>
-							{(v.present ?? []).map((name) => (
-								<li key={name}>{name}</li>
-							))}
-						</ul>
-					</>
-				))}
-			{item.type === "person" && v.person && (
-				<p>
-					Vald: <strong>{v.person}</strong>
-				</p>
-			)}
-			{item.type === "decision" && v.decision && (
-				<>
-					<p>Beslut:</p>
-					<blockquote>
-						<MultilineText text={v.decision} />
-					</blockquote>
-				</>
-			)}
-			{v.notes && <MultilineText text={v.notes} />}
-		</>
 	);
 }
 

@@ -95,3 +95,19 @@ export const closeProtocol = createServerFn({ method: "POST" })
 		const { db, user, protocols } = await ctx();
 		await protocols.closeProtocol(db, user.id, data.protocolId);
 	});
+
+/** No login required: the share id itself is the access token. */
+export const getPublicProtocol = createServerFn({ method: "GET" })
+	.validator((d: unknown) => ({ shareId: str(obj(d).shareId) }))
+	.handler(async ({ data }) => {
+		const { getDb } = await import("./db");
+		const { getPublicProtocol } = await import("./protocols.server");
+		return getPublicProtocol(await getDb(), data.shareId);
+	});
+
+export const regenerateProtocolShareId = createServerFn({ method: "POST" })
+	.validator((d: unknown) => ({ protocolId: str(obj(d).protocolId) }))
+	.handler(async ({ data }) => {
+		const { db, user, protocols } = await ctx();
+		return protocols.regenerateProtocolShareId(db, user.id, data.protocolId);
+	});

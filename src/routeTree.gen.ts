@@ -16,6 +16,7 @@ import { Route as RegistreraRouteImport } from './routes/registrera'
 import { Route as StyrelserRouteImport } from './routes/styrelser'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as DagordningShareIdRouteImport } from './routes/dagordning.$shareId'
+import { Route as ProtokollShareIdRouteImport } from './routes/protokoll.$shareId'
 import { Route as StyrelserIndexRouteImport } from './routes/styrelser.index'
 import { Route as StyrelserBoardIdIndexRouteImport } from './routes/styrelser.$boardId.index'
 import { Route as StyrelserBoardIdInstallningarRouteImport } from './routes/styrelser.$boardId.installningar'
@@ -56,6 +57,11 @@ const ApiHealthRoute = ApiHealthRouteImport.update({
 const DagordningShareIdRoute = DagordningShareIdRouteImport.update({
   id: '/dagordning/$shareId',
   path: '/dagordning/$shareId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProtokollShareIdRoute = ProtokollShareIdRouteImport.update({
+  id: '/protokoll/$shareId',
+  path: '/protokoll/$shareId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StyrelserIndexRoute = StyrelserIndexRouteImport.update({
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/styrelser': typeof StyrelserRouteWithChildren
   '/api/health': typeof ApiHealthRoute
   '/dagordning/$shareId': typeof DagordningShareIdRoute
+  '/protokoll/$shareId': typeof ProtokollShareIdRoute
   '/styrelser/': typeof StyrelserIndexRoute
   '/styrelser/$boardId/installningar': typeof StyrelserBoardIdInstallningarRoute
   '/styrelser/$boardId/': typeof StyrelserBoardIdIndexRoute
@@ -115,6 +122,7 @@ export interface FileRoutesByTo {
   '/registrera': typeof RegistreraRoute
   '/api/health': typeof ApiHealthRoute
   '/dagordning/$shareId': typeof DagordningShareIdRoute
+  '/protokoll/$shareId': typeof ProtokollShareIdRoute
   '/styrelser': typeof StyrelserIndexRoute
   '/styrelser/$boardId/installningar': typeof StyrelserBoardIdInstallningarRoute
   '/styrelser/$boardId': typeof StyrelserBoardIdIndexRoute
@@ -131,6 +139,7 @@ export interface FileRoutesById {
   '/styrelser': typeof StyrelserRouteWithChildren
   '/api/health': typeof ApiHealthRoute
   '/dagordning/$shareId': typeof DagordningShareIdRoute
+  '/protokoll/$shareId': typeof ProtokollShareIdRoute
   '/styrelser/': typeof StyrelserIndexRoute
   '/styrelser/$boardId/installningar': typeof StyrelserBoardIdInstallningarRoute
   '/styrelser/$boardId/': typeof StyrelserBoardIdIndexRoute
@@ -148,6 +157,7 @@ export interface FileRouteTypes {
     | '/styrelser'
     | '/api/health'
     | '/dagordning/$shareId'
+    | '/protokoll/$shareId'
     | '/styrelser/'
     | '/styrelser/$boardId/installningar'
     | '/styrelser/$boardId/'
@@ -162,6 +172,7 @@ export interface FileRouteTypes {
     | '/registrera'
     | '/api/health'
     | '/dagordning/$shareId'
+    | '/protokoll/$shareId'
     | '/styrelser'
     | '/styrelser/$boardId/installningar'
     | '/styrelser/$boardId'
@@ -177,6 +188,7 @@ export interface FileRouteTypes {
     | '/styrelser'
     | '/api/health'
     | '/dagordning/$shareId'
+    | '/protokoll/$shareId'
     | '/styrelser/'
     | '/styrelser/$boardId/installningar'
     | '/styrelser/$boardId/'
@@ -193,6 +205,7 @@ export interface RootRouteChildren {
   StyrelserRoute: typeof StyrelserRouteWithChildren
   ApiHealthRoute: typeof ApiHealthRoute
   DagordningShareIdRoute: typeof DagordningShareIdRoute
+  ProtokollShareIdRoute: typeof ProtokollShareIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -244,6 +257,13 @@ declare module '@tanstack/react-router' {
       path: '/dagordning/$shareId'
       fullPath: '/dagordning/$shareId'
       preLoaderRoute: typeof DagordningShareIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/protokoll/$shareId': {
+      id: '/protokoll/$shareId'
+      path: '/protokoll/$shareId'
+      fullPath: '/protokoll/$shareId'
+      preLoaderRoute: typeof ProtokollShareIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/styrelser/': {
@@ -323,6 +343,7 @@ const rootRouteChildren: RootRouteChildren = {
   StyrelserRoute: StyrelserRouteWithChildren,
   ApiHealthRoute: ApiHealthRoute,
   DagordningShareIdRoute: DagordningShareIdRoute,
+  ProtokollShareIdRoute: ProtokollShareIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

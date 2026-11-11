@@ -8,6 +8,7 @@ import { useState } from "react";
 import { AgendaItems, MeetingDetails } from "#/components/AgendaView";
 import { ItemEditor } from "#/components/ItemEditor";
 import { MeetingForm } from "#/components/MeetingForm";
+import { ShareSection } from "#/components/ShareSection";
 import {
 	deleteAgenda,
 	getAgenda,
@@ -142,61 +143,16 @@ function AgendaPage() {
 				)}
 			</section>
 
-			<ShareSection agendaId={agenda.id} shareId={agenda.shareId} />
+			<ShareSection
+				path={`/dagordning/${agenda.shareId}`}
+				intro={
+					<p>Alla som har länken kan läsa dagordningen, utan att logga in.</p>
+				}
+				linkText="Visa den delade dagordningen"
+				onRegenerate={() =>
+					regenerateAgendaShareId({ data: { agendaId: agenda.id } })
+				}
+			/>
 		</main>
-	);
-}
-
-function ShareSection({
-	agendaId,
-	shareId,
-}: {
-	agendaId: string;
-	shareId: string;
-}) {
-	const router = useRouter();
-	const [status, setStatus] = useState<string | null>(null);
-
-	async function onCopy() {
-		const url = `${window.location.origin}/dagordning/${shareId}`;
-		try {
-			await navigator.clipboard.writeText(url);
-			setStatus("Länken är kopierad.");
-		} catch {
-			setStatus(`Kunde inte kopiera. Länken är: ${url}`);
-		}
-	}
-
-	async function onRegenerate() {
-		if (
-			!confirm(
-				"Skapa en ny länk? Den gamla länken slutar fungera för alla som har fått den.",
-			)
-		)
-			return;
-		await regenerateAgendaShareId({ data: { agendaId } });
-		await router.invalidate();
-		setStatus("En ny länk har skapats. Den gamla fungerar inte längre.");
-	}
-
-	return (
-		<section aria-labelledby="share">
-			<h2 id="share">Dela</h2>
-			<p>Alla som har länken kan läsa dagordningen, utan att logga in.</p>
-			<p>
-				<Link to="/dagordning/$shareId" params={{ shareId }}>
-					Visa den delade dagordningen
-				</Link>
-			</p>
-			<p>
-				<button type="button" onClick={onCopy}>
-					Kopiera länken
-				</button>{" "}
-				<button type="button" onClick={onRegenerate}>
-					Skapa ny länk
-				</button>
-			</p>
-			{status && <output>{status}</output>}
-		</section>
 	);
 }

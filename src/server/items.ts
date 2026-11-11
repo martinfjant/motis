@@ -60,3 +60,6 @@ export type ProtocolItem = Item & { value: ProtocolValue };
 export function personLabel(name: string, title: string): string {
 	return title ? `${name} (${title})` : name;
 }
+
+/** A change made after a protocol was closed: who (as written) and when (UTC). */
+export type ProtocolEdit = { userName: string; editedAt: string };

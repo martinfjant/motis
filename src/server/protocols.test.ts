@@ -22,7 +22,9 @@ import {
 	createProtocol,
 	deleteProtocol,
 	getProtocol,
+	getPublicProtocol,
 	listProtocols,
+	regenerateProtocolShareId,
 	saveItemValue,
 	updateProtocol,
 } from "./protocols.server";
@@ -270,4 +272,49 @@ test("members are written with their title, as it was when recorded", async () =
 	expect((await getProtocol(db, anna, protocol.id)).edits[0].userName).toBe(
 		"anna (Ordförande)",
 	);
+});
+
+test("public protocol: only readable once closed, with just what the page needs", async () => {
+	const protocol = await createProtocol(db, anna, agendaId);
+	expect(await getPublicProtocol(db, "")).toBeNull();
+	expect(await getPublicProtocol(db, "finns-inte")).toBeNull();
+
+	const open = await getPublicProtocol(db, protocol.shareId);
+	expect(open).toEqual({
+		status: "open",
+		board: { name: "BRF Björken", background: "standard" },
+	});
+
+	const items = (await getProtocol(db, anna, protocol.id)).items;
+	const close = items.find((i) => i.type === "close")?.id ?? "";
+	await saveItemValue(db, anna, close, { at: "2026-11-20T19:30" });
+
+	const pub = await getPublicProtocol(db, protocol.shareId);
+	if (pub?.status !== "closed") throw new Error("expected closed");
+	expect(pub.protocol.title).toBe("Höstmöte");
+	expect(pub.items).toHaveLength(items.length);
+	expect(Object.keys(pub.items[0]).sort()).toEqual([
+		"description",
+		"id",
+		"title",
+		"type",
+		"value",
+	]);
+	expect(Object.keys(pub.protocol).sort()).toEqual([
+		"closedAt",
+		"location",
+		"meetingAt",
+		"title",
+	]);
+});
+
+test("replacing the protocol link revokes the old one, members only", async () => {
+	const protocol = await createProtocol(db, anna, agendaId);
+	await expect(regenerateProtocolShareId(db, cia, protocol.id)).rejects.toThrow(
+		BoardError,
+	);
+	const shareId = await regenerateProtocolShareId(db, bo, protocol.id);
+	expect(shareId).not.toBe(protocol.shareId);
+	expect(await getPublicProtocol(db, protocol.shareId)).toBeNull();
+	expect(await getPublicProtocol(db, shareId)).not.toBeNull();
 });
