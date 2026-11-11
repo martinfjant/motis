@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import {
 	deleteCookie,
 	getCookie,
+	getRequestIP,
 	setCookie,
 } from "@tanstack/react-start/server";
 
@@ -53,9 +54,13 @@ export const logIn = createServerFn({ method: "POST" })
 		return { email: str(o.email), password: str(o.password) };
 	})
 	.handler(async ({ data }) => {
-		const { authenticate } = await import("./auth.server");
+		const { logInWithLimit } = await import("./login-limit.server");
 		const { getDb } = await import("./db");
-		const user = await authenticate(await getDb(), data.email, data.password);
+		// Behind a proxy (e.g. in production) the client's address is only in
+		// X-Forwarded-For. Trust that header only when told to, since clients
+		// can set it themselves when nothing in front of the app overwrites it.
+		const ip = getRequestIP({ xForwardedFor: process.env.TRUST_PROXY === "1" });
+		const user = await logInWithLimit(await getDb(), { ...data, ip });
 		await startSession(user.id);
 		return user;
 	});
