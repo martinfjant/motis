@@ -1,5 +1,5 @@
 import { createClient } from "@libsql/client";
-import { beforeEach, expect, test } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import {
 	addItem,
 	createAgenda,
@@ -40,6 +40,15 @@ const mk = async (name: string) =>
 			password: "hemligt123",
 		})
 	).id;
+
+// The test meetings are on 2026-11-20 and can only be started that day.
+beforeEach(() => {
+	vi.useFakeTimers({ toFake: ["Date"] });
+	vi.setSystemTime(new Date("2026-11-20T17:00:00Z"));
+});
+afterEach(() => {
+	vi.useRealTimers();
+});
 
 beforeEach(async () => {
 	db = createClient({ url: ":memory:" });
@@ -317,4 +326,34 @@ test("replacing the protocol link revokes the old one, members only", async () =
 	expect(shareId).not.toBe(protocol.shareId);
 	expect(await getPublicProtocol(db, protocol.shareId)).toBeNull();
 	expect(await getPublicProtocol(db, shareId)).not.toBeNull();
+});
+
+test("a meeting can only be started on its day, Swedish time", async () => {
+	const at = (iso: string) => new Date(iso);
+	await expect(
+		createProtocol(db, anna, agendaId, at("2026-11-19T12:00:00Z")),
+	).rejects.toThrow("Mötet kan startas den 20-11-2026.");
+	await expect(
+		createProtocol(db, anna, agendaId, at("2026-11-21T12:00:00Z")),
+	).rejects.toThrow("Mötet var satt till 20-11-2026.");
+	// 23:30 UTC on the 19th is already the 20th in Sweden.
+	const protocol = await createProtocol(
+		db,
+		anna,
+		agendaId,
+		at("2026-11-19T23:30:00Z"),
+	);
+	// Opening an already started meeting works any day.
+	expect(
+		(await createProtocol(db, anna, agendaId, at("2027-01-01T12:00:00Z"))).id,
+	).toBe(protocol.id);
+
+	const undated = await createAgenda(db, anna, boardId, {
+		title: "Utan datum",
+		meetingAt: "",
+		location: "",
+	});
+	await expect(createProtocol(db, anna, undated.id)).rejects.toThrow(
+		"Mötet har inget datum.",
+	);
 });

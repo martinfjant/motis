@@ -59,6 +59,20 @@ export function daysBetween(from: string, to: string): number {
 	return Math.round((utc(to) - utc(from)) / 86_400_000);
 }
 
+/**
+ * Why a meeting can't be started today, or null if it can. A meeting is
+ * started on the day it is set for; to hold it another day, change the date.
+ */
+export function cannotStart(meetingAt: string, today: string): string | null {
+	const day = meetingAt.slice(0, 10);
+	if (!day)
+		return "Mötet har inget datum. Ange datum i dagordningen för att kunna starta det.";
+	if (day > today) return `Mötet kan startas den ${formatMeetingAt(day)}.`;
+	if (day < today)
+		return `Mötet var satt till ${formatMeetingAt(day)}. Ändra datumet i dagordningen om det hålls idag.`;
+	return null;
+}
+
 /** "idag", "imorgon", "om 5 dagar" — for a meeting this many days away. */
 export function daysUntilText(days: number): string {
 	if (days <= 0) return "idag";

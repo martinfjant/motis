@@ -112,8 +112,10 @@ export const callMeeting = createServerFn({ method: "POST" })
 export const getAgenda = createServerFn({ method: "GET" })
 	.validator((d: unknown) => ({ agendaId: str(obj(d).agendaId) }))
 	.handler(async ({ data }) => {
-		const { db, user, agendas } = await ctx();
-		return orNull(agendas.getAgenda(db, user.id, data.agendaId));
+		const { db, user, agendas, meetings } = await ctx();
+		const result = await orNull(agendas.getAgenda(db, user.id, data.agendaId));
+		// Today in Sweden, to tell whether the meeting can be started.
+		return result && { ...result, today: meetings.today() };
 	});
 
 export const updateAgenda = createServerFn({ method: "POST" })

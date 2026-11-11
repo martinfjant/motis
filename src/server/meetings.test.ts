@@ -1,5 +1,5 @@
 import { createClient } from "@libsql/client";
-import { beforeEach, expect, test } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import {
 	createAgenda,
 	getAgenda,
@@ -28,6 +28,15 @@ async function points() {
 	const { items } = await getProtocol(db, anna, protocolId);
 	return Object.fromEntries(items.map((i) => [i.title, i]));
 }
+
+// The protocol is started on the meeting's day, 2026-11-05.
+beforeEach(() => {
+	vi.useFakeTimers({ toFake: ["Date"] });
+	vi.setSystemTime(new Date("2026-11-05T17:00:00Z"));
+});
+afterEach(() => {
+	vi.useRealTimers();
+});
 
 beforeEach(async () => {
 	db = createClient({ url: ":memory:" });

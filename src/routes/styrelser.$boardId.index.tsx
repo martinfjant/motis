@@ -5,7 +5,12 @@ import {
 	useRouter,
 } from "@tanstack/react-router";
 import { useRef, useState } from "react";
-import { daysBetween, daysUntilText, formatMeetingAt } from "#/meeting-time";
+import {
+	cannotStart,
+	daysBetween,
+	daysUntilText,
+	formatMeetingAt,
+} from "#/meeting-time";
 import { callMeeting, getBoardOverview } from "#/server/agendas.functions";
 import type { MeetingPlan } from "#/server/meetings.server";
 import { createProtocol } from "#/server/protocols.functions";
@@ -120,9 +125,16 @@ function Board() {
 									{a.title}
 								</Link>{" "}
 								<When at={a.meetingAt} today={today} />{" "}
-								<button type="button" onClick={() => onStartMeeting(a.id)}>
-									Starta möte
-								</button>
+								{/* Startable only on its day; a future date speaks for itself. */}
+								{!a.meetingAt ? (
+									<>– inget datum, ange det för att kunna starta mötet.</>
+								) : a.meetingAt.slice(0, 10) < today ? (
+									<>– datumet har passerat, ändra det för att starta mötet.</>
+								) : cannotStart(a.meetingAt, today) ? null : (
+									<button type="button" onClick={() => onStartMeeting(a.id)}>
+										Starta möte
+									</button>
+								)}
 							</li>
 						))}
 						{plan.nextAt && (

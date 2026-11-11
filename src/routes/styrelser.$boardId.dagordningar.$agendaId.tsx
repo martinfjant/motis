@@ -9,6 +9,7 @@ import { AgendaItems, MeetingDetails } from "#/components/AgendaView";
 import { ItemEditor } from "#/components/ItemEditor";
 import { MeetingForm } from "#/components/MeetingForm";
 import { ShareSection } from "#/components/ShareSection";
+import { cannotStart } from "#/meeting-time";
 import {
 	deleteAgenda,
 	getAgenda,
@@ -37,16 +38,23 @@ export const Route = createFileRoute(
 });
 
 function AgendaPage() {
-	const { board, agenda, items, protocolId } = Route.useLoaderData();
+	const { board, agenda, items, protocolId, today } = Route.useLoaderData();
 	const router = useRouter();
 	const [editing, setEditing] = useState(false);
+	const [startError, setStartError] = useState<string | null>(null);
+	const notToday = cannotStart(agenda.meetingAt, today);
 
 	async function onStartProtocol() {
-		const protocol = await createProtocol({ data: { agendaId: agenda.id } });
-		await router.navigate({
-			to: "/styrelser/$boardId/protokoll/$protocolId",
-			params: { boardId: board.id, protocolId: protocol.id },
-		});
+		setStartError(null);
+		try {
+			const protocol = await createProtocol({ data: { agendaId: agenda.id } });
+			await router.navigate({
+				to: "/styrelser/$boardId/protokoll/$protocolId",
+				params: { boardId: board.id, protocolId: protocol.id },
+			});
+		} catch (err) {
+			setStartError(err instanceof Error ? err.message : "Något gick fel.");
+		}
 	}
 
 	async function onDelete() {
@@ -133,12 +141,17 @@ function AgendaPage() {
 				) : (
 					<>
 						<p>
-							Protokollet skapas som en kopia av dagordningen. Dagordningen
-							finns kvar som den är.
+							Protokollet skapas som en kopia av dagordningen när mötet startar.
+							Dagordningen finns kvar som den är.
 						</p>
-						<button type="button" onClick={onStartProtocol}>
-							Skapa protokoll
-						</button>
+						{notToday ? (
+							<p>{notToday}</p>
+						) : (
+							<button type="button" onClick={onStartProtocol}>
+								Starta möte
+							</button>
+						)}
+						{startError && <p role="alert">{startError}</p>}
 					</>
 				)}
 			</section>
