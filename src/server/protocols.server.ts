@@ -236,6 +236,10 @@ export async function getProtocol(
 		memberNames: [...members, ...unregistered]
 			.map((m) => personLabel(m.name, m.title))
 			.sort((a, b) => a.localeCompare(b, "sv")),
+		/** Everyone on the board by plain name, for @-mentions in notes. */
+		people: [...members, ...unregistered]
+			.map((m) => ({ name: m.name, label: personLabel(m.name, m.title) }))
+			.sort((a, b) => a.name.localeCompare(b.name, "sv")),
 	};
 }
 

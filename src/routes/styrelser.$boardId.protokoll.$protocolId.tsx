@@ -8,6 +8,7 @@ import { type ReactNode, useEffect, useState } from "react";
 import { MeetingDetails, MultilineText } from "#/components/AgendaView";
 import { ItemFields } from "#/components/ItemEditor";
 import { MeetingForm } from "#/components/MeetingForm";
+import { MentionNames, MentionTextarea } from "#/components/MentionTextarea";
 import {
 	MOMENT_TEXT,
 	ProtocolDisplay,
@@ -55,7 +56,8 @@ export const Route = createFileRoute(
 });
 
 function ProtocolPage() {
-	const { board, protocol, items, memberNames, edits } = Route.useLoaderData();
+	const { board, protocol, items, memberNames, people, edits } =
+		Route.useLoaderData();
 	const router = useRouter();
 	const [error, setError] = useState<string | null>(null);
 	const [addFormKey, setAddFormKey] = useState(0);
@@ -81,6 +83,16 @@ function ProtocolPage() {
 		),
 	);
 	const choosable = present.length > 0 ? present : invited;
+
+	// Who can be @-mentioned in notes: the board, plus invited guests.
+	const mentionable = [
+		...people,
+		...unique(
+			items.flatMap((i) => (i.type === "attendance" ? i.extraNames : [])),
+		)
+			.filter((name) => !people.some((p) => p.name === name))
+			.map((name) => ({ name, label: name })),
+	];
 
 	async function run(action: () => Promise<unknown>) {
 		setError(null);
@@ -165,159 +177,168 @@ function ProtocolPage() {
 	);
 
 	return (
-		<main>
-			<nav aria-label="Brödsmula">
-				<Link to="/styrelser">Styrelser</Link> ›{" "}
-				<Link to="/styrelser/$boardId" params={{ boardId: board.id }}>
-					{board.name}
-				</Link>
-			</nav>
-			<h1>Protokoll: {protocol.title}</h1>
-			{/* The protocol sits next to its agenda, not under it. */}
-			{protocol.agendaId && (
-				<p>
-					<Link
-						to="/styrelser/$boardId/dagordningar/$agendaId"
-						params={{ boardId: board.id, agendaId: protocol.agendaId }}
-					>
-						Se dagordningen
+		<MentionNames.Provider value={mentionable}>
+			<main>
+				<nav aria-label="Brödsmula">
+					<Link to="/styrelser">Styrelser</Link> ›{" "}
+					<Link to="/styrelser/$boardId" params={{ boardId: board.id }}>
+						{board.name}
 					</Link>
-				</p>
-			)}
-
-			{!editable ? (
-				<>
+				</nav>
+				<h1>Protokoll: {protocol.title}</h1>
+				{/* The protocol sits next to its agenda, not under it. */}
+				{protocol.agendaId && (
 					<p>
-						<button
-							type="button"
-							onClick={() => setEditSession(crypto.randomUUID())}
+						<Link
+							to="/styrelser/$boardId/dagordningar/$agendaId"
+							params={{ boardId: board.id, agendaId: protocol.agendaId }}
 						>
-							Redigera protokollet
-						</button>
+							Se dagordningen
+						</Link>
 					</p>
-					<ProtocolDisplay protocol={protocol} items={items} edits={edits} />
-					{share}
-				</>
-			) : (
-				<>
-					{closed && (
-						<>
-							<p>
-								<strong>Du redigerar ett stängt protokoll.</strong> Att det har
-								redigerats, av vem och när, noteras i slutet av protokollet.
-							</p>
-							{doneEditing}
-						</>
-					)}
+				)}
 
-					{editingDetails ? (
-						<>
-							<MeetingForm
-								initial={protocol}
-								onSave={async (details) => {
-									await updateProtocol({
-										data: {
-											protocolId: protocol.id,
-											editSession: session,
-											...details,
-										},
-									});
-									await router.invalidate();
-									setEditingDetails(false);
-								}}
-							/>
-							<p>
-								<button type="button" onClick={() => setEditingDetails(false)}>
-									Avbryt
-								</button>
-							</p>
-						</>
-					) : (
-						<section aria-labelledby="meeting">
-							<h2 id="meeting">Mötet</h2>
-							<MeetingDetails
-								meetingAt={protocol.meetingAt}
-								location={protocol.location}
-							/>
-							<p>
-								<button type="button" onClick={() => setEditingDetails(true)}>
-									Ändra mötesuppgifter
-								</button>
-							</p>
-						</section>
-					)}
-
-					<section aria-labelledby="points">
-						<h2 id="points">Punkter</h2>
-						{error && <p role="alert">{error}</p>}
-						{items.length === 0 ? (
-							<p>Inga punkter ännu.</p>
-						) : (
-							<ol>
-								{items.map((item) => (
-									<li key={item.id}>
-										{item.type === "open" || item.type === "close" ? (
-											<MeetingMoment item={item} onSave={saveValue(item.id)} />
-										) : (
-											<ProtocolItemForm
-												item={item}
-												invited={invited}
-												choosable={choosable}
-												onSave={saveValue(item.id)}
-												onCarryOver={saveCarryOver(item.id)}
-												onDelete={() => {
-													if (confirm(`Ta bort punkten ”${item.title}”?`))
-														run(() =>
-															deleteItem({
-																data: {
-																	kind: "protocol",
-																	itemId: item.id,
-																	editSession: session,
-																},
-															}),
-														);
-												}}
-											/>
-										)}
-									</li>
-								))}
-							</ol>
-						)}
-
-						<h3>Lägg till punkt</h3>
-						<form key={addFormKey} onSubmit={onAdd}>
-							<ItemFields idPrefix="new-item" />
-							<button type="submit">Lägg till</button>
-						</form>
-					</section>
-
-					{!closed && !hasClosePoint && (
+				{!editable ? (
+					<>
 						<p>
-							<button type="button" onClick={onCloseProtocol}>
-								Stäng protokollet
+							<button
+								type="button"
+								onClick={() => setEditSession(crypto.randomUUID())}
+							>
+								Redigera protokollet
 							</button>
 						</p>
-					)}
+						<ProtocolDisplay protocol={protocol} items={items} edits={edits} />
+						{share}
+					</>
+				) : (
+					<>
+						{closed && (
+							<>
+								<p>
+									<strong>Du redigerar ett stängt protokoll.</strong> Att det
+									har redigerats, av vem och när, noteras i slutet av
+									protokollet.
+								</p>
+								{doneEditing}
+							</>
+						)}
 
-					{closed && (
-						<>
-							<ProtocolHistory closedAt={protocol.closedAt} edits={edits} />
-							{doneEditing}
-						</>
-					)}
+						{editingDetails ? (
+							<>
+								<MeetingForm
+									initial={protocol}
+									onSave={async (details) => {
+										await updateProtocol({
+											data: {
+												protocolId: protocol.id,
+												editSession: session,
+												...details,
+											},
+										});
+										await router.invalidate();
+										setEditingDetails(false);
+									}}
+								/>
+								<p>
+									<button
+										type="button"
+										onClick={() => setEditingDetails(false)}
+									>
+										Avbryt
+									</button>
+								</p>
+							</>
+						) : (
+							<section aria-labelledby="meeting">
+								<h2 id="meeting">Mötet</h2>
+								<MeetingDetails
+									meetingAt={protocol.meetingAt}
+									location={protocol.location}
+								/>
+								<p>
+									<button type="button" onClick={() => setEditingDetails(true)}>
+										Ändra mötesuppgifter
+									</button>
+								</p>
+							</section>
+						)}
 
-					{share}
+						<section aria-labelledby="points">
+							<h2 id="points">Punkter</h2>
+							{error && <p role="alert">{error}</p>}
+							{items.length === 0 ? (
+								<p>Inga punkter ännu.</p>
+							) : (
+								<ol>
+									{items.map((item) => (
+										<li key={item.id}>
+											{item.type === "open" || item.type === "close" ? (
+												<MeetingMoment
+													item={item}
+													onSave={saveValue(item.id)}
+												/>
+											) : (
+												<ProtocolItemForm
+													item={item}
+													invited={invited}
+													choosable={choosable}
+													onSave={saveValue(item.id)}
+													onCarryOver={saveCarryOver(item.id)}
+													onDelete={() => {
+														if (confirm(`Ta bort punkten ”${item.title}”?`))
+															run(() =>
+																deleteItem({
+																	data: {
+																		kind: "protocol",
+																		itemId: item.id,
+																		editSession: session,
+																	},
+																}),
+															);
+													}}
+												/>
+											)}
+										</li>
+									))}
+								</ol>
+							)}
 
-					<section aria-labelledby="danger">
-						<h2 id="danger">Ta bort</h2>
-						<p>Dagordningen påverkas inte.</p>
-						<button type="button" onClick={onDelete}>
-							Ta bort protokollet
-						</button>
-					</section>
-				</>
-			)}
-		</main>
+							<h3>Lägg till punkt</h3>
+							<form key={addFormKey} onSubmit={onAdd}>
+								<ItemFields idPrefix="new-item" />
+								<button type="submit">Lägg till</button>
+							</form>
+						</section>
+
+						{!closed && !hasClosePoint && (
+							<p>
+								<button type="button" onClick={onCloseProtocol}>
+									Stäng protokollet
+								</button>
+							</p>
+						)}
+
+						{closed && (
+							<>
+								<ProtocolHistory closedAt={protocol.closedAt} edits={edits} />
+								{doneEditing}
+							</>
+						)}
+
+						{share}
+
+						<section aria-labelledby="danger">
+							<h2 id="danger">Ta bort</h2>
+							<p>Dagordningen påverkas inte.</p>
+							<button type="button" onClick={onDelete}>
+								Ta bort protokollet
+							</button>
+						</section>
+					</>
+				)}
+			</main>
+		</MentionNames.Provider>
 	);
 }
 
@@ -449,8 +470,8 @@ function NotesEditor({
 		>
 			<p>
 				<label htmlFor={id}>Anteckningar</label>
-				{/* biome-ignore lint/a11y/noAutofocus: opened by an explicit click */}
-				<textarea id={id} name="notes" defaultValue={notes} autoFocus />
+				{/* Opened by an explicit click, so focus goes straight to it. */}
+				<MentionTextarea id={id} name="notes" defaultValue={notes} autoFocus />
 			</p>
 			<button type="submit">Klar</button>{" "}
 			<button type="button" onClick={() => setOpen(false)}>
@@ -823,7 +844,11 @@ function ItemValueForm({
 			{notesOpen ? (
 				<p>
 					<label htmlFor={id("notes")}>Anteckningar</label>
-					<textarea id={id("notes")} name="notes" defaultValue={v.notes} />
+					<MentionTextarea
+						id={id("notes")}
+						name="notes"
+						defaultValue={v.notes}
+					/>
 				</p>
 			) : (
 				<p>
