@@ -126,7 +126,7 @@ function AgendaPage() {
 							to="/styrelser/$boardId/protokoll/$protocolId"
 							params={{ boardId: board.id, protocolId }}
 						>
-							Öppna protokollet
+							Se protokoll
 						</Link>
 					</p>
 				) : (

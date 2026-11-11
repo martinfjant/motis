@@ -84,14 +84,18 @@ function Board() {
 											{formatMeetingAt(a.meetingAt)}
 										</time>
 									</>
-								)}
-								{!a.protocolId && (
-									<>
-										{" "}
-										<button type="button" onClick={() => onStartMeeting(a.id)}>
-											Starta möte
-										</button>
-									</>
+								)}{" "}
+								{a.protocolId ? (
+									<Link
+										to="/styrelser/$boardId/protokoll/$protocolId"
+										params={{ boardId: board.id, protocolId: a.protocolId }}
+									>
+										Se protokoll
+									</Link>
+								) : (
+									<button type="button" onClick={() => onStartMeeting(a.id)}>
+										Starta möte
+									</button>
 								)}
 							</li>
 						))}
