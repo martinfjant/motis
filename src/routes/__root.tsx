@@ -22,7 +22,6 @@ export const Route = createRootRoute({
 		],
 		links: [
 			// Temporary classless base styles until the app gets its own CSS.
-			{ rel: "stylesheet", href: "https://unpkg.com/mvp.css" },
 			{ rel: "stylesheet", href: appCss },
 			// Board background patterns, chosen per board in its settings.
 			{ rel: "stylesheet", href: patternsCss },
