@@ -523,7 +523,9 @@ function ProtocolItemForm({
 			</fieldset>
 		);
 
-	// Follow-up is a checkbox before the buttons; "Bordlägg" sits among them.
+	// Follow-up is a checkbox before the buttons. A point is dealt with in
+	// one of two ways: "Klar" or "Bordlägg". Once it is klar it can't be
+	// tabled, not even when reopened with "Ändra".
 	const followUp = carriable && (
 		<p>
 			{/* Keyed on the saved state so it shows what the server has. */}
@@ -567,7 +569,7 @@ function ProtocolItemForm({
 					onClose={() => setEditing(false)}
 					onDelete={onDelete}
 					beforeActions={followUp}
-					extraAction={table}
+					extraAction={editing ? null : table}
 				/>
 			) : (
 				<>
@@ -576,8 +578,7 @@ function ProtocolItemForm({
 					<p>
 						<button type="button" onClick={() => setEditing(true)}>
 							{hasValue(v) ? "Ändra" : "Lägg till anteckning"}
-						</button>{" "}
-						{table}
+						</button>
 					</p>
 				</>
 			)}

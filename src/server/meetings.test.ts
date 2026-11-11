@@ -96,19 +96,22 @@ test("a tabled point needs no decision and keeps its flag when notes are saved",
 	});
 });
 
-test("follow-up survives saving the decision; tabling clears it", async () => {
-	const { Cykelrum } = await points();
+test("follow-up survives saving the decision; a decided point can't be tabled", async () => {
+	const { Cykelrum, Takreparation } = await points();
 	await setCarryOver(db, anna, Cykelrum.id, { followUp: true });
 	await saveItemValue(db, anna, Cykelrum.id, { decision: "Vi rensar i maj." });
 	expect((await points()).Cykelrum.value).toEqual({
 		decision: "Vi rensar i maj.",
 		followUp: true,
 	});
-	await setCarryOver(db, anna, Cykelrum.id, { tabled: true });
-	expect((await points()).Cykelrum.value).toEqual({
-		decision: "Vi rensar i maj.",
-		tabled: true,
-	});
+	await expect(
+		setCarryOver(db, anna, Cykelrum.id, { tabled: true }),
+	).rejects.toThrow("Punkten är redan klar och kan inte bordläggas.");
+
+	// Tabling a point marked for follow-up clears the follow-up.
+	await setCarryOver(db, anna, Takreparation.id, { followUp: true });
+	await setCarryOver(db, anna, Takreparation.id, { tabled: true });
+	expect((await points()).Takreparation.value).toEqual({ tabled: true });
 });
 
 test("formalities can't be tabled", async () => {

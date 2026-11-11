@@ -328,7 +328,8 @@ export async function saveItemValue(
 
 /**
  * Tables a point (moves it to the next meeting) or marks it for follow-up
- * there. Leaves what was recorded for the point as it is. A tabled point
+ * there. Only a point with nothing recorded can be tabled; notes can be
+ * added afterwards. A tabled point
  * comes back on the next agenda anyway, so tabling clears follow-up.
  */
 export async function setCarryOver(
@@ -346,6 +347,9 @@ export async function setCarryOver(
 	await guardProtocolEdit(db, userId, parentId, editSession);
 	const stored = await storedValue(db, itemId);
 	const { tabled: _t, followUp: _f, ...recorded } = stored;
+	// A point is either dealt with ("Klar") or tabled, not both.
+	if (input.tabled && !stored.tabled && Object.keys(recorded).length > 0)
+		throw new BoardError("Punkten är redan klar och kan inte bordläggas.");
 	const tabled = input.tabled ?? !!stored.tabled;
 	const followUp = !tabled && (input.followUp ?? !!stored.followUp);
 	const value = { ...recorded, ...flagsOf({ tabled, followUp }) };
