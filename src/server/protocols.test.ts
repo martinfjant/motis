@@ -128,6 +128,7 @@ test("values are stored per type and stray fields dropped", async () => {
 		decision: "ska bort",
 	});
 	await saveItemValue(db, bo, byTitle("Ekonomi"), { done: true, notes: "" });
+	await saveItemValue(db, bo, byTitle("Föregående protokoll"), { done: false });
 
 	const saved = (await getProtocol(db, anna, protocol.id)).items;
 	const value = (t: string) => saved.find((i) => i.title === t)?.value;
@@ -142,6 +143,15 @@ test("values are stored per type and stray fields dropped", async () => {
 	});
 	expect(value("Val av ordförande")).toEqual({ person: "anna" });
 	expect(value("Ekonomi")).toEqual({});
+	expect(value("Föregående protokoll")).toEqual({ done: false });
+
+	// A yes/no point with no answer chosen records nothing.
+	await saveItemValue(db, bo, byTitle("Föregående protokoll"), {});
+	expect(
+		(await getProtocol(db, anna, protocol.id)).items.find(
+			(i) => i.title === "Föregående protokoll",
+		)?.value,
+	).toEqual({});
 });
 
 test("deleting the agenda keeps the protocol, and vice versa", async () => {

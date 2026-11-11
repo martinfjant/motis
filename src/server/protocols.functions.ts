@@ -61,7 +61,7 @@ export const saveItemValue = createServerFn({ method: "POST" })
 		return {
 			itemId: str(obj(d).itemId),
 			value: {
-				done: v.done === true,
+				done: typeof v.done === "boolean" ? v.done : undefined,
 				at: str(v.at),
 				present: Array.isArray(v.present) ? v.present.map(str) : [],
 				person: str(v.person),

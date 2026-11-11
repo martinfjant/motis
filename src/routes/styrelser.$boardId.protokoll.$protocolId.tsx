@@ -371,7 +371,9 @@ function RecordedValue({ item }: { item: ProtocolItem }) {
 	const v = item.value;
 	return (
 		<>
-			{item.type === "toggle" && <p>{v.done ? "Ja" : "Nej"}</p>}
+			{item.type === "toggle" && v.done !== undefined && (
+				<p>{v.done ? "Ja" : "Nej"}</p>
+			)}
 			{item.type === "attendance" &&
 				((v.present ?? []).length === 0 ? (
 					<p>Ingen närvaro registrerad.</p>
@@ -433,7 +435,13 @@ function ItemValueForm({
 		const f = new FormData(form);
 		const picked = String(f.get("person") ?? "");
 		return {
-			done: f.get("done") === "on",
+			// Neither radio chosen means no answer yet, not "Nej".
+			done:
+				f.get("done") === "yes"
+					? true
+					: f.get("done") === "no"
+						? false
+						: undefined,
 			present: [
 				...f.getAll("present").map(String),
 				...String(f.get("others") ?? "").split("\n"),
@@ -455,12 +463,21 @@ function ItemValueForm({
 			{item.type === "toggle" && (
 				<p>
 					<input
-						id={id("done")}
+						id={id("done-yes")}
 						name="done"
-						type="checkbox"
+						type="radio"
+						value="yes"
 						defaultChecked={v.done === true}
 					/>{" "}
-					<label htmlFor={id("done")}>Ja</label>
+					<label htmlFor={id("done-yes")}>Ja</label>{" "}
+					<input
+						id={id("done-no")}
+						name="done"
+						type="radio"
+						value="no"
+						defaultChecked={v.done === false}
+					/>{" "}
+					<label htmlFor={id("done-no")}>Nej</label>
 				</p>
 			)}
 

@@ -54,7 +54,9 @@ export function cleanValue(
 	const base = notes ? { notes } : {};
 	switch (type) {
 		case "toggle":
-			return { ...base, done: input.done === true };
+			return typeof input.done === "boolean"
+				? { ...base, done: input.done }
+				: base;
 		case "open":
 		case "close": {
 			const at = (input.at ?? "").trim();
