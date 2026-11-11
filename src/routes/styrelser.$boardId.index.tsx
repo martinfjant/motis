@@ -7,6 +7,7 @@ import {
 import { useRef, useState } from "react";
 import { formatMeetingAt } from "#/meeting-time";
 import { createAgenda, getBoardOverview } from "#/server/agendas.functions";
+import { createProtocol } from "#/server/protocols.functions";
 
 export const Route = createFileRoute("/styrelser/$boardId/")({
 	loader: async ({ params }) => {
@@ -29,6 +30,22 @@ export const Route = createFileRoute("/styrelser/$boardId/")({
 
 function Board() {
 	const { board, agendas, protocols, templates } = Route.useLoaderData();
+	const router = useRouter();
+	const [error, setError] = useState<string | null>(null);
+
+	// Starting the meeting creates the protocol from the agenda and opens it.
+	async function onStartMeeting(agendaId: string) {
+		setError(null);
+		try {
+			const protocol = await createProtocol({ data: { agendaId } });
+			await router.navigate({
+				to: "/styrelser/$boardId/protokoll/$protocolId",
+				params: { boardId: board.id, protocolId: protocol.id },
+			});
+		} catch (err) {
+			setError(err instanceof Error ? err.message : "Något gick fel.");
+		}
+	}
 
 	return (
 		<main>
@@ -68,10 +85,19 @@ function Board() {
 										</time>
 									</>
 								)}
+								{!a.protocolId && (
+									<>
+										{" "}
+										<button type="button" onClick={() => onStartMeeting(a.id)}>
+											Starta möte
+										</button>
+									</>
+								)}
 							</li>
 						))}
 					</ul>
 				)}
+				{error && <p role="alert">{error}</p>}
 			</section>
 
 			<section aria-labelledby="protocols">

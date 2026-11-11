@@ -234,13 +234,18 @@ export async function listAgendas(
 	db: Client,
 	userId: string,
 	boardId: string,
-): Promise<Agenda[]> {
+): Promise<(Agenda & { protocolId: string | null })[]> {
 	await requireMember(db, userId, boardId);
 	const res = await db.execute({
-		sql: "SELECT * FROM agendas WHERE board_id = ? ORDER BY meeting_at DESC, created_at DESC",
+		sql: `SELECT a.*, p.id AS protocol_id FROM agendas a
+          LEFT JOIN protocols p ON p.agenda_id = a.id
+          WHERE a.board_id = ? ORDER BY a.meeting_at DESC, a.created_at DESC`,
 		args: [boardId],
 	});
-	return res.rows.map(toAgenda);
+	return res.rows.map((r) => ({
+		...toAgenda(r),
+		protocolId: r.protocol_id == null ? null : String(r.protocol_id),
+	}));
 }
 
 export type AgendaDetails = {

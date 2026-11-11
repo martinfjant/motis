@@ -5,6 +5,7 @@ import {
 	createAgenda,
 	deleteAgenda,
 	getAgenda,
+	listAgendas,
 	listTemplates,
 } from "./agendas.server";
 import { createUser } from "./auth.server";
@@ -79,10 +80,13 @@ test("a protocol copies the agenda and leaves it untouched", async () => {
 });
 
 test("one protocol per agenda", async () => {
+	expect((await listAgendas(db, anna, boardId))[0].protocolId).toBeNull();
 	const a = await createProtocol(db, anna, agendaId);
 	const b = await createProtocol(db, bo, agendaId);
 	expect(b.id).toBe(a.id);
 	expect(await listProtocols(db, anna, boardId)).toHaveLength(1);
+	const [listed] = await listAgendas(db, anna, boardId);
+	expect(listed.protocolId).toBe(a.id);
 });
 
 test("non-members cannot create, read or fill in protocols", async () => {
