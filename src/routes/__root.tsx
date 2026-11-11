@@ -21,7 +21,6 @@ export const Route = createRootRoute({
 			{ title: "BRF-protokoll" },
 		],
 		links: [
-			// Temporary classless base styles until the app gets its own CSS.
 			{ rel: "stylesheet", href: appCss },
 			// Board background patterns, chosen per board in its settings.
 			{ rel: "stylesheet", href: patternsCss },
