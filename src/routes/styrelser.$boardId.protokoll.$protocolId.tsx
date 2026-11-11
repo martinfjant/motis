@@ -243,7 +243,8 @@ function MeetingMoment({
 	onSave: (value: ProtocolValue) => Promise<boolean>;
 }) {
 	const text = MOMENT_TEXT[item.type === "close" ? "close" : "open"];
-	const at = item.value.at;
+	const v = item.value;
+	const at = v.at;
 	const now = useNow();
 	const [editing, setEditing] = useState(false);
 	const inputId = `${item.id}-at`;
@@ -251,13 +252,13 @@ function MeetingMoment({
 	async function onCorrect(e: React.FormEvent<HTMLFormElement>) {
 		e.preventDefault();
 		const value = String(new FormData(e.currentTarget).get("at") ?? "");
-		if (await onSave({ at: value })) setEditing(false);
+		if (await onSave({ ...v, at: value })) setEditing(false);
 	}
 
 	return (
 		<fieldset>
 			<legend>{item.title}</legend>
-			{item.description && <p>{item.description}</p>}
+			{item.description && <MultilineText text={item.description} />}
 			{editing && at ? (
 				<form onSubmit={onCorrect}>
 					<p>
@@ -294,13 +295,66 @@ function MeetingMoment({
 					)}
 					<button
 						type="button"
-						onClick={() => onSave({ at: toLocalStamp(new Date()) })}
+						onClick={() => onSave({ ...v, at: toLocalStamp(new Date()) })}
 					>
 						{text.button}
 					</button>
 				</p>
 			)}
+			{at && (
+				<NotesEditor
+					idPrefix={item.id}
+					notes={v.notes}
+					onSave={(notes) => onSave({ ...v, notes })}
+				/>
+			)}
 		</fieldset>
+	);
+}
+
+/** Notes shown as text, edited behind "Lägg till anteckning" / "Ändra anteckning". */
+function NotesEditor({
+	idPrefix,
+	notes,
+	onSave,
+}: {
+	idPrefix: string;
+	notes?: string;
+	onSave: (notes: string) => Promise<boolean>;
+}) {
+	const [open, setOpen] = useState(false);
+	const id = `${idPrefix}-notes`;
+
+	if (!open)
+		return (
+			<>
+				{notes && <MultilineText text={notes} />}
+				<p>
+					<button type="button" onClick={() => setOpen(true)}>
+						{notes ? "Ändra anteckning" : "Lägg till anteckning"}
+					</button>
+				</p>
+			</>
+		);
+
+	return (
+		<form
+			onSubmit={async (e) => {
+				e.preventDefault();
+				const value = String(new FormData(e.currentTarget).get("notes") ?? "");
+				if (await onSave(value)) setOpen(false);
+			}}
+		>
+			<p>
+				<label htmlFor={id}>Anteckningar</label>
+				{/* biome-ignore lint/a11y/noAutofocus: opened by an explicit click */}
+				<textarea id={id} name="notes" defaultValue={notes} autoFocus />
+			</p>
+			<button type="submit">Spara</button>{" "}
+			<button type="button" onClick={() => setOpen(false)}>
+				Avbryt
+			</button>
+		</form>
 	);
 }
 
@@ -345,12 +399,16 @@ function ProtocolItemForm({
 					item={item}
 					invited={invited}
 					choosable={choosable}
-					onSave={async (value) => {
+					onSave={async (value, stayOpen) => {
 						const ok = await onSave(value);
-						if (ok) setEditing(false);
+						// Attendance saves on every tick, so it stays open until "Klar".
+						if (ok) setEditing(stayOpen);
 						return ok;
 					}}
-					onCancel={editing ? () => setEditing(false) : undefined}
+					closeLabel={
+						editing ? (item.type === "attendance" ? "Klar" : "Avbryt") : null
+					}
+					onClose={() => setEditing(false)}
 					onDelete={onDelete}
 				/>
 			) : (
@@ -410,14 +468,16 @@ function ItemValueForm({
 	invited,
 	choosable,
 	onSave,
-	onCancel,
+	closeLabel,
+	onClose,
 	onDelete,
 }: {
 	item: ProtocolItem;
 	invited: string[];
 	choosable: string[];
-	onSave: (value: ProtocolValue) => Promise<boolean>;
-	onCancel?: () => void;
+	onSave: (value: ProtocolValue, stayOpen: boolean) => Promise<boolean>;
+	closeLabel: string | null;
+	onClose: () => void;
 	onDelete: () => void;
 }) {
 	const id = (name: string) => `${item.id}-${name}`;
@@ -430,6 +490,16 @@ function ItemValueForm({
 	// Person: pick from the list, or "Annan person" to type a name.
 	const savedIsOther = !!v.person && !choosable.includes(v.person);
 	const [otherPerson, setOtherPerson] = useState(savedIsOther);
+
+	// Notes are hidden behind a button, except on free-text points where the
+	// notes are the whole point.
+	const [notesOpen, setNotesOpen] = useState(item.type === "text" || !!v.notes);
+
+	// Only typed content needs an explicit save; choices save themselves.
+	const showSave =
+		notesOpen ||
+		item.type === "decision" ||
+		(item.type === "person" && otherPerson);
 
 	function read(form: HTMLFormElement): ProtocolValue {
 		const f = new FormData(form);
@@ -453,6 +523,20 @@ function ItemValueForm({
 		};
 	}
 
+	const noOnePresent = (value: ProtocolValue) =>
+		!value.present?.some((n) => n.trim());
+
+	/** Saves straight from a choice; attendance stays open for more ticks. */
+	function autosave(form: HTMLFormElement | null) {
+		if (!form) return;
+		const value = read(form);
+		if (item.type === "attendance") {
+			if (!noOnePresent(value)) onSave(value, true);
+		} else {
+			onSave(value, false);
+		}
+	}
+
 	return (
 		<form
 			onSubmit={(e) => {
@@ -461,10 +545,7 @@ function ItemValueForm({
 				const value = read(form);
 				// A checkbox group cannot be "required" in HTML, so check attendance
 				// by hand and report it like the browser reports other fields.
-				if (
-					item.type === "attendance" &&
-					!value.present?.some((n) => n.trim())
-				) {
+				if (item.type === "attendance" && noOnePresent(value)) {
 					const first = form.querySelector<HTMLInputElement>(
 						'input[name="present"], textarea[name="others"]',
 					);
@@ -472,7 +553,7 @@ function ItemValueForm({
 					first?.reportValidity();
 					return;
 				}
-				onSave(value);
+				onSave(value, false);
 			}}
 			onChange={(e) => {
 				// Clear the attendance message as soon as something changes.
@@ -492,6 +573,7 @@ function ItemValueForm({
 						value="yes"
 						defaultChecked={v.done === true}
 						required
+						onChange={(e) => autosave(e.currentTarget.form)}
 					/>{" "}
 					<label htmlFor={id("done-yes")}>Ja</label>{" "}
 					<input
@@ -501,6 +583,7 @@ function ItemValueForm({
 						value="no"
 						defaultChecked={v.done === false}
 						required
+						onChange={(e) => autosave(e.currentTarget.form)}
 					/>{" "}
 					<label htmlFor={id("done-no")}>Nej</label>
 				</p>
@@ -518,6 +601,7 @@ function ItemValueForm({
 									type="checkbox"
 									value={name}
 									defaultChecked={(v.present ?? []).includes(name)}
+									onChange={(e) => autosave(e.currentTarget.form)}
 								/>{" "}
 								<label htmlFor={id(`present-${name}`)}>{name}</label>
 							</p>
@@ -531,6 +615,7 @@ function ItemValueForm({
 							id={id("others")}
 							name="others"
 							defaultValue={others.join("\n")}
+							onBlur={(e) => autosave(e.currentTarget.form)}
 						/>
 					</p>
 				</>
@@ -550,7 +635,7 @@ function ItemValueForm({
 								setOtherPerson(picked === OTHER_PERSON);
 								// Choosing a name from the list saves right away.
 								if (picked && picked !== OTHER_PERSON)
-									onSave(read(e.currentTarget.form as HTMLFormElement));
+									autosave(e.currentTarget.form);
 							}}
 						>
 							<option value="" disabled>
@@ -590,17 +675,29 @@ function ItemValueForm({
 				</p>
 			)}
 
-			<p>
-				<label htmlFor={id("notes")}>Anteckningar</label>
-				<textarea id={id("notes")} name="notes" defaultValue={v.notes} />
-			</p>
+			{notesOpen ? (
+				<p>
+					<label htmlFor={id("notes")}>Anteckningar</label>
+					<textarea id={id("notes")} name="notes" defaultValue={v.notes} />
+				</p>
+			) : (
+				<p>
+					<button type="button" onClick={() => setNotesOpen(true)}>
+						Lägg till anteckning
+					</button>
+				</p>
+			)}
 
 			<p>
-				<button type="submit">Spara</button>{" "}
-				{onCancel && (
+				{showSave && (
 					<>
-						<button type="button" onClick={onCancel}>
-							Avbryt
+						<button type="submit">Spara</button>{" "}
+					</>
+				)}
+				{closeLabel && (
+					<>
+						<button type="button" onClick={onClose}>
+							{closeLabel}
 						</button>{" "}
 					</>
 				)}
