@@ -13,6 +13,8 @@ import {
 } from "./agendas.server";
 import { BoardError, listMembers, requireMember } from "./boards.server";
 import {
+	type CarryOverFlags,
+	canCarryOver,
 	type ItemType,
 	type ProtocolEdit,
 	type ProtocolItem,
@@ -68,7 +70,8 @@ export function cleanValue(
 				? { ...base, done: input.done }
 				: base;
 		case "open":
-		case "close": {
+		case "close":
+		case "next_meeting": {
 			const at = (input.at ?? "").trim();
 			return AT.test(at) ? { ...base, at } : base;
 		}
@@ -87,7 +90,7 @@ export function cleanValue(
 	}
 }
 
-async function listProtocolItems(
+export async function listProtocolItems(
 	db: Client,
 	protocolId: string,
 ): Promise<ProtocolItem[]> {
@@ -249,9 +252,12 @@ export async function deleteProtocol(
 	});
 }
 
-/** Records what happened at the meeting for one point. */
-/** Everything except notes is required; returns the problem, if any. */
+/**
+ * Everything except notes is required; returns the problem, if any. A tabled
+ * point was not dealt with, so nothing is required of it.
+ */
 export function missingValue(type: ItemType, v: ProtocolValue): string | null {
+	if (v.tabled) return null;
 	switch (type) {
 		case "toggle":
 			return v.done === undefined ? "Välj ja eller nej." : null;
@@ -264,11 +270,33 @@ export function missingValue(type: ItemType, v: ProtocolValue): string | null {
 			return v.person ? null : "Välj en person.";
 		case "decision":
 			return v.decision ? null : "Skriv beslutet.";
+		case "next_meeting":
+			return v.at ? null : "Ange datum och tid för nästa möte.";
 		default:
 			return null;
 	}
 }
 
+async function storedValue(db: Client, itemId: string) {
+	const res = await db.execute({
+		sql: "SELECT value FROM protocol_items WHERE id = ?",
+		args: [itemId],
+	});
+	return parseValue(res.rows[0]?.value);
+}
+
+/** The carry-over flags as stored, without the ones that are off. */
+function flagsOf(v: ProtocolValue): CarryOverFlags {
+	return {
+		...(v.tabled ? { tabled: true } : {}),
+		...(v.followUp ? { followUp: true } : {}),
+	};
+}
+
+/**
+ * Records what happened at the meeting for one point. Whether the point is
+ * tabled or followed up is kept as it was; see setCarryOver.
+ */
 export async function saveItemValue(
 	db: Client,
 	userId: string,
@@ -277,7 +305,8 @@ export async function saveItemValue(
 	editSession?: string,
 ) {
 	const { item, parentId } = await requireItem(db, userId, "protocol", itemId);
-	const value = cleanValue(item.type, input);
+	const flags = flagsOf(await storedValue(db, itemId));
+	const value = { ...cleanValue(item.type, input), ...flags };
 	const missing = missingValue(item.type, value);
 	if (missing) throw new BoardError(missing);
 	await guardProtocolEdit(db, userId, parentId, editSession);
@@ -287,6 +316,35 @@ export async function saveItemValue(
 	});
 	// Closing the meeting closes the protocol.
 	if (item.type === "close") await markClosed(db, parentId);
+}
+
+/**
+ * Tables a point (moves it to the next meeting) or marks it for follow-up
+ * there. Leaves what was recorded for the point as it is. A tabled point
+ * comes back on the next agenda anyway, so tabling clears follow-up.
+ */
+export async function setCarryOver(
+	db: Client,
+	userId: string,
+	itemId: string,
+	input: CarryOverFlags,
+	editSession?: string,
+) {
+	const { item, parentId } = await requireItem(db, userId, "protocol", itemId);
+	if (!canCarryOver(item.type))
+		throw new BoardError(
+			"Den här punkten kan inte bordläggas eller följas upp.",
+		);
+	await guardProtocolEdit(db, userId, parentId, editSession);
+	const stored = await storedValue(db, itemId);
+	const { tabled: _t, followUp: _f, ...recorded } = stored;
+	const tabled = input.tabled ?? !!stored.tabled;
+	const followUp = !tabled && (input.followUp ?? !!stored.followUp);
+	const value = { ...recorded, ...flagsOf({ tabled, followUp }) };
+	await db.execute({
+		sql: "UPDATE protocol_items SET value = ? WHERE id = ?",
+		args: [JSON.stringify(value), itemId],
+	});
 }
 
 async function markClosed(db: Client, protocolId: string) {

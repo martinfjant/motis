@@ -8,6 +8,7 @@ export const ITEM_TYPES = [
 	"person",
 	"decision",
 	"text",
+	"next_meeting",
 ] as const;
 export type ItemType = (typeof ITEM_TYPES)[number];
 
@@ -19,7 +20,17 @@ export const ITEM_TYPE_LABELS: Record<ItemType, string> = {
 	person: "Val av person",
 	decision: "Beslut",
 	text: "Fritext",
+	next_meeting: "Nästa möte (datum och tid)",
 };
+
+/**
+ * Points that are matters to discuss, as opposed to formalities like opening
+ * the meeting or taking attendance. Only these can be tabled ("bordläggas")
+ * or marked for follow-up, which carries them over to the next meeting.
+ */
+export function canCarryOver(type: ItemType): boolean {
+	return type === "text" || type === "decision";
+}
 
 export type Item = {
 	id: string;
@@ -39,7 +50,10 @@ export function isItemType(v: unknown): v is ItemType {
 export type ProtocolValue = {
 	/** toggle: e.g. the agenda was approved. */
 	done?: boolean;
-	/** open/close: when it happened, local wall-clock "YYYY-MM-DDTHH:MM". */
+	/**
+	 * open/close: when it happened; next_meeting: when the next meeting is.
+	 * Local wall-clock "YYYY-MM-DDTHH:MM".
+	 */
 	at?: string;
 	/** attendance: names of everyone present (snapshot, not account ids). */
 	present?: string[];
@@ -49,7 +63,14 @@ export type ProtocolValue = {
 	decision?: string;
 	/** All types: free-form minutes for the point. */
 	notes?: string;
+	/** Tabled ("bordlagd"): not dealt with, moved to the next meeting. */
+	tabled?: boolean;
+	/** Dealt with, but to be followed up at the next meeting. */
+	followUp?: boolean;
 };
+
+/** The flags that carry a point over to the next meeting. */
+export type CarryOverFlags = Pick<ProtocolValue, "tabled" | "followUp">;
 
 export type ProtocolItem = Item & { value: ProtocolValue };
 

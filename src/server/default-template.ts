@@ -15,7 +15,7 @@ export const DEFAULT_TEMPLATE_ITEMS: { title: string; type: ItemType }[] = [
 	{ title: "Ekonomi", type: "text" },
 	{ title: "Driftsfrågor", type: "text" },
 	{ title: "Övriga frågor", type: "text" },
-	{ title: "Nästa möte", type: "text" },
+	{ title: "Nästa möte", type: "next_meeting" },
 	{ title: "Mötets avslutande", type: "close" },
 ];
 

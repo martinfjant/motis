@@ -11,7 +11,8 @@ async function ctx() {
 	const agendas = await import("./agendas.server");
 	const boards = await import("./boards.server");
 	const protocols = await import("./protocols.server");
-	return { ...(await requireUser()), agendas, boards, protocols };
+	const meetings = await import("./meetings.server");
+	return { ...(await requireUser()), agendas, boards, protocols, meetings };
 }
 
 /** Lets loaders turn "not found / not a member" into a 404 instead of an error. */
@@ -28,7 +29,7 @@ async function orNull<T>(p: Promise<T>): Promise<T | null> {
 export const getBoardOverview = createServerFn({ method: "GET" })
 	.validator((d: unknown) => ({ boardId: str(obj(d).boardId) }))
 	.handler(async ({ data }) => {
-		const { db, user, agendas, boards, protocols } = await ctx();
+		const { db, user, agendas, boards, protocols, meetings } = await ctx();
 		const board = await boards.getBoard(db, user.id, data.boardId);
 		if (!board) return null;
 		return {
@@ -36,8 +37,19 @@ export const getBoardOverview = createServerFn({ method: "GET" })
 			agendas: await agendas.listAgendas(db, user.id, board.id),
 			protocols: await protocols.listProtocols(db, user.id, board.id),
 			templates: await agendas.listTemplates(db, user.id, board.id),
+			plan: await meetings.getMeetingPlan(db, user.id, board.id),
+			/** Today in Sweden, so "om 3 dagar" renders the same everywhere. */
+			today: meetings.today(),
 		};
 	});
+
+/** Coming meetings on all the user's boards, for the start page. */
+export const getUpcomingMeetings = createServerFn({ method: "GET" }).handler(
+	async () => {
+		const { db, user, meetings } = await ctx();
+		return meetings.listUpcoming(db, user.id);
+	},
+);
 
 // ---------- Templates ----------
 
@@ -84,15 +96,17 @@ const details = (d: unknown) => ({
 	location: str(obj(d).location),
 });
 
-export const createAgenda = createServerFn({ method: "POST" })
+/** "Kalla till möte": a new agenda, with points carried over if chosen. */
+export const callMeeting = createServerFn({ method: "POST" })
 	.validator((d: unknown) => ({
 		...details(d),
 		boardId: str(obj(d).boardId),
 		templateId: str(obj(d).templateId) || undefined,
+		carryOver: strList(obj(d).carryOver),
 	}))
 	.handler(async ({ data }) => {
-		const { db, user, agendas } = await ctx();
-		return agendas.createAgenda(db, user.id, data.boardId, data);
+		const { db, user, meetings } = await ctx();
+		return meetings.callMeeting(db, user.id, data.boardId, data);
 	});
 
 export const getAgenda = createServerFn({ method: "GET" })

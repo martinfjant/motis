@@ -255,12 +255,59 @@ export type AgendaDetails = {
 	location: string;
 };
 
-/** Creates an agenda, copying all items from the template if one is given. */
+/** A point brought over from an earlier protocol to a new agenda. */
+export type CarriedItem = {
+	title: string;
+	type: ItemType;
+	description: string;
+	sourceItemId: string;
+};
+
+type NewItem = Pick<Item, "title" | "type" | "description" | "extraNames"> & {
+	sourceItemId?: string;
+};
+
+const sameTitle = (a: string, b: string) =>
+	a.trim().toLowerCase() === b.trim().toLowerCase();
+
+/**
+ * Puts carried-over points on a new agenda. A point the template already has
+ * (a standing point like "Ekonomi") is not added twice: the template's point
+ * gets the carried description instead. Other points go with the other
+ * matters: before "Övriga frågor" if there is one, else before the next
+ * meeting and the closing.
+ */
+export function mergeCarried(items: NewItem[], carried: NewItem[]): NewItem[] {
+	const merged = items.map((item) => ({ ...item }));
+	const added: NewItem[] = [];
+	for (const c of carried) {
+		const standing = merged.find(
+			(i) => !i.sourceItemId && sameTitle(i.title, c.title),
+		);
+		if (standing) {
+			standing.description = c.description;
+			standing.sourceItemId = c.sourceItemId;
+		} else added.push(c);
+	}
+	if (added.length === 0) return merged;
+	let at = merged.findIndex(
+		(i) => i.type === "next_meeting" || i.type === "close",
+	);
+	if (at === -1) at = merged.length;
+	const other = merged.findIndex((i) => sameTitle(i.title, "Övriga frågor"));
+	if (other !== -1 && other < at) at = other;
+	return [...merged.slice(0, at), ...added, ...merged.slice(at)];
+}
+
+/**
+ * Creates an agenda, copying all items from the template if one is given,
+ * plus any points carried over from an earlier meeting (see callMeeting).
+ */
 export async function createAgenda(
 	db: Client,
 	userId: string,
 	boardId: string,
-	input: AgendaDetails & { templateId?: string },
+	input: AgendaDetails & { templateId?: string; carried?: CarriedItem[] },
 ): Promise<Agenda> {
 	await requireMember(db, userId, boardId);
 	const agenda: Agenda = {
@@ -272,13 +319,17 @@ export async function createAgenda(
 		location: input.location.trim(),
 	};
 
-	let items: Item[] = [];
+	let fromTemplate: Item[] = [];
 	if (input.templateId) {
 		const tpl = await requireParent(db, userId, "template", input.templateId);
 		if (String(tpl.row.board_id) !== boardId)
 			throw new BoardError("Mallen finns inte.");
-		items = await listItems(db, "template", input.templateId);
+		fromTemplate = await listItems(db, "template", input.templateId);
 	}
+	const items = mergeCarried(
+		fromTemplate,
+		(input.carried ?? []).map((c) => ({ ...c, extraNames: [] })),
+	);
 
 	const statements: InStatement[] = [
 		{
@@ -295,8 +346,8 @@ export async function createAgenda(
 			],
 		},
 		...items.map((item, i) => ({
-			sql: `INSERT INTO agenda_items (id, agenda_id, position, title, type, description, config)
-            VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			sql: `INSERT INTO agenda_items (id, agenda_id, position, title, type, description, config, source_item_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 			args: [
 				randomUUID(),
 				agenda.id,
@@ -305,6 +356,7 @@ export async function createAgenda(
 				item.type,
 				item.description,
 				configJson(item.type, item.extraNames),
+				item.sourceItemId ?? null,
 			],
 		})),
 	];

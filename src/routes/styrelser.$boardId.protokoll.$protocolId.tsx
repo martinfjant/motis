@@ -17,13 +17,19 @@ import {
 import { ShareSection } from "#/components/ShareSection";
 import { formatMeetingAt, toLocalStamp } from "#/meeting-time";
 import { addItem, deleteItem } from "#/server/agendas.functions";
-import type { ProtocolItem, ProtocolValue } from "#/server/items";
+import {
+	type CarryOverFlags,
+	canCarryOver,
+	type ProtocolItem,
+	type ProtocolValue,
+} from "#/server/items";
 import {
 	closeProtocol,
 	deleteProtocol,
 	getProtocol,
 	regenerateProtocolShareId,
 	saveItemValue,
+	setCarryOver,
 	updateProtocol,
 } from "#/server/protocols.functions";
 
@@ -90,6 +96,11 @@ function ProtocolPage() {
 
 	const saveValue = (itemId: string) => (value: ProtocolValue) =>
 		run(() => saveItemValue({ data: { itemId, value, editSession: session } }));
+
+	const saveCarryOver = (itemId: string) => (flags: CarryOverFlags) =>
+		run(() =>
+			setCarryOver({ data: { itemId, ...flags, editSession: session } }),
+		);
 
 	async function onAdd(e: React.FormEvent<HTMLFormElement>) {
 		e.preventDefault();
@@ -253,6 +264,7 @@ function ProtocolPage() {
 												invited={invited}
 												choosable={choosable}
 												onSave={saveValue(item.id)}
+												onCarryOver={saveCarryOver(item.id)}
 												onDelete={() => {
 													if (confirm(`Ta bort punkten ”${item.title}”?`))
 														run(() =>
@@ -454,31 +466,59 @@ function unique(names: string[]) {
 
 const OTHER_PERSON = "__other";
 
-/** Whether anything has been recorded for the point yet. */
+/** Whether anything has been recorded for the point yet (flags aside). */
 function hasValue(v: ProtocolValue) {
-	return Object.keys(v).length > 0;
+	const { tabled: _t, followUp: _f, ...recorded } = v;
+	return Object.keys(recorded).length > 0;
 }
 
 /**
  * One protocol point. Shows what was recorded as text with an "Ändra"
  * button; shows the form when nothing is recorded yet or while editing.
+ * Matters to discuss can also be tabled or marked for follow-up, which
+ * brings them back on the next meeting's agenda.
  */
 function ProtocolItemForm({
 	item,
 	invited,
 	choosable,
 	onSave,
+	onCarryOver,
 	onDelete,
 }: {
 	item: ProtocolItem;
 	invited: string[];
 	choosable: string[];
 	onSave: (value: ProtocolValue) => Promise<boolean>;
+	onCarryOver: (flags: CarryOverFlags) => Promise<boolean>;
 	onDelete: () => void;
 }) {
 	const v = item.value;
 	const [editing, setEditing] = useState(false);
 	const showForm = editing || !hasValue(v);
+	const carriable = canCarryOver(item.type);
+
+	if (v.tabled)
+		return (
+			<fieldset>
+				<legend>{item.title}</legend>
+				{item.description && <MultilineText text={item.description} />}
+				<p>
+					<strong>Bordlagd</strong> – kommer med på dagordningen till nästa
+					möte.
+				</p>
+				<NotesEditor
+					idPrefix={item.id}
+					notes={v.notes}
+					onSave={(notes) => onSave({ ...v, notes })}
+				/>
+				<p>
+					<button type="button" onClick={() => onCarryOver({ tabled: false })}>
+						Ångra bordläggning
+					</button>
+				</p>
+			</fieldset>
+		);
 
 	return (
 		<fieldset>
@@ -503,13 +543,29 @@ function ProtocolItemForm({
 				/>
 			) : (
 				<>
-					<RecordedValue item={item} />
+					<RecordedValue item={item} showFollowUp={false} />
 					<p>
 						<button type="button" onClick={() => setEditing(true)}>
 							Ändra
 						</button>
 					</p>
 				</>
+			)}
+			{carriable && (
+				<p>
+					{/* Keyed on the saved state so it shows what the server has. */}
+					<input
+						key={String(!!v.followUp)}
+						id={`${item.id}-followup`}
+						type="checkbox"
+						defaultChecked={!!v.followUp}
+						onChange={(e) => onCarryOver({ followUp: e.currentTarget.checked })}
+					/>{" "}
+					<label htmlFor={`${item.id}-followup`}>Följ upp på nästa möte</label>{" "}
+					<button type="button" onClick={() => onCarryOver({ tabled: true })}>
+						Bordlägg
+					</button>
+				</p>
 			)}
 		</fieldset>
 	);
@@ -551,6 +607,7 @@ function ItemValueForm({
 	const showSave =
 		notesOpen ||
 		item.type === "decision" ||
+		item.type === "next_meeting" ||
 		(item.type === "person" && otherPerson);
 
 	function read(form: HTMLFormElement): ProtocolValue {
@@ -571,6 +628,7 @@ function ItemValueForm({
 			person:
 				picked === OTHER_PERSON ? String(f.get("personOther") ?? "") : picked,
 			decision: String(f.get("decision") ?? ""),
+			at: String(f.get("at") ?? ""),
 			notes: String(f.get("notes") ?? ""),
 		};
 	}
@@ -722,6 +780,19 @@ function ItemValueForm({
 						id={id("decision")}
 						name="decision"
 						defaultValue={v.decision}
+						required
+					/>
+				</p>
+			)}
+
+			{item.type === "next_meeting" && (
+				<p>
+					<label htmlFor={id("at")}>Datum och tid</label>
+					<input
+						id={id("at")}
+						name="at"
+						type="datetime-local"
+						defaultValue={v.at}
 						required
 					/>
 				</p>

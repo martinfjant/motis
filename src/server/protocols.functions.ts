@@ -89,6 +89,27 @@ export const saveItemValue = createServerFn({ method: "POST" })
 		);
 	});
 
+export const setCarryOver = createServerFn({ method: "POST" })
+	.validator((d: unknown) => {
+		const flag = (v: unknown) => (typeof v === "boolean" ? v : undefined);
+		return {
+			itemId: str(obj(d).itemId),
+			editSession: str(obj(d).editSession) || undefined,
+			tabled: flag(obj(d).tabled),
+			followUp: flag(obj(d).followUp),
+		};
+	})
+	.handler(async ({ data }) => {
+		const { db, user, protocols } = await ctx();
+		await protocols.setCarryOver(
+			db,
+			user.id,
+			data.itemId,
+			{ tabled: data.tabled, followUp: data.followUp },
+			data.editSession,
+		);
+	});
+
 export const closeProtocol = createServerFn({ method: "POST" })
 	.validator((d: unknown) => ({ protocolId: str(obj(d).protocolId) }))
 	.handler(async ({ data }) => {

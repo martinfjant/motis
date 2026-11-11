@@ -40,3 +40,28 @@ export function formatInstant(iso: string): string {
 		STOCKHOLM.formatToParts(date).find((p) => p.type === type)?.value ?? "";
 	return `${part("day")}-${part("month")}-${part("year")} ${part("hour")}:${part("minute")}`;
 }
+
+/** The current time in Sweden as "YYYY-MM-DDTHH:MM", wherever this runs. */
+export function stockholmStamp(date: Date): string {
+	const part = (type: Intl.DateTimeFormatPartTypes) =>
+		STOCKHOLM.formatToParts(date).find((p) => p.type === type)?.value ?? "";
+	return `${part("year")}-${part("month")}-${part("day")}T${part("hour")}:${part("minute")}`;
+}
+
+/** Whole days from one "YYYY-MM-DD…" date to another. */
+export function daysBetween(from: string, to: string): number {
+	const utc = (v: string) =>
+		Date.UTC(
+			Number(v.slice(0, 4)),
+			Number(v.slice(5, 7)) - 1,
+			Number(v.slice(8, 10)),
+		);
+	return Math.round((utc(to) - utc(from)) / 86_400_000);
+}
+
+/** "idag", "imorgon", "om 5 dagar" — for a meeting this many days away. */
+export function daysUntilText(days: number): string {
+	if (days <= 0) return "idag";
+	if (days === 1) return "imorgon";
+	return `om ${days} dagar`;
+}
