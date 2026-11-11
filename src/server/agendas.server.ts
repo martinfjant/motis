@@ -8,19 +8,32 @@ export type Template = { id: string; boardId: string; name: string };
 export type Agenda = {
 	id: string;
 	boardId: string;
-	slug: string;
+	shareId: string;
 	title: string;
 	meetingAt: string;
 	location: string;
 };
 
-export type ItemKind = "template" | "agenda";
+export const newShareId = () => randomBytes(18).toString("base64url");
+
+export type ItemKind = "template" | "agenda" | "protocol";
 
 // Fixed table names per kind; never built from user input.
 const TABLES = {
 	template: { parent: "templates", items: "template_items", fk: "template_id" },
 	agenda: { parent: "agendas", items: "agenda_items", fk: "agenda_id" },
+	protocol: {
+		parent: "protocols",
+		items: "protocol_items",
+		fk: "protocol_id",
+	},
 } as const;
+
+const MISSING: Record<ItemKind, string> = {
+	template: "Mallen finns inte.",
+	agenda: "Dagordningen finns inte.",
+	protocol: "Protokollet finns inte.",
+};
 
 const toTemplate = (r: Row): Template => ({
 	id: String(r.id),
@@ -31,7 +44,7 @@ const toTemplate = (r: Row): Template => ({
 const toAgenda = (r: Row): Agenda => ({
 	id: String(r.id),
 	boardId: String(r.board_id),
-	slug: String(r.slug),
+	shareId: String(r.share_id),
 	title: String(r.title),
 	meetingAt: String(r.meeting_at),
 	location: String(r.location),
@@ -54,30 +67,30 @@ function toItem(r: Row): Item {
 	};
 }
 
-function cleanNames(names: string[]): string[] {
+export function cleanNames(names: string[]): string[] {
 	return [...new Set(names.map((n) => n.trim()).filter(Boolean))];
 }
 
-function configJson(type: ItemType, extraNames: string[]) {
+export function configJson(type: ItemType, extraNames: string[]) {
 	return type === "attendance"
 		? JSON.stringify({ extraNames: cleanNames(extraNames) })
 		: "{}";
 }
 
-function requireTitle(input: string, message: string) {
+export function requireTitle(input: string, message: string) {
 	const title = input.trim();
 	if (!title) throw new BoardError(message);
 	return title;
 }
 
 const MEETING_AT = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/;
-function cleanMeetingAt(input: string) {
+export function cleanMeetingAt(input: string) {
 	const v = input.trim();
 	if (v && !MEETING_AT.test(v)) throw new BoardError("Ogiltigt datum.");
 	return v;
 }
 
-async function listItems(db: Client, kind: ItemKind, parentId: string) {
+export async function listItems(db: Client, kind: ItemKind, parentId: string) {
 	const t = TABLES[kind];
 	const res = await db.execute({
 		sql: `SELECT * FROM ${t.items} WHERE ${t.fk} = ? ORDER BY position, id`,
@@ -87,7 +100,7 @@ async function listItems(db: Client, kind: ItemKind, parentId: string) {
 }
 
 /** Loads a template or agenda row and checks that the user is on its board. */
-async function requireParent(
+export async function requireParent(
 	db: Client,
 	userId: string,
 	kind: ItemKind,
@@ -98,8 +111,7 @@ async function requireParent(
 		args: [parentId],
 	});
 	const row = res.rows[0];
-	const missing =
-		kind === "template" ? "Mallen finns inte." : "Dagordningen finns inte.";
+	const missing = MISSING[kind];
 	if (!row) throw new BoardError(missing);
 	const board = await requireMember(db, userId, String(row.board_id)).catch(
 		() => {
@@ -109,7 +121,7 @@ async function requireParent(
 	return { row, board };
 }
 
-async function requireItem(
+export async function requireItem(
 	db: Client,
 	userId: string,
 	kind: ItemKind,
@@ -248,7 +260,7 @@ export async function createAgenda(
 	const agenda: Agenda = {
 		id: randomUUID(),
 		boardId,
-		slug: newSlug(),
+		shareId: newShareId(),
 		title: requireTitle(input.title, "Ange en rubrik för mötet."),
 		meetingAt: cleanMeetingAt(input.meetingAt),
 		location: input.location.trim(),
@@ -264,12 +276,12 @@ export async function createAgenda(
 
 	const statements: InStatement[] = [
 		{
-			sql: `INSERT INTO agendas (id, board_id, slug, title, meeting_at, location, created_by)
+			sql: `INSERT INTO agendas (id, board_id, share_id, title, meeting_at, location, created_by)
             VALUES (?, ?, ?, ?, ?, ?, ?)`,
 			args: [
 				agenda.id,
 				boardId,
-				agenda.slug,
+				agenda.shareId,
 				agenda.title,
 				agenda.meetingAt,
 				agenda.location,
@@ -296,10 +308,15 @@ export async function createAgenda(
 
 export async function getAgenda(db: Client, userId: string, agendaId: string) {
 	const { row, board } = await requireParent(db, userId, "agenda", agendaId);
+	const protocol = await db.execute({
+		sql: "SELECT id FROM protocols WHERE agenda_id = ?",
+		args: [agendaId],
+	});
 	return {
 		board,
 		agenda: toAgenda(row),
 		items: await listItems(db, "agenda", agendaId),
+		protocolId: protocol.rows[0] ? String(protocol.rows[0].id) : null,
 	};
 }
 
@@ -431,15 +448,13 @@ export async function deleteItem(
 
 // ---------- Public sharing ----------
 
-const newSlug = () => randomBytes(18).toString("base64url");
-
 /** Anyone with the link may read the agenda; no account needed. */
-export async function getPublicAgenda(db: Client, slug: string) {
-	if (!slug) return null;
+export async function getPublicAgenda(db: Client, shareId: string) {
+	if (!shareId) return null;
 	const res = await db.execute({
 		sql: `SELECT a.*, b.name AS board_name FROM agendas a
-          JOIN boards b ON b.id = a.board_id WHERE a.slug = ?`,
-		args: [slug],
+          JOIN boards b ON b.id = a.board_id WHERE a.share_id = ?`,
+		args: [shareId],
 	});
 	const row = res.rows[0];
 	if (!row) return null;
@@ -457,16 +472,16 @@ export async function getPublicAgenda(db: Client, slug: string) {
 }
 
 /** Replaces the share link, so the old one stops working. */
-export async function regenerateSlug(
+export async function regenerateShareId(
 	db: Client,
 	userId: string,
 	agendaId: string,
 ) {
 	await requireParent(db, userId, "agenda", agendaId);
-	const slug = newSlug();
+	const shareId = newShareId();
 	await db.execute({
-		sql: "UPDATE agendas SET slug = ? WHERE id = ?",
-		args: [slug, agendaId],
+		sql: "UPDATE agendas SET share_id = ? WHERE id = ?",
+		args: [shareId, agendaId],
 	});
-	return slug;
+	return shareId;
 }

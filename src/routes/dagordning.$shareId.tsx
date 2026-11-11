@@ -5,9 +5,9 @@ import { getPublicAgenda } from "#/server/agendas.functions";
 
 // Public, read-only agenda. Anyone with the link can see it, so it only
 // exposes the board name, meeting details and the points.
-export const Route = createFileRoute("/dagordning/$slug")({
+export const Route = createFileRoute("/dagordning/$shareId")({
 	loader: async ({ params }) => {
-		const data = await getPublicAgenda({ data: { slug: params.slug } });
+		const data = await getPublicAgenda({ data: { shareId: params.shareId } });
 		if (!data) throw notFound();
 		return data;
 	},

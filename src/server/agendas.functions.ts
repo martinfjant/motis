@@ -3,14 +3,15 @@ import { createServerFn } from "@tanstack/react-start";
 const str = (v: unknown) => (typeof v === "string" ? v : "");
 const obj = (d: unknown) => (d ?? {}) as Record<string, unknown>;
 const strList = (v: unknown) => (Array.isArray(v) ? v.map(str) : []);
-const kind = (v: unknown): "agenda" | "template" =>
-	v === "agenda" ? "agenda" : "template";
+const kind = (v: unknown): "agenda" | "template" | "protocol" =>
+	v === "agenda" || v === "protocol" ? v : "template";
 
 async function ctx() {
 	const { requireUser } = await import("./session.server");
 	const agendas = await import("./agendas.server");
 	const boards = await import("./boards.server");
-	return { ...(await requireUser()), agendas, boards };
+	const protocols = await import("./protocols.server");
+	return { ...(await requireUser()), agendas, boards, protocols };
 }
 
 /** Lets loaders turn "not found / not a member" into a 404 instead of an error. */
@@ -27,12 +28,13 @@ async function orNull<T>(p: Promise<T>): Promise<T | null> {
 export const getBoardOverview = createServerFn({ method: "GET" })
 	.validator((d: unknown) => ({ boardId: str(obj(d).boardId) }))
 	.handler(async ({ data }) => {
-		const { db, user, agendas, boards } = await ctx();
+		const { db, user, agendas, boards, protocols } = await ctx();
 		const board = await boards.getBoard(db, user.id, data.boardId);
 		if (!board) return null;
 		return {
 			board,
 			agendas: await agendas.listAgendas(db, user.id, board.id),
+			protocols: await protocols.listProtocols(db, user.id, board.id),
 			templates: await agendas.listTemplates(db, user.id, board.id),
 		};
 	});
@@ -171,18 +173,18 @@ export const deleteItem = createServerFn({ method: "POST" })
 
 // ---------- Public sharing ----------
 
-/** No login required: the slug itself is the access token. */
+/** No login required: the share id itself is the access token. */
 export const getPublicAgenda = createServerFn({ method: "GET" })
-	.validator((d: unknown) => ({ slug: str(obj(d).slug) }))
+	.validator((d: unknown) => ({ shareId: str(obj(d).shareId) }))
 	.handler(async ({ data }) => {
 		const { getDb } = await import("./db");
 		const { getPublicAgenda } = await import("./agendas.server");
-		return getPublicAgenda(await getDb(), data.slug);
+		return getPublicAgenda(await getDb(), data.shareId);
 	});
 
-export const regenerateAgendaSlug = createServerFn({ method: "POST" })
+export const regenerateAgendaShareId = createServerFn({ method: "POST" })
 	.validator((d: unknown) => ({ agendaId: str(obj(d).agendaId) }))
 	.handler(async ({ data }) => {
 		const { db, user, agendas } = await ctx();
-		return agendas.regenerateSlug(db, user.id, data.agendaId);
+		return agendas.regenerateShareId(db, user.id, data.agendaId);
 	});

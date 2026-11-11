@@ -157,7 +157,13 @@ function ItemForm({
 	);
 }
 
-function ItemFields({ idPrefix, item }: { idPrefix: string; item?: Item }) {
+export function ItemFields({
+	idPrefix,
+	item,
+}: {
+	idPrefix: string;
+	item?: Item;
+}) {
 	const [type, setType] = useState<ItemType>(item?.type ?? "text");
 	const id = (name: string) => `${idPrefix}-${name}`;
 	return (

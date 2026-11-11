@@ -40,7 +40,7 @@ export const Route = createFileRoute("/styrelser/$boardId/")({
 });
 
 function Board() {
-	const { board, members, currentUserId, agendas, templates } =
+	const { board, members, currentUserId, agendas, protocols, templates } =
 		Route.useLoaderData();
 	const router = useRouter();
 	const isAdmin = board.role === "admin";
@@ -173,6 +173,34 @@ function Board() {
 					</p>
 					<button type="submit">Skapa dagordning</button>
 				</form>
+			</section>
+
+			<section aria-labelledby="protocols">
+				<h2 id="protocols">Protokoll</h2>
+				{protocols.length === 0 ? (
+					<p>Inga protokoll ännu. Skapa ett från en dagordning.</p>
+				) : (
+					<ul>
+						{protocols.map((p) => (
+							<li key={p.id}>
+								<Link
+									to="/styrelser/$boardId/protokoll/$protocolId"
+									params={{ boardId: board.id, protocolId: p.id }}
+								>
+									{p.title}
+								</Link>
+								{p.meetingAt && (
+									<>
+										{" "}
+										<time dateTime={p.meetingAt}>
+											{formatMeetingAt(p.meetingAt)}
+										</time>
+									</>
+								)}
+							</li>
+						))}
+					</ul>
+				)}
 			</section>
 
 			<section aria-labelledby="templates">

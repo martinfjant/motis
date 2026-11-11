@@ -12,7 +12,7 @@ import {
 	listAgendas,
 	listTemplates,
 	moveItem,
-	regenerateSlug,
+	regenerateShareId,
 	updateItem,
 } from "./agendas.server";
 import { createUser } from "./auth.server";
@@ -94,7 +94,7 @@ test("agenda copies template items, later template edits do not leak", async () 
 		templateId,
 		meetingAt: "2026-11-20T18:00",
 	});
-	expect(agenda.slug.length).toBeGreaterThanOrEqual(24);
+	expect(agenda.shareId.length).toBeGreaterThanOrEqual(24);
 	await addItem(db, anna, "template", templateId, item("Ny punkt"));
 	const { items } = await getAgenda(db, anna, agenda.id);
 	expect(items.map((i) => i.title)).toEqual(
@@ -165,14 +165,14 @@ test("an item id from an agenda cannot be edited as a template item", async () =
 	).rejects.toThrow(BoardError);
 });
 
-test("public agenda is readable by slug and exposes only safe fields", async () => {
+test("public agenda is readable by share id and exposes only safe fields", async () => {
 	const agenda = await createAgenda(db, anna, boardId, {
 		title: "Höstmöte",
 		meetingAt: "2026-11-20T18:00",
 		location: "Lokalen",
 		templateId,
 	});
-	const pub = await getPublicAgenda(db, agenda.slug);
+	const pub = await getPublicAgenda(db, agenda.shareId);
 	expect(pub?.boardName).toBe("BRF Björken");
 	expect(pub?.agenda).toEqual({
 		title: "Höstmöte",
@@ -189,11 +189,13 @@ test("public agenda is readable by slug and exposes only safe fields", async () 
 	expect(await getPublicAgenda(db, "nope")).toBeNull();
 });
 
-test("regenerating the slug revokes the old link, members only", async () => {
+test("regenerating the share id revokes the old link, members only", async () => {
 	const agenda = await createAgenda(db, anna, boardId, details);
-	await expect(regenerateSlug(db, bo, agenda.id)).rejects.toThrow(BoardError);
-	const slug = await regenerateSlug(db, anna, agenda.id);
-	expect(slug).not.toBe(agenda.slug);
-	expect(await getPublicAgenda(db, agenda.slug)).toBeNull();
-	expect(await getPublicAgenda(db, slug)).not.toBeNull();
+	await expect(regenerateShareId(db, bo, agenda.id)).rejects.toThrow(
+		BoardError,
+	);
+	const shareId = await regenerateShareId(db, anna, agenda.id);
+	expect(shareId).not.toBe(agenda.shareId);
+	expect(await getPublicAgenda(db, agenda.shareId)).toBeNull();
+	expect(await getPublicAgenda(db, shareId)).not.toBeNull();
 });

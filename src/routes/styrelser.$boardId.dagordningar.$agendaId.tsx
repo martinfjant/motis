@@ -6,12 +6,14 @@ import {
 } from "@tanstack/react-router";
 import { useState } from "react";
 import { ItemEditor } from "#/components/ItemEditor";
+import { MeetingForm } from "#/components/MeetingForm";
 import {
 	deleteAgenda,
 	getAgenda,
-	regenerateAgendaSlug,
+	regenerateAgendaShareId,
 	updateAgenda,
 } from "#/server/agendas.functions";
+import { createProtocol } from "#/server/protocols.functions";
 
 export const Route = createFileRoute(
 	"/styrelser/$boardId/dagordningar/$agendaId",
@@ -33,30 +35,15 @@ export const Route = createFileRoute(
 });
 
 function AgendaPage() {
-	const { board, agenda, items } = Route.useLoaderData();
+	const { board, agenda, items, protocolId } = Route.useLoaderData();
 	const router = useRouter();
-	const [error, setError] = useState<string | null>(null);
-	const [saved, setSaved] = useState(false);
 
-	async function onSave(e: React.FormEvent<HTMLFormElement>) {
-		e.preventDefault();
-		const f = new FormData(e.currentTarget);
-		setError(null);
-		setSaved(false);
-		try {
-			await updateAgenda({
-				data: {
-					agendaId: agenda.id,
-					title: String(f.get("title")),
-					meetingAt: String(f.get("meetingAt")),
-					location: String(f.get("location")),
-				},
-			});
-			await router.invalidate();
-			setSaved(true);
-		} catch (err) {
-			setError(err instanceof Error ? err.message : "Något gick fel.");
-		}
+	async function onStartProtocol() {
+		const protocol = await createProtocol({ data: { agendaId: agenda.id } });
+		await router.navigate({
+			to: "/styrelser/$boardId/protokoll/$protocolId",
+			params: { boardId: board.id, protocolId: protocol.id },
+		});
 	}
 
 	async function onDelete() {
@@ -78,42 +65,39 @@ function AgendaPage() {
 			</nav>
 			<h1>Dagordning: {agenda.title}</h1>
 
-			<section aria-labelledby="meeting">
-				<h2 id="meeting">Mötet</h2>
-				<form onSubmit={onSave}>
+			<MeetingForm
+				initial={agenda}
+				onSave={async (details) => {
+					await updateAgenda({ data: { agendaId: agenda.id, ...details } });
+					await router.invalidate();
+				}}
+			/>
+
+			<section aria-labelledby="protocol">
+				<h2 id="protocol">Protokoll</h2>
+				{protocolId ? (
 					<p>
-						<label htmlFor="title">Rubrik</label>
-						<input
-							id="title"
-							name="title"
-							defaultValue={agenda.title}
-							required
-						/>
+						<Link
+							to="/styrelser/$boardId/protokoll/$protocolId"
+							params={{ boardId: board.id, protocolId }}
+						>
+							Öppna protokollet
+						</Link>
 					</p>
-					<p>
-						<label htmlFor="meetingAt">Datum och tid</label>
-						<input
-							id="meetingAt"
-							name="meetingAt"
-							type="datetime-local"
-							defaultValue={agenda.meetingAt}
-						/>
-					</p>
-					<p>
-						<label htmlFor="location">Plats</label>
-						<input
-							id="location"
-							name="location"
-							defaultValue={agenda.location}
-						/>
-					</p>
-					{error && <p role="alert">{error}</p>}
-					{saved && <output>Sparat.</output>}
-					<button type="submit">Spara</button>
-				</form>
+				) : (
+					<>
+						<p>
+							Protokollet skapas som en kopia av dagordningen. Dagordningen
+							finns kvar som den är.
+						</p>
+						<button type="button" onClick={onStartProtocol}>
+							Skapa protokoll
+						</button>
+					</>
+				)}
 			</section>
 
-			<ShareSection agendaId={agenda.id} slug={agenda.slug} />
+			<ShareSection agendaId={agenda.id} shareId={agenda.shareId} />
 
 			<ItemEditor kind="agenda" parentId={agenda.id} items={items} />
 
@@ -127,12 +111,18 @@ function AgendaPage() {
 	);
 }
 
-function ShareSection({ agendaId, slug }: { agendaId: string; slug: string }) {
+function ShareSection({
+	agendaId,
+	shareId,
+}: {
+	agendaId: string;
+	shareId: string;
+}) {
 	const router = useRouter();
 	const [status, setStatus] = useState<string | null>(null);
 
 	async function onCopy() {
-		const url = `${window.location.origin}/dagordning/${slug}`;
+		const url = `${window.location.origin}/dagordning/${shareId}`;
 		try {
 			await navigator.clipboard.writeText(url);
 			setStatus("Länken är kopierad.");
@@ -148,7 +138,7 @@ function ShareSection({ agendaId, slug }: { agendaId: string; slug: string }) {
 			)
 		)
 			return;
-		await regenerateAgendaSlug({ data: { agendaId } });
+		await regenerateAgendaShareId({ data: { agendaId } });
 		await router.invalidate();
 		setStatus("En ny länk har skapats. Den gamla fungerar inte längre.");
 	}
@@ -158,7 +148,7 @@ function ShareSection({ agendaId, slug }: { agendaId: string; slug: string }) {
 			<h2 id="share">Dela</h2>
 			<p>Alla som har länken kan läsa dagordningen, utan att logga in.</p>
 			<p>
-				<Link to="/dagordning/$slug" params={{ slug }}>
+				<Link to="/dagordning/$shareId" params={{ shareId }}>
 					Visa den delade dagordningen
 				</Link>
 			</p>

@@ -30,3 +30,19 @@ export type Item = {
 export function isItemType(v: unknown): v is ItemType {
 	return (ITEM_TYPES as readonly unknown[]).includes(v);
 }
+
+/** What was recorded for a point at the meeting. Which fields apply depends on the type. */
+export type ProtocolValue = {
+	/** toggle: e.g. the meeting was opened, the agenda was approved. */
+	done?: boolean;
+	/** attendance: names of everyone present (snapshot, not account ids). */
+	present?: string[];
+	/** person: the chosen person's name. */
+	person?: string;
+	/** decision: the decision as it should read in the minutes. */
+	decision?: string;
+	/** All types: free-form minutes for the point. */
+	notes?: string;
+};
+
+export type ProtocolItem = Item & { value: ProtocolValue };
