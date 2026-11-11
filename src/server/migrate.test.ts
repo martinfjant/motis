@@ -1,6 +1,6 @@
 import { createClient } from "@libsql/client";
 import { expect, test } from "vitest";
-import { migrate } from "./migrate";
+import { migrate, migrations } from "./migrate";
 
 test("migrations apply once and are idempotent", async () => {
 	const db = createClient({ url: ":memory:" });
@@ -11,5 +11,5 @@ test("migrations apply once and are idempotent", async () => {
 	);
 	expect(tables.rows).toHaveLength(1);
 	const applied = await db.execute("SELECT name FROM _migrations");
-	expect(applied.rows).toHaveLength(1);
+	expect(applied.rows).toHaveLength(migrations.length);
 });

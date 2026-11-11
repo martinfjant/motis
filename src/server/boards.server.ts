@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Client } from "@libsql/client";
+import { defaultTemplateStatements } from "./default-template";
 
 export type Role = "admin" | "member";
 export type Board = { id: string; name: string; role: Role };
@@ -30,6 +31,7 @@ export async function createBoard(
 				sql: "INSERT INTO board_memberships (board_id, user_id, role) VALUES (?, ?, 'admin')",
 				args: [id, userId],
 			},
+			...defaultTemplateStatements(id).statements,
 		],
 		"write",
 	);
@@ -88,7 +90,11 @@ export async function listMembers(
 	}));
 }
 
-async function requireMember(db: Client, userId: string, boardId: string) {
+export async function requireMember(
+	db: Client,
+	userId: string,
+	boardId: string,
+) {
 	const board = await getBoard(db, userId, boardId);
 	if (!board) throw new BoardError("Styrelsen finns inte.");
 	return board;
