@@ -819,7 +819,7 @@ function ItemValueForm({
 			{item.type === "decision" && (
 				<p>
 					<label htmlFor={id("decision")}>Beslut</label>
-					<textarea
+					<MentionTextarea
 						id={id("decision")}
 						name="decision"
 						defaultValue={v.decision}
