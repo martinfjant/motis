@@ -9,6 +9,7 @@ import { Breadcrumbs } from "#/components/Breadcrumbs";
 import { Button } from "#/components/Button";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Input, Select } from "#/components/Field";
+import { IconButton, PenIcon } from "#/components/IconButton";
 import { Notice } from "#/components/Notice";
 import { Section } from "#/components/Section";
 import { Cell, RowHeader, Table } from "#/components/Table";
@@ -332,10 +333,21 @@ function BackgroundSection({
 }
 
 // Row buttons, smaller than elsewhere so a row's actions fit side by side.
-// mt-0! undoes the flow spacing (main * + *) in styles.css, which would
-// otherwise push every button after the first down.
 const ACTIONS =
-	"flex flex-wrap items-center gap-y-1 [&_button]:px-2 [&_button]:py-0.5 [&_button]:text-sm [&_button]:whitespace-nowrap [&>*]:mt-0!";
+	"flex flex-wrap items-center gap-1 [&_button]:mr-0 [&_button]:px-2 [&_button]:py-0.5 [&_button]:text-sm [&_button]:whitespace-nowrap";
+
+/** An email address that may wrap after the @, but nowhere else. */
+function Email({ address }: { address: string }) {
+	const at = address.indexOf("@");
+	if (at === -1) return address;
+	return (
+		<>
+			{address.slice(0, at)}
+			<wbr />
+			{address.slice(at)}
+		</>
+	);
+}
 
 type Run = (
 	action: () => Promise<unknown>,
@@ -343,8 +355,9 @@ type Run = (
 ) => Promise<void>;
 
 /**
- * A member with an account. Their own title can be changed by them and by
- * admins, in the Titel cell; admins can also change roles and remove.
+ * A member with an account. Their title can be changed by them and by
+ * admins, and their role by admins, each with a pen next to it that opens
+ * the field in place.
  */
 function MemberRow({
 	boardId,
@@ -368,14 +381,16 @@ function MemberRow({
 	onLeave: () => void;
 }) {
 	const router = useRouter();
-	const [editing, setEditing] = useState(false);
+	const [editing, setEditing] = useState<"title" | "role" | null>(null);
 	const canEditTitle = isAdmin || isSelf;
+	const roleName = (role: string) =>
+		role === "admin" ? "Administratör" : "Ledamot";
 
 	return (
 		<tr>
 			<RowHeader>{member.name}</RowHeader>
 			<Cell>
-				{editing ? (
+				{editing === "title" ? (
 					<TitleForm
 						id={`title-${member.userId}`}
 						label={`Titel för ${member.name}`}
@@ -385,61 +400,86 @@ function MemberRow({
 								data: { boardId, userId: member.userId, title },
 							});
 							await router.invalidate();
-							setEditing(false);
+							setEditing(null);
 						}}
-						onCancel={() => setEditing(false)}
+						onCancel={() => setEditing(null)}
 					/>
 				) : (
-					member.title
+					<span className="inline-flex items-center gap-1">
+						{member.title}
+						{canEditTitle && (
+							<IconButton
+								label={`${member.title ? "Ändra" : "Lägg till"} titel för ${member.name}`}
+								icon={<PenIcon />}
+								onClick={() => setEditing("title")}
+							/>
+						)}
+					</span>
 				)}
 			</Cell>
-			<Cell className="text-sm whitespace-nowrap text-stone-600">
-				{member.email}
+			<Cell className="text-sm text-stone-600">
+				<Email address={member.email} />
 			</Cell>
 			<Cell>
-				<span
-					className={`rounded-full px-2 py-0.5 text-sm whitespace-nowrap ${
-						member.role === "admin"
-							? "bg-sky-100 text-sky-800"
-							: "bg-stone-100 text-stone-700"
-					}`}
-				>
-					{member.role === "admin" ? "Administratör" : "Ledamot"}
-				</span>
-			</Cell>
-			<Cell>
-				<div className={ACTIONS}>
-					{canEditTitle && !editing && (
-						<Button type="button" onClick={() => setEditing(true)}>
-							{member.title ? "Ändra titel" : "Lägg till titel"}
-						</Button>
-					)}
-					{isAdmin && (
-						<Button
-							type="button"
-							onClick={() =>
-								run(() =>
-									changeMemberRole({
-										data: {
-											boardId,
-											userId: member.userId,
-											role: member.role === "admin" ? "member" : "admin",
-										},
-									}),
-								)
-							}
+				{editing === "role" ? (
+					<span className="inline-flex items-center gap-1">
+						<label htmlFor={`role-${member.userId}`} className="sr-only">
+							Roll för {member.name}
+						</label>
+						{/* Choosing a role saves it straight away. */}
+						<select
+							id={`role-${member.userId}`}
+							defaultValue={member.role}
+							className="rounded-md border border-stone-400 px-1 text-sm"
+							onChange={(e) => {
+								const role = e.currentTarget.value;
+								run(
+									() =>
+										changeMemberRole({
+											data: { boardId, userId: member.userId, role },
+										}),
+									() => setEditing(null),
+								);
+							}}
 						>
-							{member.role === "admin"
-								? "Gör till ledamot"
-								: "Gör till administratör"}
-						</Button>
-					)}
-					{(isAdmin || isSelf) && (
+							<option value="member">{roleName("member")}</option>
+							<option value="admin">{roleName("admin")}</option>
+						</select>
+						<IconButton
+							label="Avbryt"
+							icon={<span aria-hidden="true">✕</span>}
+							onClick={() => setEditing(null)}
+						/>
+					</span>
+				) : (
+					<span className="inline-flex items-center gap-1">
+						<span
+							className={`rounded-full px-2 py-0.5 text-sm whitespace-nowrap ${
+								member.role === "admin"
+									? "bg-sky-100 text-sky-800"
+									: "bg-stone-100 text-stone-700"
+							}`}
+						>
+							{roleName(member.role)}
+						</span>
+						{isAdmin && (
+							<IconButton
+								label={`Ändra roll för ${member.name}`}
+								icon={<PenIcon />}
+								onClick={() => setEditing("role")}
+							/>
+						)}
+					</span>
+				)}
+			</Cell>
+			<Cell>
+				{(isAdmin || isSelf) && (
+					<div className={ACTIONS}>
 						<Button type="button" onClick={onLeave}>
 							{isSelf ? "Lämna styrelsen" : "Ta bort"}
 						</Button>
-					)}
-				</div>
+					</div>
+				)}
 			</Cell>
 		</tr>
 	);
@@ -563,8 +603,8 @@ function UnregisteredRow({
 				)}
 			</RowHeader>
 			<Cell>{member.title}</Cell>
-			<Cell className="text-sm whitespace-nowrap text-stone-600">
-				{member.email}
+			<Cell className="text-sm text-stone-600">
+				<Email address={member.email} />
 			</Cell>
 			{canEdit && (
 				<Cell>
