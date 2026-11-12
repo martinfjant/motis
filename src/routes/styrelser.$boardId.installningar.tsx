@@ -11,6 +11,7 @@ import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Input, Select } from "#/components/Field";
 import { Notice } from "#/components/Notice";
 import { Section } from "#/components/Section";
+import { Cell, RowHeader, Table } from "#/components/Table";
 import {
 	TITLE_LIST_ID,
 	TitleForm,
@@ -30,7 +31,6 @@ import {
 	updateUnregistered,
 } from "#/server/boards.functions";
 import type { UnregisteredMember } from "#/server/boards.server";
-import { personLabel } from "#/server/items";
 
 // Board settings: background, templates and members, kept off the overview so that
 // page can focus on agendas and protocols.
@@ -171,62 +171,49 @@ function Settings() {
 
 			<Section id="members" title="Ledamöter">
 				<TitleSuggestions />
-				<ul>
+				<Table
+					caption="Med konto"
+					columns={["Namn", "Titel", "E-postadress", "Roll", "Åtgärder"]}
+				>
 					{members.map((m) => (
-						<li key={m.userId}>
-							<MemberTitle
-								boardId={board.id}
-								member={m}
-								canEdit={isAdmin || m.userId === currentUserId}
-							/>{" "}
-							<span>{m.role === "admin" ? "Administratör" : "Ledamot"}</span>
-							{isAdmin && (
-								<Button
-									type="button"
-									onClick={() =>
-										run(() =>
-											changeMemberRole({
-												data: {
-													boardId: board.id,
-													userId: m.userId,
-													role: m.role === "admin" ? "member" : "admin",
-												},
-											}),
-										)
-									}
-								>
-									{m.role === "admin"
-										? "Gör till ledamot"
-										: "Gör till administratör"}
-								</Button>
-							)}
-							{(isAdmin || m.userId === currentUserId) && (
-								<Button type="button" onClick={() => onLeave(m.userId)}>
-									{m.userId === currentUserId ? "Lämna styrelsen" : "Ta bort"}
-								</Button>
-							)}
-						</li>
+						<MemberRow
+							key={m.userId}
+							boardId={board.id}
+							member={m}
+							isAdmin={isAdmin}
+							isSelf={m.userId === currentUserId}
+							run={run}
+							onLeave={() => onLeave(m.userId)}
+						/>
 					))}
-				</ul>
+				</Table>
 
 				{unregistered.length > 0 && (
 					<>
-						<h3>Utan konto</h3>
 						<p>
-							Kan väljas i närvaro och val i protokollen, men kan inte logga in.
+							Ledamöter utan konto kan väljas i närvaro och val i protokollen,
+							men kan inte logga in.
 						</p>
-						<ul>
+						<Table
+							caption="Utan konto"
+							columns={[
+								"Namn",
+								"Titel",
+								"E-postadress",
+								"Konto",
+								...(isAdmin ? ["Åtgärder"] : []),
+							]}
+						>
 							{unregistered.map((m) => (
-								<li key={m.id}>
-									<UnregisteredRow
-										boardId={board.id}
-										member={m}
-										canEdit={isAdmin}
-										run={run}
-									/>
-								</li>
+								<UnregisteredRow
+									key={m.id}
+									boardId={board.id}
+									member={m}
+									canEdit={isAdmin}
+									run={run}
+								/>
 							))}
-						</ul>
+						</Table>
 					</>
 				)}
 			</Section>
@@ -345,48 +332,97 @@ function BackgroundSection({
 	);
 }
 
-/** A member as "Namn (Titel)", with a way to change the title if allowed. */
-function MemberTitle({
+type Run = (
+	action: () => Promise<unknown>,
+	after?: () => void,
+) => Promise<void>;
+
+/**
+ * A member with an account. Their own title can be changed by them and by
+ * admins, in the Titel cell; admins can also change roles and remove.
+ */
+function MemberRow({
 	boardId,
 	member,
-	canEdit,
+	isAdmin,
+	isSelf,
+	run,
+	onLeave,
 }: {
 	boardId: string;
-	member: { userId: string; name: string; email: string; title: string };
-	canEdit: boolean;
+	member: {
+		userId: string;
+		name: string;
+		email: string;
+		title: string;
+		role: string;
+	};
+	isAdmin: boolean;
+	isSelf: boolean;
+	run: Run;
+	onLeave: () => void;
 }) {
 	const router = useRouter();
 	const [editing, setEditing] = useState(false);
-
-	if (editing)
-		return (
-			<TitleForm
-				id={`title-${member.userId}`}
-				label={`Titel för ${member.name}`}
-				title={member.title}
-				onSave={async (title) => {
-					await setMemberTitle({
-						data: { boardId, userId: member.userId, title },
-					});
-					await router.invalidate();
-					setEditing(false);
-				}}
-				onCancel={() => setEditing(false)}
-			/>
-		);
+	const canEditTitle = isAdmin || isSelf;
 
 	return (
-		<span>
-			{personLabel(member.name, member.title)} <small>{member.email}</small>
-			{canEdit && (
-				<>
-					{" "}
+		<tr>
+			<RowHeader>{member.name}</RowHeader>
+			<Cell>
+				{editing ? (
+					<TitleForm
+						id={`title-${member.userId}`}
+						label={`Titel för ${member.name}`}
+						title={member.title}
+						onSave={async (title) => {
+							await setMemberTitle({
+								data: { boardId, userId: member.userId, title },
+							});
+							await router.invalidate();
+							setEditing(false);
+						}}
+						onCancel={() => setEditing(false)}
+					/>
+				) : (
+					member.title
+				)}
+			</Cell>
+			<Cell>{member.email}</Cell>
+			<Cell>{member.role === "admin" ? "Administratör" : "Ledamot"}</Cell>
+			<Cell>
+				{canEditTitle && !editing && (
 					<Button type="button" onClick={() => setEditing(true)}>
 						{member.title ? "Ändra titel" : "Lägg till titel"}
 					</Button>
-				</>
-			)}
-		</span>
+				)}
+				{isAdmin && (
+					<Button
+						type="button"
+						onClick={() =>
+							run(() =>
+								changeMemberRole({
+									data: {
+										boardId,
+										userId: member.userId,
+										role: member.role === "admin" ? "member" : "admin",
+									},
+								}),
+							)
+						}
+					>
+						{member.role === "admin"
+							? "Gör till ledamot"
+							: "Gör till administratör"}
+					</Button>
+				)}
+				{(isAdmin || isSelf) && (
+					<Button type="button" onClick={onLeave}>
+						{isSelf ? "Lämna styrelsen" : "Ta bort"}
+					</Button>
+				)}
+			</Cell>
+		</tr>
 	);
 }
 
@@ -459,71 +495,66 @@ function UnregisteredRow({
 	boardId: string;
 	member: UnregisteredMember;
 	canEdit: boolean;
-	run: (action: () => Promise<unknown>, after?: () => void) => Promise<void>;
+	run: Run;
 }) {
 	const [editing, setEditing] = useState(false);
 	const ref = { boardId, id: member.id };
 
+	// A form can't span table cells, so while editing the row is one wide
+	// cell holding the form.
 	if (editing)
 		return (
-			<form
-				onSubmit={(e) => {
-					e.preventDefault();
-					const person = readPerson(e.currentTarget);
-					run(
-						() => updateUnregistered({ data: { ...ref, ...person } }),
-						() => setEditing(false),
-					);
-				}}
-			>
-				<PersonFields idPrefix={member.id} nameRequired person={member} />
-				<p>
-					<Button type="submit">Spara</Button>{" "}
-					<Button type="button" onClick={() => setEditing(false)}>
-						Avbryt
-					</Button>
-				</p>
-			</form>
+			<tr>
+				<Cell colSpan={5}>
+					<form
+						aria-label={`Ändra ${member.name}`}
+						onSubmit={(e) => {
+							e.preventDefault();
+							const person = readPerson(e.currentTarget);
+							run(
+								() => updateUnregistered({ data: { ...ref, ...person } }),
+								() => setEditing(false),
+							);
+						}}
+					>
+						<PersonFields idPrefix={member.id} nameRequired person={member} />
+						<p>
+							<Button type="submit">Spara</Button>
+							<Button type="button" onClick={() => setEditing(false)}>
+								Avbryt
+							</Button>
+						</p>
+					</form>
+				</Cell>
+			</tr>
 		);
 
 	return (
-		<>
-			{personLabel(member.name, member.title)}
-			{member.email && (
-				<>
-					{" "}
-					<small>{member.email}</small>
-				</>
-			)}
-			{member.hasAccount && (
-				<>
-					{" "}
-					<strong>Har nu ett konto.</strong>
-				</>
-			)}
+		<tr>
+			<RowHeader>{member.name}</RowHeader>
+			<Cell>{member.title}</Cell>
+			<Cell>{member.email}</Cell>
+			<Cell>{member.hasAccount ? "Har nu ett konto" : "Inget konto"}</Cell>
 			{canEdit && (
-				<>
+				<Cell>
 					{member.hasAccount && (
-						<>
-							{" "}
-							<Button
-								type="button"
-								onClick={() => {
-									if (
-										confirm(
-											`Gör ${member.name} till registrerad ledamot? Kontot med ${member.email} får då tillgång till styrelsen.`,
-										)
+						<Button
+							type="button"
+							onClick={() => {
+								if (
+									confirm(
+										`Gör ${member.name} till registrerad ledamot? Kontot med ${member.email} får då tillgång till styrelsen.`,
 									)
-										run(() => linkUnregistered({ data: ref }));
-								}}
-							>
-								Gör till registrerad ledamot
-							</Button>
-						</>
-					)}{" "}
+								)
+									run(() => linkUnregistered({ data: ref }));
+							}}
+						>
+							Gör till registrerad ledamot
+						</Button>
+					)}
 					<Button type="button" onClick={() => setEditing(true)}>
 						Ändra
-					</Button>{" "}
+					</Button>
 					<Button
 						type="button"
 						onClick={() => {
@@ -533,8 +564,8 @@ function UnregisteredRow({
 					>
 						Ta bort
 					</Button>
-				</>
+				</Cell>
 			)}
-		</>
+		</tr>
 	);
 }
