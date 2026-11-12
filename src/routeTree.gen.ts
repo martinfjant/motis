@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as KontoRouteImport } from './routes/konto'
 import { Route as LoggaInRouteImport } from './routes/logga-in'
 import { Route as RegistreraRouteImport } from './routes/registrera'
+import { Route as UtkorgRouteImport } from './routes/utkorg'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as DagordningShareIdRouteImport } from './routes/dagordning.$shareId'
 import { Route as ProtokollShareIdRouteImport } from './routes/protokoll.$shareId'
@@ -41,6 +42,11 @@ const LoggaInRoute = LoggaInRouteImport.update({
 const RegistreraRoute = RegistreraRouteImport.update({
   id: '/registrera',
   path: '/registrera',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UtkorgRoute = UtkorgRouteImport.update({
+  id: '/utkorg',
+  path: '/utkorg',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiHealthRoute = ApiHealthRouteImport.update({
@@ -98,6 +104,7 @@ export interface FileRoutesByFullPath {
   '/konto': typeof KontoRoute
   '/logga-in': typeof LoggaInRoute
   '/registrera': typeof RegistreraRoute
+  '/utkorg': typeof UtkorgRoute
   '/api/health': typeof ApiHealthRoute
   '/dagordning/$shareId': typeof DagordningShareIdRoute
   '/protokoll/$shareId': typeof ProtokollShareIdRoute
@@ -113,6 +120,7 @@ export interface FileRoutesByTo {
   '/konto': typeof KontoRoute
   '/logga-in': typeof LoggaInRoute
   '/registrera': typeof RegistreraRoute
+  '/utkorg': typeof UtkorgRoute
   '/api/health': typeof ApiHealthRoute
   '/dagordning/$shareId': typeof DagordningShareIdRoute
   '/protokoll/$shareId': typeof ProtokollShareIdRoute
@@ -128,6 +136,7 @@ export interface FileRoutesById {
   '/konto': typeof KontoRoute
   '/logga-in': typeof LoggaInRoute
   '/registrera': typeof RegistreraRoute
+  '/utkorg': typeof UtkorgRoute
   '/api/health': typeof ApiHealthRoute
   '/dagordning/$shareId': typeof DagordningShareIdRoute
   '/protokoll/$shareId': typeof ProtokollShareIdRoute
@@ -145,6 +154,7 @@ export interface FileRouteTypes {
     | '/konto'
     | '/logga-in'
     | '/registrera'
+    | '/utkorg'
     | '/api/health'
     | '/dagordning/$shareId'
     | '/protokoll/$shareId'
@@ -160,6 +170,7 @@ export interface FileRouteTypes {
     | '/konto'
     | '/logga-in'
     | '/registrera'
+    | '/utkorg'
     | '/api/health'
     | '/dagordning/$shareId'
     | '/protokoll/$shareId'
@@ -174,6 +185,7 @@ export interface FileRouteTypes {
     | '/konto'
     | '/logga-in'
     | '/registrera'
+    | '/utkorg'
     | '/api/health'
     | '/dagordning/$shareId'
     | '/protokoll/$shareId'
@@ -190,6 +202,7 @@ export interface RootRouteChildren {
   KontoRoute: typeof KontoRoute
   LoggaInRoute: typeof LoggaInRoute
   RegistreraRoute: typeof RegistreraRoute
+  UtkorgRoute: typeof UtkorgRoute
   ApiHealthRoute: typeof ApiHealthRoute
   DagordningShareIdRoute: typeof DagordningShareIdRoute
   ProtokollShareIdRoute: typeof ProtokollShareIdRoute
@@ -224,6 +237,13 @@ declare module '@tanstack/react-router' {
       path: '/registrera'
       fullPath: '/registrera'
       preLoaderRoute: typeof RegistreraRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/utkorg': {
+      id: '/utkorg'
+      path: '/utkorg'
+      fullPath: '/utkorg'
+      preLoaderRoute: typeof UtkorgRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/health': {
@@ -318,6 +338,7 @@ const rootRouteChildren: RootRouteChildren = {
   KontoRoute: KontoRoute,
   LoggaInRoute: LoggaInRoute,
   RegistreraRoute: RegistreraRoute,
+  UtkorgRoute: UtkorgRoute,
   ApiHealthRoute: ApiHealthRoute,
   DagordningShareIdRoute: DagordningShareIdRoute,
   ProtokollShareIdRoute: ProtokollShareIdRoute,
