@@ -22,6 +22,7 @@ import {
 	decideReview,
 	getReviewPage,
 	getReviewRound,
+	isJusterat,
 	sendForReview,
 } from "./reviews.server";
 
@@ -198,6 +199,7 @@ test("justering round trip: decline, edit, send again, approve", async () => {
 	expect(await getReviewRound(db, protocolId)).toMatchObject({
 		state: "declined",
 	});
+	expect(await isJusterat(db, protocolId)).toBe(false);
 	const [declined] = await listOutbox(db);
 	expect(declined).toMatchObject({
 		to: "bo@example.se",
@@ -253,6 +255,17 @@ test("justering round trip: decline, edit, send again, approve", async () => {
 	expect(justerat).toMatchObject({ to: "anna@example.se" });
 	expect(justerat.text).toContain("är justerat av anna och Dora");
 	await refused(sendForReview(db, anna, protocolId), /redan justerat/);
+	expect(await isJusterat(db, protocolId)).toBe(true);
+
+	// Any change afterwards means it is no longer justerat.
+	await saveItemValue(
+		db,
+		anna,
+		itemId("Ekonomi"),
+		{ done: true, notes: "Ändrat efter justeringen." },
+		randomUUID(),
+	);
+	expect(await isJusterat(db, protocolId)).toBe(false);
 });
 
 test("a protocol changed after sending can't be answered until sent again", async () => {

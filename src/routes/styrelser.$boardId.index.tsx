@@ -11,6 +11,7 @@ import { Checkbox } from "#/components/Choice";
 import { Dialog } from "#/components/Dialog";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Input, Select } from "#/components/Field";
+import { LockIcon } from "#/components/IconButton";
 import { MeetingItem, MeetingList } from "#/components/MeetingList";
 import { Section } from "#/components/Section";
 import { cannotStart, daysBetween, START_ANY_DAY } from "#/meeting-time";
@@ -165,12 +166,20 @@ function Board() {
 							<MeetingItem
 								key={p.id}
 								title={
-									<Link
-										to="/styrelser/$boardId/protokoll/$protocolId"
-										params={{ boardId: board.id, protocolId: p.id }}
-									>
-										{p.title}
-									</Link>
+									<>
+										<Link
+											to="/styrelser/$boardId/protokoll/$protocolId"
+											params={{ boardId: board.id, protocolId: p.id }}
+										>
+											{p.title}
+										</Link>
+										{p.justerat && (
+											<>
+												{" "}
+												<JusteratMark />
+											</>
+										)}
+									</>
 								}
 								at={p.meetingAt}
 							/>
@@ -179,6 +188,16 @@ function Board() {
 				)}
 			</Section>
 		</main>
+	);
+}
+
+/** A padlock: the protocol is justerat. Says so to screen readers and on hover. */
+function JusteratMark() {
+	return (
+		<span title="Justerat" className="inline-flex align-middle text-stone-500">
+			<LockIcon />
+			<span className="sr-only">Justerat</span>
+		</span>
 	);
 }
 

@@ -106,6 +106,22 @@ export async function getReviewRound(
 	};
 }
 
+/**
+ * Justerat: everyone in the latest round approved, and the protocol is
+ * still exactly what they approved.
+ */
+export async function isJusterat(
+	db: Client,
+	protocolId: string,
+): Promise<boolean> {
+	const rows = await latestRound(db, protocolId);
+	if (rows.length === 0 || rows.some((r) => r.status !== "approved"))
+		return false;
+	return (
+		(await protocolFingerprint(db, protocolId)) === String(rows[0].content_hash)
+	);
+}
+
 /** The chosen justerare in the protocol, each once. */
 function chosenReviewers(items: ProtocolItem[]) {
 	const byMember = new Map<MemberRef, string>();

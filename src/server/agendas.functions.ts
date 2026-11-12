@@ -30,12 +30,21 @@ export const getBoardOverview = createServerFn({ method: "GET" })
 	.validator((d: unknown) => ({ boardId: str(obj(d).boardId) }))
 	.handler(async ({ data }) => {
 		const { db, user, agendas, boards, protocols, meetings } = await ctx();
+		const { isJusterat } = await import("./reviews.server");
 		const board = await boards.getBoard(db, user.id, data.boardId);
 		if (!board) return null;
 		return {
 			board,
 			agendas: await agendas.listAgendas(db, user.id, board.id),
-			protocols: await protocols.listProtocols(db, user.id, board.id),
+			protocols: await Promise.all(
+				(await protocols.listProtocols(db, user.id, board.id)).map(
+					async (p) => ({
+						...p,
+						/** Approved by every justerare, and unchanged since. */
+						justerat: !!p.closedAt && (await isJusterat(db, p.id)),
+					}),
+				),
+			),
 			templates: await agendas.listTemplates(db, user.id, board.id),
 			plan: await meetings.getMeetingPlan(db, user.id, board.id),
 			/** Today in Sweden, so "om 3 dagar" renders the same everywhere. */
