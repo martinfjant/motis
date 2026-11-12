@@ -24,6 +24,8 @@ import { Route as ProtokollShareIdRouteImport } from './routes/protokoll.$shareI
 import { Route as StyrelserBoardIdRouteImport } from './routes/styrelser.$boardId'
 import { Route as StyrelserBoardIdIndexRouteImport } from './routes/styrelser.$boardId.index'
 import { Route as StyrelserBoardIdInstallningarRouteImport } from './routes/styrelser.$boardId.installningar'
+import { Route as ApiDelatProtokollShareIdFormatRouteImport } from './routes/api/delat-protokoll.$shareId.$format'
+import { Route as ApiProtokollProtocolIdFormatRouteImport } from './routes/api/protokoll.$protocolId.$format'
 import { Route as StyrelserBoardIdDagordningarAgendaIdRouteImport } from './routes/styrelser.$boardId.dagordningar.$agendaId'
 import { Route as StyrelserBoardIdMallarTemplateIdRouteImport } from './routes/styrelser.$boardId.mallar.$templateId'
 import { Route as StyrelserBoardIdProtokollProtocolIdRouteImport } from './routes/styrelser.$boardId.protokoll.$protocolId'
@@ -104,6 +106,18 @@ const StyrelserBoardIdInstallningarRoute =
     path: '/installningar',
     getParentRoute: () => StyrelserBoardIdRoute,
   } as any)
+const ApiDelatProtokollShareIdFormatRoute =
+  ApiDelatProtokollShareIdFormatRouteImport.update({
+    id: '/api/delat-protokoll/$shareId/$format',
+    path: '/api/delat-protokoll/$shareId/$format',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiProtokollProtocolIdFormatRoute =
+  ApiProtokollProtocolIdFormatRouteImport.update({
+    id: '/api/protokoll/$protocolId/$format',
+    path: '/api/protokoll/$protocolId/$format',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const StyrelserBoardIdDagordningarAgendaIdRoute =
   StyrelserBoardIdDagordningarAgendaIdRouteImport.update({
     id: '/dagordningar/$agendaId',
@@ -139,6 +153,8 @@ export interface FileRoutesByFullPath {
   '/styrelser/$boardId': typeof StyrelserBoardIdRouteWithChildren
   '/styrelser/$boardId/installningar': typeof StyrelserBoardIdInstallningarRoute
   '/styrelser/$boardId/': typeof StyrelserBoardIdIndexRoute
+  '/api/delat-protokoll/$shareId/$format': typeof ApiDelatProtokollShareIdFormatRoute
+  '/api/protokoll/$protocolId/$format': typeof ApiProtokollProtocolIdFormatRoute
   '/styrelser/$boardId/dagordningar/$agendaId': typeof StyrelserBoardIdDagordningarAgendaIdRoute
   '/styrelser/$boardId/mallar/$templateId': typeof StyrelserBoardIdMallarTemplateIdRoute
   '/styrelser/$boardId/protokoll/$protocolId': typeof StyrelserBoardIdProtokollProtocolIdRoute
@@ -158,6 +174,8 @@ export interface FileRoutesByTo {
   '/protokoll/$shareId': typeof ProtokollShareIdRoute
   '/styrelser/$boardId/installningar': typeof StyrelserBoardIdInstallningarRoute
   '/styrelser/$boardId': typeof StyrelserBoardIdIndexRoute
+  '/api/delat-protokoll/$shareId/$format': typeof ApiDelatProtokollShareIdFormatRoute
+  '/api/protokoll/$protocolId/$format': typeof ApiProtokollProtocolIdFormatRoute
   '/styrelser/$boardId/dagordningar/$agendaId': typeof StyrelserBoardIdDagordningarAgendaIdRoute
   '/styrelser/$boardId/mallar/$templateId': typeof StyrelserBoardIdMallarTemplateIdRoute
   '/styrelser/$boardId/protokoll/$protocolId': typeof StyrelserBoardIdProtokollProtocolIdRoute
@@ -179,6 +197,8 @@ export interface FileRoutesById {
   '/styrelser/$boardId': typeof StyrelserBoardIdRouteWithChildren
   '/styrelser/$boardId/installningar': typeof StyrelserBoardIdInstallningarRoute
   '/styrelser/$boardId/': typeof StyrelserBoardIdIndexRoute
+  '/api/delat-protokoll/$shareId/$format': typeof ApiDelatProtokollShareIdFormatRoute
+  '/api/protokoll/$protocolId/$format': typeof ApiProtokollProtocolIdFormatRoute
   '/styrelser/$boardId/dagordningar/$agendaId': typeof StyrelserBoardIdDagordningarAgendaIdRoute
   '/styrelser/$boardId/mallar/$templateId': typeof StyrelserBoardIdMallarTemplateIdRoute
   '/styrelser/$boardId/protokoll/$protocolId': typeof StyrelserBoardIdProtokollProtocolIdRoute
@@ -201,6 +221,8 @@ export interface FileRouteTypes {
     | '/styrelser/$boardId'
     | '/styrelser/$boardId/installningar'
     | '/styrelser/$boardId/'
+    | '/api/delat-protokoll/$shareId/$format'
+    | '/api/protokoll/$protocolId/$format'
     | '/styrelser/$boardId/dagordningar/$agendaId'
     | '/styrelser/$boardId/mallar/$templateId'
     | '/styrelser/$boardId/protokoll/$protocolId'
@@ -220,6 +242,8 @@ export interface FileRouteTypes {
     | '/protokoll/$shareId'
     | '/styrelser/$boardId/installningar'
     | '/styrelser/$boardId'
+    | '/api/delat-protokoll/$shareId/$format'
+    | '/api/protokoll/$protocolId/$format'
     | '/styrelser/$boardId/dagordningar/$agendaId'
     | '/styrelser/$boardId/mallar/$templateId'
     | '/styrelser/$boardId/protokoll/$protocolId'
@@ -240,6 +264,8 @@ export interface FileRouteTypes {
     | '/styrelser/$boardId'
     | '/styrelser/$boardId/installningar'
     | '/styrelser/$boardId/'
+    | '/api/delat-protokoll/$shareId/$format'
+    | '/api/protokoll/$protocolId/$format'
     | '/styrelser/$boardId/dagordningar/$agendaId'
     | '/styrelser/$boardId/mallar/$templateId'
     | '/styrelser/$boardId/protokoll/$protocolId'
@@ -259,6 +285,8 @@ export interface RootRouteChildren {
   NyttLosenordTokenRoute: typeof NyttLosenordTokenRoute
   ProtokollShareIdRoute: typeof ProtokollShareIdRoute
   StyrelserBoardIdRoute: typeof StyrelserBoardIdRouteWithChildren
+  ApiDelatProtokollShareIdFormatRoute: typeof ApiDelatProtokollShareIdFormatRoute
+  ApiProtokollProtocolIdFormatRoute: typeof ApiProtokollProtocolIdFormatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -368,6 +396,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StyrelserBoardIdInstallningarRouteImport
       parentRoute: typeof StyrelserBoardIdRoute
     }
+    '/api/delat-protokoll/$shareId/$format': {
+      id: '/api/delat-protokoll/$shareId/$format'
+      path: '/api/delat-protokoll/$shareId/$format'
+      fullPath: '/api/delat-protokoll/$shareId/$format'
+      preLoaderRoute: typeof ApiDelatProtokollShareIdFormatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/protokoll/$protocolId/$format': {
+      id: '/api/protokoll/$protocolId/$format'
+      path: '/api/protokoll/$protocolId/$format'
+      fullPath: '/api/protokoll/$protocolId/$format'
+      preLoaderRoute: typeof ApiProtokollProtocolIdFormatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/styrelser/$boardId/dagordningar/$agendaId': {
       id: '/styrelser/$boardId/dagordningar/$agendaId'
       path: '/dagordningar/$agendaId'
@@ -427,6 +469,8 @@ const rootRouteChildren: RootRouteChildren = {
   NyttLosenordTokenRoute: NyttLosenordTokenRoute,
   ProtokollShareIdRoute: ProtokollShareIdRoute,
   StyrelserBoardIdRoute: StyrelserBoardIdRouteWithChildren,
+  ApiDelatProtokollShareIdFormatRoute: ApiDelatProtokollShareIdFormatRoute,
+  ApiProtokollProtocolIdFormatRoute: ApiProtokollProtocolIdFormatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -8,6 +8,7 @@ import { useState } from "react";
 import { MeetingDetails } from "#/components/AgendaView";
 import { Breadcrumbs } from "#/components/Breadcrumbs";
 import { Button } from "#/components/Button";
+import { DownloadSection } from "#/components/DownloadSection";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { ItemFields } from "#/components/ItemEditor";
 import { MeetingForm } from "#/components/MeetingForm";
@@ -66,6 +67,7 @@ function ProtocolPage() {
 		people,
 		edits,
 		review,
+		justering,
 	} = Route.useLoaderData();
 	const router = useRouter();
 	const [error, setError] = useState<string | null>(null);
@@ -222,7 +224,12 @@ function ProtocolPage() {
 								Redigera protokollet
 							</Button>
 						</p>
-						<ProtocolDisplay protocol={protocol} items={items} edits={edits} />
+						<ProtocolDisplay
+							protocol={protocol}
+							items={items}
+							edits={edits}
+							justering={justering}
+						/>
 						<ErrorMessage error={error} />
 						<ReviewSection
 							items={items}
@@ -232,6 +239,7 @@ function ProtocolPage() {
 								run(() => sendForReview({ data: { protocolId: protocol.id } }))
 							}
 						/>
+						<DownloadSection base={`/api/protokoll/${protocol.id}`} />
 						{share}
 					</>
 				) : (

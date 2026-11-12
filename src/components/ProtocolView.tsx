@@ -1,6 +1,6 @@
 import { MeetingDetails, MultilineText } from "#/components/AgendaView";
 import { Section } from "#/components/Section";
-import type { ProtocolEdit, ProtocolItem } from "#/server/items";
+import type { Justering, ProtocolEdit, ProtocolItem } from "#/server/items";
 import { Instant, MeetingTime } from "./DateTime";
 
 // Read-only protocol, shared by the closed protocol in the app and the public
@@ -17,15 +17,17 @@ export const MOMENT_TEXT = {
 	close: { button: "Avsluta mötet", done: "Mötet avslutades" },
 };
 
-/** A closed protocol, read-only. */
+/** A closed protocol, read-only, with its justering once justerat. */
 export function ProtocolDisplay({
 	protocol,
 	items,
 	edits,
+	justering = null,
 }: {
 	protocol: { meetingAt: string; location: string; closedAt: string | null };
 	items: RecordedItem[];
 	edits: ProtocolEdit[];
+	justering?: Justering | null;
 }) {
 	return (
 		<>
@@ -51,7 +53,41 @@ export function ProtocolDisplay({
 				)}
 			</Section>
 			<ProtocolHistory closedAt={protocol.closedAt} edits={edits} />
+			<JusteringSection justering={justering} />
 		</>
+	);
+}
+
+/** Who justerade the protocol, with their drawn signatures. */
+export function JusteringSection({
+	justering,
+}: {
+	justering: Justering | null;
+}) {
+	if (!justering) return null;
+	return (
+		<Section id="justering" title="Justering">
+			<p>Protokollet är justerat av:</p>
+			<ul>
+				{justering.reviewers.map((r) => (
+					<li key={r.name}>
+						<figure>
+							{r.signature && (
+								<img
+									src={r.signature}
+									alt={`Signatur: ${r.name}`}
+									className="h-16 w-auto"
+								/>
+							)}
+							<figcaption>
+								{r.name}, {r.signature ? "signerat" : "godkänt"}{" "}
+								<Instant at={r.approvedAt} />
+							</figcaption>
+						</figure>
+					</li>
+				))}
+			</ul>
+		</Section>
 	);
 }
 

@@ -101,6 +101,10 @@ async function links() {
 	);
 }
 
+/** A tiny real PNG, standing in for a drawn signature. */
+const SIGNATURE =
+	"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+
 const refused = (p: Promise<unknown>, message?: RegExp) =>
 	expect(p).rejects.toThrow(message ?? BoardError);
 
@@ -180,9 +184,14 @@ test("justering round trip: decline, edit, send again, approve", async () => {
 	await decideReview(db, first["anna@example.se"], {
 		approve: true,
 		comment: "",
+		signature: SIGNATURE,
 	});
 	await refused(
-		decideReview(db, first["anna@example.se"], { approve: true, comment: "" }),
+		decideReview(db, first["anna@example.se"], {
+			approve: true,
+			comment: "",
+			signature: SIGNATURE,
+		}),
 		/redan svarat/,
 	);
 	await refused(
@@ -230,7 +239,11 @@ test("justering round trip: decline, edit, send again, approve", async () => {
 		others: [],
 	});
 	await refused(
-		decideReview(db, first["dora@example.se"], { approve: true, comment: "" }),
+		decideReview(db, first["dora@example.se"], {
+			approve: true,
+			comment: "",
+			signature: SIGNATURE,
+		}),
 		/skickats på nytt/,
 	);
 
@@ -239,11 +252,13 @@ test("justering round trip: decline, edit, send again, approve", async () => {
 	await decideReview(db, second["dora@example.se"], {
 		approve: true,
 		comment: "ignoreras",
+		signature: SIGNATURE,
 	});
 	expect(await listOutbox(db)).toEqual([]);
 	await decideReview(db, second["anna@example.se"], {
 		approve: true,
 		comment: "",
+		signature: SIGNATURE,
 	});
 	const done = await getReviewRound(db, protocolId);
 	expect(done).toMatchObject({ round: 2, state: "approved", changed: false });
@@ -284,7 +299,11 @@ test("a protocol changed after sending can't be answered until sent again", asyn
 		changed: true,
 	});
 	await refused(
-		decideReview(db, sent["bo@example.se"], { approve: true, comment: "" }),
+		decideReview(db, sent["bo@example.se"], {
+			approve: true,
+			comment: "",
+			signature: SIGNATURE,
+		}),
 		/har ändrats/,
 	);
 });

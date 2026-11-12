@@ -28,6 +28,7 @@ export const decideReview = createServerFn({ method: "POST" })
 		token: str(obj(d).token),
 		approve: obj(d).approve === true,
 		comment: str(obj(d).comment),
+		signature: str(obj(d).signature),
 	}))
 	.handler(async ({ data }) => {
 		const { getDb } = await import("./db");

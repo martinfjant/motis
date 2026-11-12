@@ -176,6 +176,8 @@ export type Review = {
 	comment: string;
 	/** ISO 8601 UTC, or null while pending. */
 	decidedAt: string | null;
+	/** The drawn signature given when approving (PNG data URL), or null. */
+	signature: string | null;
 };
 
 /** The latest sending of a protocol for justering. */
@@ -191,4 +193,18 @@ export type ReviewRound = {
 	state: ReviewStatus;
 	/** The protocol has changed since it was sent, so the round no longer holds. */
 	changed: boolean;
+};
+
+/**
+ * A justerat protocol's justering: who approved it, when, and their drawn
+ * signatures. Shown with the protocol and in its downloads.
+ */
+export type Justering = {
+	reviewers: {
+		name: string;
+		/** ISO 8601 UTC. */
+		approvedAt: string;
+		/** PNG data URL, or null for approvals from before signatures. */
+		signature: string | null;
+	}[];
 };

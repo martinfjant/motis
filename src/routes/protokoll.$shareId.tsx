@@ -1,4 +1,5 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
+import { DownloadSection } from "#/components/DownloadSection";
 import { ProtocolDisplay } from "#/components/ProtocolView";
 import { getPublicProtocol } from "#/server/protocols.functions";
 
@@ -40,6 +41,7 @@ export const Route = createFileRoute("/protokoll/$shareId")({
 
 function PublicProtocol() {
 	const data = Route.useLoaderData();
+	const { shareId } = Route.useParams();
 
 	if (data.status === "open")
 		return (
@@ -64,8 +66,10 @@ function PublicProtocol() {
 					protocol={data.protocol}
 					items={data.items}
 					edits={data.edits}
+					justering={data.justering}
 				/>
 			</article>
+			<DownloadSection base={`/api/delat-protokoll/${shareId}`} />
 		</main>
 	);
 }

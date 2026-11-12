@@ -7,6 +7,7 @@ import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Textarea } from "#/components/Field";
 import { ProtocolDisplay } from "#/components/ProtocolView";
 import { Section } from "#/components/Section";
+import { SignatureField } from "#/components/SignatureField";
 import type { ReviewStatus } from "#/server/items";
 import { decideReview, getReviewPage } from "#/server/reviews.functions";
 
@@ -75,6 +76,7 @@ function ReviewPage() {
 					protocol={data.protocol}
 					items={data.items}
 					edits={data.edits}
+					justering={data.justering}
 				/>
 			</article>
 			<Section id="answer" title="Ditt svar">
@@ -137,45 +139,77 @@ function YourAnswer({
 function AnswerForm() {
 	const { token } = Route.useParams();
 	const router = useRouter();
-	const [declining, setDeclining] = useState(false);
+	const [mode, setMode] = useState<"choose" | "approve" | "decline">("choose");
+	const [signature, setSignature] = useState<string | null>(null);
+	const [pending, setPending] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
-	async function answer(approve: boolean, comment = "") {
+	async function answer(input: {
+		approve: boolean;
+		comment?: string;
+		signature?: string;
+	}) {
 		setError(null);
+		setPending(true);
 		try {
-			await decideReview({ data: { token, approve, comment } });
+			await decideReview({ data: { token, comment: "", ...input } });
 			await router.invalidate();
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Något gick fel.");
+		} finally {
+			setPending(false);
 		}
 	}
 
 	return (
 		<>
 			<ErrorMessage error={error} />
-			{!declining ? (
+			{mode === "choose" && (
 				<>
 					<p>
-						Stämmer protokollet med det som hände på mötet? Godkänn det, eller
-						avvisa det och skriv vad som behöver ändras.
+						Stämmer protokollet med det som hände på mötet? Godkänn det med din
+						signatur, eller avvisa det och skriv vad som behöver ändras.
 					</p>
 					<p>
-						<Button
-							onClick={() => {
-								if (confirm("Godkänna protokollet?")) answer(true);
-							}}
-						>
-							Godkänn protokollet
+						<Button onClick={() => setMode("approve")}>
+							Godkänn och signera…
 						</Button>
-						<Button onClick={() => setDeclining(true)}>Avvisa…</Button>
+						<Button onClick={() => setMode("decline")}>Avvisa…</Button>
 					</p>
 				</>
-			) : (
+			)}
+			{mode === "approve" && (
+				<form
+					onSubmit={(e) => {
+						e.preventDefault();
+						if (signature) answer({ approve: true, signature });
+					}}
+				>
+					<SignatureField
+						label="Rita din signatur med musen eller fingret. Genom att signera godkänner du protokollet."
+						onChange={setSignature}
+					/>
+					<p>
+						<Button type="submit" disabled={!signature || pending}>
+							Godkänn och signera
+						</Button>
+						<Button
+							onClick={() => {
+								setSignature(null);
+								setMode("choose");
+							}}
+						>
+							Avbryt
+						</Button>
+					</p>
+				</form>
+			)}
+			{mode === "decline" && (
 				<form
 					onSubmit={(e) => {
 						e.preventDefault();
 						const f = new FormData(e.currentTarget);
-						answer(false, String(f.get("comment") ?? ""));
+						answer({ approve: false, comment: String(f.get("comment") ?? "") });
 					}}
 				>
 					<Field
@@ -185,8 +219,10 @@ function AnswerForm() {
 						<Textarea name="comment" required autoFocus />
 					</Field>
 					<p>
-						<Button type="submit">Avvisa protokollet</Button>
-						<Button onClick={() => setDeclining(false)}>Avbryt</Button>
+						<Button type="submit" disabled={pending}>
+							Avvisa protokollet
+						</Button>
+						<Button onClick={() => setMode("choose")}>Avbryt</Button>
 					</p>
 				</form>
 			)}

@@ -29,7 +29,7 @@ export const getProtocol = createServerFn({ method: "GET" })
 	.handler(async ({ data }) => {
 		const { db, user, protocols } = await ctx();
 		const { BoardError } = await import("./boards.server");
-		const { getReviewRound } = await import("./reviews.server");
+		const { getJustering, getReviewRound } = await import("./reviews.server");
 		try {
 			const protocol = await protocols.getProtocol(
 				db,
@@ -38,7 +38,9 @@ export const getProtocol = createServerFn({ method: "GET" })
 			);
 			/** The latest sending for justering, or null. */
 			const review = await getReviewRound(db, data.protocolId);
-			return { ...protocol, review };
+			/** Who justerade it, with signatures, once justerat. */
+			const justering = await getJustering(db, data.protocolId);
+			return { ...protocol, review, justering };
 		} catch (err) {
 			if (err instanceof BoardError) return null;
 			throw err;
@@ -139,7 +141,18 @@ export const getPublicProtocol = createServerFn({ method: "GET" })
 	.handler(async ({ data }) => {
 		const { getDb } = await import("./db");
 		const { getPublicProtocol } = await import("./protocols.server");
-		return getPublicProtocol(await getDb(), data.shareId);
+		const db = await getDb();
+		const result = await getPublicProtocol(db, data.shareId);
+		if (result?.status !== "closed") return result;
+		const { getJustering } = await import("./reviews.server");
+		const { rows } = await db.execute({
+			sql: "SELECT id FROM protocols WHERE share_id = ?",
+			args: [data.shareId],
+		});
+		return {
+			...result,
+			justering: await getJustering(db, String(rows[0].id)),
+		};
 	});
 
 export const regenerateProtocolShareId = createServerFn({ method: "POST" })

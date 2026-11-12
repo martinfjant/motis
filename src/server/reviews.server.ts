@@ -3,6 +3,7 @@ import type { Client, Row } from "@libsql/client";
 import { requireParent } from "./agendas.server";
 import { BoardError } from "./boards.server";
 import type {
+	Justering,
 	MemberRef,
 	ProtocolItem,
 	Review,
@@ -21,6 +22,7 @@ import {
 	publicValue,
 	toProtocol,
 } from "./protocols.server";
+import { cleanSignature } from "./signature.server";
 import { checkToken, createToken } from "./tokens.server";
 
 // Justering: a closed protocol is sent to the justerare chosen in it. Each
@@ -37,6 +39,7 @@ const toReview = (r: Row): Review => ({
 	status: r.status as ReviewStatus,
 	comment: String(r.comment),
 	decidedAt: r.decided_at == null ? null : String(r.decided_at),
+	signature: r.signature == null ? null : String(r.signature),
 });
 
 function roundState(reviews: Review[]): ReviewStatus {
@@ -120,6 +123,22 @@ export async function isJusterat(
 	return (
 		(await protocolFingerprint(db, protocolId)) === String(rows[0].content_hash)
 	);
+}
+
+/** Who justerade the protocol and their signatures, or null if not justerat. */
+export async function getJustering(
+	db: Client,
+	protocolId: string,
+): Promise<Justering | null> {
+	if (!(await isJusterat(db, protocolId))) return null;
+	const rows = await latestRound(db, protocolId);
+	return {
+		reviewers: rows.map((r) => ({
+			name: String(r.name),
+			approvedAt: String(r.decided_at),
+			signature: r.signature == null ? null : String(r.signature),
+		})),
+	};
 }
 
 /** The chosen justerare in the protocol, each once. */
@@ -363,6 +382,8 @@ export async function getReviewPage(
 			decidedAt: review.decidedAt,
 		},
 		sentByName: String(found.row.sent_by_name),
+		/** Once everyone has approved: who, with signatures. */
+		justering: replaced ? null : await getJustering(db, protocolId),
 		replaced,
 		/** Changed since this link was sent: answering waits for a new sending. */
 		changed: !replaced && !!round?.changed,
@@ -375,7 +396,8 @@ export async function getReviewPage(
 }
 
 /**
- * The justerare's answer. Declining needs a comment saying what is wrong.
+ * The justerare's answer. Approving needs their drawn signature; declining
+ * needs a comment saying what is wrong.
  * Only the latest sending can be answered, once, and only while the
  * protocol is as it was sent. The sender hears about a decline, and about
  * the protocol being fully approved.
@@ -383,7 +405,7 @@ export async function getReviewPage(
 export async function decideReview(
 	db: Client,
 	token: string,
-	input: { approve: boolean; comment: string },
+	input: { approve: boolean; comment: string; signature?: string },
 	now = new Date(),
 ): Promise<void> {
 	const found = await reviewForToken(db, token, now);
@@ -399,14 +421,19 @@ export async function decideReview(
 	const comment = input.comment.trim();
 	if (!input.approve && !comment)
 		throw new BoardError("Skriv vad som behöver ändras.");
+	// Approving is signing: the drawn signature is required.
+	const signature = input.approve
+		? cleanSignature(input.signature ?? "")
+		: null;
 
 	const res = await db.execute({
-		sql: `UPDATE protocol_reviews SET status = ?, comment = ?, decided_at = ?
+		sql: `UPDATE protocol_reviews SET status = ?, comment = ?, decided_at = ?, signature = ?
           WHERE id = ? AND status = 'pending'`,
 		args: [
 			input.approve ? "approved" : "declined",
 			input.approve ? "" : comment,
 			now.toISOString(),
+			signature,
 			found.review.id,
 		],
 	});
