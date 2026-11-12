@@ -10,13 +10,16 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as GlomtLosenordRouteImport } from './routes/glomt-losenord'
 import { Route as KontoRouteImport } from './routes/konto'
 import { Route as LoggaInRouteImport } from './routes/logga-in'
 import { Route as RegistreraRouteImport } from './routes/registrera'
 import { Route as UtkorgRouteImport } from './routes/utkorg'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as BekraftaTokenRouteImport } from './routes/bekrafta.$token'
 import { Route as DagordningShareIdRouteImport } from './routes/dagordning.$shareId'
 import { Route as JusteraTokenRouteImport } from './routes/justera.$token'
+import { Route as NyttLosenordTokenRouteImport } from './routes/nytt-losenord.$token'
 import { Route as ProtokollShareIdRouteImport } from './routes/protokoll.$shareId'
 import { Route as StyrelserBoardIdRouteImport } from './routes/styrelser.$boardId'
 import { Route as StyrelserBoardIdIndexRouteImport } from './routes/styrelser.$boardId.index'
@@ -28,6 +31,11 @@ import { Route as StyrelserBoardIdProtokollProtocolIdRouteImport } from './route
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GlomtLosenordRoute = GlomtLosenordRouteImport.update({
+  id: '/glomt-losenord',
+  path: '/glomt-losenord',
   getParentRoute: () => rootRouteImport,
 } as any)
 const KontoRoute = KontoRouteImport.update({
@@ -55,6 +63,11 @@ const ApiHealthRoute = ApiHealthRouteImport.update({
   path: '/api/health',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BekraftaTokenRoute = BekraftaTokenRouteImport.update({
+  id: '/bekrafta/$token',
+  path: '/bekrafta/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DagordningShareIdRoute = DagordningShareIdRouteImport.update({
   id: '/dagordning/$shareId',
   path: '/dagordning/$shareId',
@@ -63,6 +76,11 @@ const DagordningShareIdRoute = DagordningShareIdRouteImport.update({
 const JusteraTokenRoute = JusteraTokenRouteImport.update({
   id: '/justera/$token',
   path: '/justera/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NyttLosenordTokenRoute = NyttLosenordTokenRouteImport.update({
+  id: '/nytt-losenord/$token',
+  path: '/nytt-losenord/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProtokollShareIdRoute = ProtokollShareIdRouteImport.update({
@@ -107,13 +125,16 @@ const StyrelserBoardIdProtokollProtocolIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/glomt-losenord': typeof GlomtLosenordRoute
   '/konto': typeof KontoRoute
   '/logga-in': typeof LoggaInRoute
   '/registrera': typeof RegistreraRoute
   '/utkorg': typeof UtkorgRoute
   '/api/health': typeof ApiHealthRoute
+  '/bekrafta/$token': typeof BekraftaTokenRoute
   '/dagordning/$shareId': typeof DagordningShareIdRoute
   '/justera/$token': typeof JusteraTokenRoute
+  '/nytt-losenord/$token': typeof NyttLosenordTokenRoute
   '/protokoll/$shareId': typeof ProtokollShareIdRoute
   '/styrelser/$boardId': typeof StyrelserBoardIdRouteWithChildren
   '/styrelser/$boardId/installningar': typeof StyrelserBoardIdInstallningarRoute
@@ -124,13 +145,16 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/glomt-losenord': typeof GlomtLosenordRoute
   '/konto': typeof KontoRoute
   '/logga-in': typeof LoggaInRoute
   '/registrera': typeof RegistreraRoute
   '/utkorg': typeof UtkorgRoute
   '/api/health': typeof ApiHealthRoute
+  '/bekrafta/$token': typeof BekraftaTokenRoute
   '/dagordning/$shareId': typeof DagordningShareIdRoute
   '/justera/$token': typeof JusteraTokenRoute
+  '/nytt-losenord/$token': typeof NyttLosenordTokenRoute
   '/protokoll/$shareId': typeof ProtokollShareIdRoute
   '/styrelser/$boardId/installningar': typeof StyrelserBoardIdInstallningarRoute
   '/styrelser/$boardId': typeof StyrelserBoardIdIndexRoute
@@ -141,13 +165,16 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/glomt-losenord': typeof GlomtLosenordRoute
   '/konto': typeof KontoRoute
   '/logga-in': typeof LoggaInRoute
   '/registrera': typeof RegistreraRoute
   '/utkorg': typeof UtkorgRoute
   '/api/health': typeof ApiHealthRoute
+  '/bekrafta/$token': typeof BekraftaTokenRoute
   '/dagordning/$shareId': typeof DagordningShareIdRoute
   '/justera/$token': typeof JusteraTokenRoute
+  '/nytt-losenord/$token': typeof NyttLosenordTokenRoute
   '/protokoll/$shareId': typeof ProtokollShareIdRoute
   '/styrelser/$boardId': typeof StyrelserBoardIdRouteWithChildren
   '/styrelser/$boardId/installningar': typeof StyrelserBoardIdInstallningarRoute
@@ -160,13 +187,16 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/glomt-losenord'
     | '/konto'
     | '/logga-in'
     | '/registrera'
     | '/utkorg'
     | '/api/health'
+    | '/bekrafta/$token'
     | '/dagordning/$shareId'
     | '/justera/$token'
+    | '/nytt-losenord/$token'
     | '/protokoll/$shareId'
     | '/styrelser/$boardId'
     | '/styrelser/$boardId/installningar'
@@ -177,13 +207,16 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/glomt-losenord'
     | '/konto'
     | '/logga-in'
     | '/registrera'
     | '/utkorg'
     | '/api/health'
+    | '/bekrafta/$token'
     | '/dagordning/$shareId'
     | '/justera/$token'
+    | '/nytt-losenord/$token'
     | '/protokoll/$shareId'
     | '/styrelser/$boardId/installningar'
     | '/styrelser/$boardId'
@@ -193,13 +226,16 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/glomt-losenord'
     | '/konto'
     | '/logga-in'
     | '/registrera'
     | '/utkorg'
     | '/api/health'
+    | '/bekrafta/$token'
     | '/dagordning/$shareId'
     | '/justera/$token'
+    | '/nytt-losenord/$token'
     | '/protokoll/$shareId'
     | '/styrelser/$boardId'
     | '/styrelser/$boardId/installningar'
@@ -211,13 +247,16 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  GlomtLosenordRoute: typeof GlomtLosenordRoute
   KontoRoute: typeof KontoRoute
   LoggaInRoute: typeof LoggaInRoute
   RegistreraRoute: typeof RegistreraRoute
   UtkorgRoute: typeof UtkorgRoute
   ApiHealthRoute: typeof ApiHealthRoute
+  BekraftaTokenRoute: typeof BekraftaTokenRoute
   DagordningShareIdRoute: typeof DagordningShareIdRoute
   JusteraTokenRoute: typeof JusteraTokenRoute
+  NyttLosenordTokenRoute: typeof NyttLosenordTokenRoute
   ProtokollShareIdRoute: typeof ProtokollShareIdRoute
   StyrelserBoardIdRoute: typeof StyrelserBoardIdRouteWithChildren
 }
@@ -229,6 +268,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/glomt-losenord': {
+      id: '/glomt-losenord'
+      path: '/glomt-losenord'
+      fullPath: '/glomt-losenord'
+      preLoaderRoute: typeof GlomtLosenordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/konto': {
@@ -266,6 +312,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/bekrafta/$token': {
+      id: '/bekrafta/$token'
+      path: '/bekrafta/$token'
+      fullPath: '/bekrafta/$token'
+      preLoaderRoute: typeof BekraftaTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dagordning/$shareId': {
       id: '/dagordning/$shareId'
       path: '/dagordning/$shareId'
@@ -278,6 +331,13 @@ declare module '@tanstack/react-router' {
       path: '/justera/$token'
       fullPath: '/justera/$token'
       preLoaderRoute: typeof JusteraTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/nytt-losenord/$token': {
+      id: '/nytt-losenord/$token'
+      path: '/nytt-losenord/$token'
+      fullPath: '/nytt-losenord/$token'
+      preLoaderRoute: typeof NyttLosenordTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/protokoll/$shareId': {
@@ -355,13 +415,16 @@ const StyrelserBoardIdRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  GlomtLosenordRoute: GlomtLosenordRoute,
   KontoRoute: KontoRoute,
   LoggaInRoute: LoggaInRoute,
   RegistreraRoute: RegistreraRoute,
   UtkorgRoute: UtkorgRoute,
   ApiHealthRoute: ApiHealthRoute,
+  BekraftaTokenRoute: BekraftaTokenRoute,
   DagordningShareIdRoute: DagordningShareIdRoute,
   JusteraTokenRoute: JusteraTokenRoute,
+  NyttLosenordTokenRoute: NyttLosenordTokenRoute,
   ProtokollShareIdRoute: ProtokollShareIdRoute,
   StyrelserBoardIdRoute: StyrelserBoardIdRouteWithChildren,
 }

@@ -11,6 +11,7 @@ import { Field, Input } from "#/components/Field";
 import { Notice } from "#/components/Notice";
 import { Section } from "#/components/Section";
 import { TitleForm, TitleSuggestions } from "#/components/TitleForm";
+import { VerifyEmailNotice } from "#/components/VerifyEmailNotice";
 import { updateProfile } from "#/server/auth.functions";
 import { getMyBoards, setMyTitle } from "#/server/boards.functions";
 
@@ -29,6 +30,7 @@ function Account() {
 	return (
 		<main className="mx-auto w-4/5 space-y-2.5 p-4">
 			<h1>Mitt konto</h1>
+			<VerifyEmailNotice user={user} />
 			<ProfileSection user={user} />
 			<Section id="titles" title="Titlar i styrelser">
 				{boards.length === 0 ? (

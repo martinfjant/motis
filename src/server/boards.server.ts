@@ -322,9 +322,10 @@ export async function removeUnregistered(
 
 /**
  * Makes a member without an account a registered member, once someone has
- * registered with their email. An admin does this by hand: emails are not
- * verified, so registering with someone's address must not by itself give
- * access to the board.
+ * registered with their email. Registering with someone's address must not
+ * by itself give access to the board, so until the account's owner confirms
+ * the address (which links them automatically, see markVerified in
+ * account.server.ts) an admin does this by hand.
  */
 export async function linkUnregistered(
 	db: Client,

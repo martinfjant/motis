@@ -157,3 +157,76 @@ export function reviewDoneMail(input: {
 		text: [done, "", `Till protokollet: ${input.url}`].join("\n"),
 	};
 }
+
+/** After signing up or changing address: confirm that the address is yours. */
+export function verifyEmailMail(input: {
+	to: string;
+	name: string;
+	url: string;
+	hours: number;
+}): Mail {
+	const intro =
+		"Bekräfta att det är din e-postadress, så att din styrelse kan nå dig och du kan återställa lösenordet om du glömmer det.";
+	const notYou = `Länken fungerar i ${input.hours} timmar. Har du inte skapat något konto kan du strunta i det här mejlet.`;
+	return {
+		to: input.to,
+		subject: "Bekräfta din e-postadress",
+		html: renderEmail(
+			<>
+				<h1 style={heading}>Bekräfta din e-postadress</h1>
+				<p>Hej {input.name}!</p>
+				<p>{intro}</p>
+				<EmailButton href={input.url}>Bekräfta e-postadressen</EmailButton>
+				<p style={muted}>{notYou}</p>
+				<p style={muted}>
+					Fungerar inte knappen? Kopiera adressen: {input.url}
+				</p>
+			</>,
+		),
+		text: [
+			`Hej ${input.name}!`,
+			"",
+			intro,
+			"",
+			`Bekräfta e-postadressen: ${input.url}`,
+			"",
+			notYou,
+		].join("\n"),
+	};
+}
+
+/** "Glömt lösenordet": a link for setting a new password. */
+export function passwordResetMail(input: {
+	to: string;
+	name: string;
+	url: string;
+	minutes: number;
+}): Mail {
+	const intro = "Någon, förhoppningsvis du, har bett om att få byta lösenord.";
+	const notYou = `Länken fungerar i ${input.minutes} minuter och bara en gång. Har du inte bett om det kan du strunta i det här mejlet; ditt lösenord är oförändrat.`;
+	return {
+		to: input.to,
+		subject: "Välj ett nytt lösenord",
+		html: renderEmail(
+			<>
+				<h1 style={heading}>Välj ett nytt lösenord</h1>
+				<p>Hej {input.name}!</p>
+				<p>{intro}</p>
+				<EmailButton href={input.url}>Välj nytt lösenord</EmailButton>
+				<p style={muted}>{notYou}</p>
+				<p style={muted}>
+					Fungerar inte knappen? Kopiera adressen: {input.url}
+				</p>
+			</>,
+		),
+		text: [
+			`Hej ${input.name}!`,
+			"",
+			intro,
+			"",
+			`Välj nytt lösenord: ${input.url}`,
+			"",
+			notYou,
+		].join("\n"),
+	};
+}

@@ -1,4 +1,9 @@
-import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	Link,
+	redirect,
+	useRouter,
+} from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "#/components/Button";
 import { ErrorMessage } from "#/components/ErrorMessage";
@@ -57,6 +62,9 @@ function LogIn() {
 					Logga in
 				</Button>
 			</form>
+			<p>
+				<Link to="/glomt-losenord">Glömt lösenordet?</Link>
+			</p>
 		</main>
 	);
 }

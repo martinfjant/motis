@@ -4,7 +4,20 @@ import { hashPassword, verifyPassword } from "./password.server";
 
 export const SESSION_DAYS = 30;
 
-export type User = { id: string; email: string; name: string };
+export type User = {
+	id: string;
+	email: string;
+	name: string;
+	/** The user has confirmed the address through a link sent to it. */
+	emailVerified: boolean;
+};
+
+const toUser = (r: Record<string, unknown>): User => ({
+	id: String(r.id),
+	email: String(r.email),
+	name: String(r.name),
+	emailVerified: r.email_verified_at != null,
+});
 
 export class AuthError extends Error {}
 
@@ -42,7 +55,7 @@ export async function createUser(
 		sql: "INSERT INTO users (id, email, name, password_hash) VALUES (?, ?, ?, ?)",
 		args: [id, email, name, await hashPassword(password)],
 	});
-	return { id, email, name };
+	return { id, email, name, emailVerified: false };
 }
 
 export async function authenticate(
@@ -51,7 +64,7 @@ export async function authenticate(
 	password: string,
 ): Promise<User> {
 	const res = await db.execute({
-		sql: "SELECT id, email, name, password_hash FROM users WHERE email = ?",
+		sql: "SELECT id, email, name, email_verified_at, password_hash FROM users WHERE email = ?",
 		args: [emailInput.trim().toLowerCase()],
 	});
 	const row = res.rows[0];
@@ -59,11 +72,7 @@ export async function authenticate(
 	const hash = row ? String(row.password_hash) : "scrypt$AAAA$AAAA";
 	const ok = await verifyPassword(password, hash);
 	if (!row || !ok) throw new AuthError("Fel e-postadress eller lösenord.");
-	return {
-		id: String(row.id),
-		email: String(row.email),
-		name: String(row.name),
-	};
+	return toUser(row);
 }
 
 /** Returns the raw token to put in the cookie; only its hash is stored. */
@@ -83,7 +92,7 @@ export async function getSessionUser(
 ): Promise<User | null> {
 	if (!token) return null;
 	const res = await db.execute({
-		sql: `SELECT u.id, u.email, u.name, s.expires_at
+		sql: `SELECT u.id, u.email, u.name, u.email_verified_at, s.expires_at
           FROM sessions s JOIN users u ON u.id = s.user_id
           WHERE s.id = ?`,
 		args: [hashToken(token)],
@@ -94,11 +103,7 @@ export async function getSessionUser(
 		await deleteSession(db, token);
 		return null;
 	}
-	return {
-		id: String(row.id),
-		email: String(row.email),
-		name: String(row.name),
-	};
+	return toUser(row);
 }
 
 export async function deleteSession(db: Client, token: string | undefined) {
@@ -111,7 +116,8 @@ export async function deleteSession(db: Client, token: string | undefined) {
 
 /**
  * Changes the user's name and email. The email is what they log in with, so
- * changing it requires the current password.
+ * changing it requires the current password, and a new address is
+ * unconfirmed until the user follows the link sent to it.
  */
 export async function updateProfile(
 	db: Client,
@@ -125,7 +131,7 @@ export async function updateProfile(
 		throw new AuthError("Ange en giltig e-postadress.");
 
 	const res = await db.execute({
-		sql: "SELECT email, password_hash FROM users WHERE id = ?",
+		sql: "SELECT email, email_verified_at, password_hash FROM users WHERE id = ?",
 		args: [userId],
 	});
 	const row = res.rows[0];
@@ -146,9 +152,17 @@ export async function updateProfile(
 			throw new AuthError("Det finns redan ett konto med den e-postadressen.");
 	}
 
+	const changed = email !== String(row.email);
 	await db.execute({
-		sql: "UPDATE users SET name = ?, email = ? WHERE id = ?",
-		args: [name, email, userId],
+		sql: `UPDATE users SET name = ?, email = ?,
+            email_verified_at = CASE WHEN ? THEN NULL ELSE email_verified_at END
+          WHERE id = ?`,
+		args: [name, email, changed ? 1 : 0, userId],
 	});
-	return { id: userId, name, email };
+	return {
+		id: userId,
+		name,
+		email,
+		emailVerified: !changed && row.email_verified_at != null,
+	};
 }

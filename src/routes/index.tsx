@@ -6,6 +6,7 @@ import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Input } from "#/components/Field";
 import { MeetingItem, MeetingList } from "#/components/MeetingList";
 import { Section } from "#/components/Section";
+import { VerifyEmailNotice } from "#/components/VerifyEmailNotice";
 import { daysUntilText } from "#/meeting-time";
 import { getUpcomingMeetings } from "#/server/agendas.functions";
 import { createBoard, getMyBoards } from "#/server/boards.functions";
@@ -47,6 +48,7 @@ function MyAssociations({
 	boards: Awaited<ReturnType<typeof getMyBoards>>;
 	upcoming: UpcomingMeeting[];
 }) {
+	const { user } = Route.useRouteContext();
 	const router = useRouter();
 	const [error, setError] = useState<string | null>(null);
 	const [pending, setPending] = useState(false);
@@ -72,6 +74,7 @@ function MyAssociations({
 	return (
 		<main className="mx-auto w-4/5 space-y-2.5 p-4">
 			<h1>Mina föreningar</h1>
+			{user && <VerifyEmailNotice user={user} />}
 			{boards.length > 0 && <Upcoming meetings={upcoming} />}
 			<Section id="my-boards" title="Föreningar">
 				{boards.length === 0 ? (
