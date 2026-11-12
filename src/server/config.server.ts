@@ -98,6 +98,24 @@ export function mailConfig(): MailConfig | null {
  */
 export const trustProxy = env.TRUST_PROXY === "1";
 
+/**
+ * Who may create an account while the service isn't open to everyone:
+ * - "open": anyone (development without SIGNUP_PASSWORD)
+ * - "password": only with SIGNUP_PASSWORD
+ * - "closed": no one (production without SIGNUP_PASSWORD, so forgetting
+ *   the setting can't leave sign-up open)
+ */
+export type SignupPolicy =
+	| { kind: "open" }
+	| { kind: "password"; password: string }
+	| { kind: "closed" };
+
+export function signupPolicy(): SignupPolicy {
+	const password = env.SIGNUP_PASSWORD?.trim();
+	if (password) return { kind: "password", password };
+	return isProduction ? { kind: "closed" } : { kind: "open" };
+}
+
 /** Session cookies only over https in production. */
 export const secureCookies = isProduction;
 

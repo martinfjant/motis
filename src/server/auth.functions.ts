@@ -35,6 +35,15 @@ export const getCurrentUser = createServerFn({ method: "GET" }).handler(
 	},
 );
 
+/** Whether "Skapa konto" asks for the sign-up password, or is closed. */
+export const getSignupPolicy = createServerFn({ method: "GET" }).handler(
+	async () => {
+		const { signupPolicy } = await import("./config.server");
+		// Only the kind; the password itself never leaves the server.
+		return { kind: signupPolicy().kind };
+	},
+);
+
 export const signUp = createServerFn({ method: "POST" })
 	.validator((d: unknown) => {
 		const o = (d ?? {}) as Record<string, unknown>;
@@ -42,10 +51,13 @@ export const signUp = createServerFn({ method: "POST" })
 			name: str(o.name),
 			email: str(o.email),
 			password: str(o.password),
+			signupPassword: str(o.signupPassword),
 		};
 	})
 	.handler(async ({ data }) => {
-		const { createUser } = await import("./auth.server");
+		const { checkSignupPassword, createUser } = await import("./auth.server");
+		const { signupPolicy } = await import("./config.server");
+		checkSignupPassword(signupPolicy(), data.signupPassword);
 		const { getDb } = await import("./db");
 		const db = await getDb();
 		const user = await createUser(db, data);

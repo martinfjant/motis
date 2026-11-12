@@ -64,8 +64,9 @@ registry (Docker Hub, GitHub Container Registry, …).
    add them as secrets to the Magic Container app. That sets
    `BUNNY_DATABASE_URL` and `BUNNY_DATABASE_AUTH_TOKEN`.
 3. Create the app from the image, with container port 3000, `APP_URL` set to
-   the site's https address, `RESEND_API_KEY` and `MAIL_FROM`, and
-   `/api/health` as health check.
+   the site's https address, `RESEND_API_KEY`, `MAIL_FROM`, `SIGNUP_PASSWORD`
+   (without it no one can create an account), and `/api/health` as health
+   check.
 4. The database is migrated when the first instance starts. Several
    instances starting at once take turns.
 

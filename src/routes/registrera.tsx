@@ -3,16 +3,18 @@ import { useState } from "react";
 import { Button } from "#/components/Button";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Input } from "#/components/Field";
-import { signUp } from "#/server/auth.functions";
+import { getSignupPolicy, signUp } from "#/server/auth.functions";
 
 export const Route = createFileRoute("/registrera")({
 	beforeLoad: ({ context }) => {
 		if (context.user) throw redirect({ to: "/" });
 	},
+	loader: () => getSignupPolicy(),
 	component: SignUp,
 });
 
 function SignUp() {
+	const policy = Route.useLoaderData();
 	const router = useRouter();
 	const [error, setError] = useState<string | null>(null);
 	const [pending, setPending] = useState(false);
@@ -28,6 +30,7 @@ function SignUp() {
 					name: String(form.get("name")),
 					email: String(form.get("email")),
 					password: String(form.get("password")),
+					signupPassword: String(form.get("signupPassword") ?? ""),
 				},
 			});
 			await router.invalidate();
@@ -38,17 +41,41 @@ function SignUp() {
 		}
 	}
 
+	if (policy.kind === "closed")
+		return (
+			<main className="mx-auto w-4/5 space-y-2.5 p-4">
+				<h1>Skapa konto</h1>
+				<p>Det går inte att skapa konton just nu.</p>
+			</main>
+		);
+
 	return (
 		<main className="mx-auto w-4/5 space-y-2.5 p-4">
 			<h1>Skapa konto</h1>
+			{policy.kind === "password" && (
+				<p>
+					BRF-protokoll är inte öppet för alla ännu. För att skapa ett konto
+					behöver du lösenordet du har fått av oss.
+				</p>
+			)}
 			<form onSubmit={onSubmit}>
+				{policy.kind === "password" && (
+					<Field id="signupPassword" label="Lösenord för att skapa konto">
+						<Input
+							name="signupPassword"
+							type="password"
+							autoComplete="off"
+							required
+						/>
+					</Field>
+				)}
 				<Field id="name" label="Namn">
 					<Input name="name" autoComplete="name" required />
 				</Field>
 				<Field id="email" label="E-post">
 					<Input name="email" type="email" autoComplete="email" required />
 				</Field>
-				<Field id="password" label="Lösenord">
+				<Field id="password" label="Välj ett lösenord för ditt konto">
 					<Input
 						name="password"
 						type="password"

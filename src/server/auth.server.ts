@@ -1,5 +1,11 @@
-import { createHash, randomBytes, randomUUID } from "node:crypto";
+import {
+	createHash,
+	randomBytes,
+	randomUUID,
+	timingSafeEqual,
+} from "node:crypto";
 import type { Client } from "@libsql/client";
+import type { SignupPolicy } from "./config.server";
 import { hashPassword, verifyPassword } from "./password.server";
 
 export const SESSION_DAYS = 30;
@@ -37,6 +43,24 @@ export function validateSignUp(input: {
 	if (input.password.length < 8)
 		throw new AuthError("Lösenordet måste vara minst 8 tecken.");
 	return { name, email, password: input.password };
+}
+
+/**
+ * Throws unless the sign-up is allowed by the policy: when a password is
+ * required, the given one must match. Compared as hashes in constant time,
+ * so response times don't hint at how close a guess was.
+ */
+export function checkSignupPassword(policy: SignupPolicy, given: string) {
+	if (policy.kind === "open") return;
+	if (policy.kind === "closed")
+		throw new AuthError("Det går inte att skapa konton just nu.");
+	const digest = (v: string) => createHash("sha256").update(v).digest();
+	if (!timingSafeEqual(digest(given.trim()), digest(policy.password)))
+		throw new AuthError(
+			given.trim()
+				? "Fel lösenord för att skapa konto."
+				: "Ange lösenordet för att skapa konto.",
+		);
 }
 
 export async function createUser(

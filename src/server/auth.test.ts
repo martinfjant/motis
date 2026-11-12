@@ -1,14 +1,16 @@
 import { createClient } from "@libsql/client";
-import { beforeEach, expect, test } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import {
 	AuthError,
 	authenticate,
+	checkSignupPassword,
 	createSession,
 	createUser,
 	deleteSession,
 	getSessionUser,
 	updateProfile,
 } from "./auth.server";
+import { signupPolicy } from "./config.server";
 import { migrate } from "./migrate";
 
 let db: ReturnType<typeof createClient>;
@@ -107,4 +109,24 @@ test("profile: name changes freely, email needs the password and must be free", 
 	await expect(
 		authenticate(db, "anna@example.se", "hemligt123"),
 	).rejects.toThrow(AuthError);
+});
+
+afterEach(() => vi.unstubAllEnvs());
+
+test("sign-up needs the sign-up password when one is set", () => {
+	vi.stubEnv("SIGNUP_PASSWORD", " hemlig-kod ");
+	const policy = signupPolicy();
+	expect(policy).toEqual({ kind: "password", password: "hemlig-kod" });
+	expect(() => checkSignupPassword(policy, "")).toThrow(/Ange lösenordet/);
+	expect(() => checkSignupPassword(policy, "fel")).toThrow(/Fel lösenord/);
+	expect(() => checkSignupPassword(policy, "hemlig-kod ")).not.toThrow();
+});
+
+test("without a sign-up password: open in development, closed in production", () => {
+	vi.stubEnv("SIGNUP_PASSWORD", "");
+	expect(signupPolicy()).toEqual({ kind: "open" });
+	expect(() => checkSignupPassword({ kind: "open" }, "")).not.toThrow();
+	expect(() => checkSignupPassword({ kind: "closed" }, "något")).toThrow(
+		/inte att skapa konton/,
+	);
 });
