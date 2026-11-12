@@ -13,11 +13,10 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as KontoRouteImport } from './routes/konto'
 import { Route as LoggaInRouteImport } from './routes/logga-in'
 import { Route as RegistreraRouteImport } from './routes/registrera'
-import { Route as StyrelserRouteImport } from './routes/styrelser'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as DagordningShareIdRouteImport } from './routes/dagordning.$shareId'
 import { Route as ProtokollShareIdRouteImport } from './routes/protokoll.$shareId'
-import { Route as StyrelserIndexRouteImport } from './routes/styrelser.index'
+import { Route as StyrelserBoardIdRouteImport } from './routes/styrelser.$boardId'
 import { Route as StyrelserBoardIdIndexRouteImport } from './routes/styrelser.$boardId.index'
 import { Route as StyrelserBoardIdInstallningarRouteImport } from './routes/styrelser.$boardId.installningar'
 import { Route as StyrelserBoardIdDagordningarAgendaIdRouteImport } from './routes/styrelser.$boardId.dagordningar.$agendaId'
@@ -44,11 +43,6 @@ const RegistreraRoute = RegistreraRouteImport.update({
   path: '/registrera',
   getParentRoute: () => rootRouteImport,
 } as any)
-const StyrelserRoute = StyrelserRouteImport.update({
-  id: '/styrelser',
-  path: '/styrelser',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiHealthRoute = ApiHealthRouteImport.update({
   id: '/api/health',
   path: '/api/health',
@@ -64,39 +58,39 @@ const ProtokollShareIdRoute = ProtokollShareIdRouteImport.update({
   path: '/protokoll/$shareId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const StyrelserIndexRoute = StyrelserIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => StyrelserRoute,
+const StyrelserBoardIdRoute = StyrelserBoardIdRouteImport.update({
+  id: '/styrelser/$boardId',
+  path: '/styrelser/$boardId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const StyrelserBoardIdIndexRoute = StyrelserBoardIdIndexRouteImport.update({
-  id: '/$boardId/',
-  path: '/$boardId/',
-  getParentRoute: () => StyrelserRoute,
+  id: '/',
+  path: '/',
+  getParentRoute: () => StyrelserBoardIdRoute,
 } as any)
 const StyrelserBoardIdInstallningarRoute =
   StyrelserBoardIdInstallningarRouteImport.update({
-    id: '/$boardId/installningar',
-    path: '/$boardId/installningar',
-    getParentRoute: () => StyrelserRoute,
+    id: '/installningar',
+    path: '/installningar',
+    getParentRoute: () => StyrelserBoardIdRoute,
   } as any)
 const StyrelserBoardIdDagordningarAgendaIdRoute =
   StyrelserBoardIdDagordningarAgendaIdRouteImport.update({
-    id: '/$boardId/dagordningar/$agendaId',
-    path: '/$boardId/dagordningar/$agendaId',
-    getParentRoute: () => StyrelserRoute,
+    id: '/dagordningar/$agendaId',
+    path: '/dagordningar/$agendaId',
+    getParentRoute: () => StyrelserBoardIdRoute,
   } as any)
 const StyrelserBoardIdMallarTemplateIdRoute =
   StyrelserBoardIdMallarTemplateIdRouteImport.update({
-    id: '/$boardId/mallar/$templateId',
-    path: '/$boardId/mallar/$templateId',
-    getParentRoute: () => StyrelserRoute,
+    id: '/mallar/$templateId',
+    path: '/mallar/$templateId',
+    getParentRoute: () => StyrelserBoardIdRoute,
   } as any)
 const StyrelserBoardIdProtokollProtocolIdRoute =
   StyrelserBoardIdProtokollProtocolIdRouteImport.update({
-    id: '/$boardId/protokoll/$protocolId',
-    path: '/$boardId/protokoll/$protocolId',
-    getParentRoute: () => StyrelserRoute,
+    id: '/protokoll/$protocolId',
+    path: '/protokoll/$protocolId',
+    getParentRoute: () => StyrelserBoardIdRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -104,11 +98,10 @@ export interface FileRoutesByFullPath {
   '/konto': typeof KontoRoute
   '/logga-in': typeof LoggaInRoute
   '/registrera': typeof RegistreraRoute
-  '/styrelser': typeof StyrelserRouteWithChildren
   '/api/health': typeof ApiHealthRoute
   '/dagordning/$shareId': typeof DagordningShareIdRoute
   '/protokoll/$shareId': typeof ProtokollShareIdRoute
-  '/styrelser/': typeof StyrelserIndexRoute
+  '/styrelser/$boardId': typeof StyrelserBoardIdRouteWithChildren
   '/styrelser/$boardId/installningar': typeof StyrelserBoardIdInstallningarRoute
   '/styrelser/$boardId/': typeof StyrelserBoardIdIndexRoute
   '/styrelser/$boardId/dagordningar/$agendaId': typeof StyrelserBoardIdDagordningarAgendaIdRoute
@@ -123,7 +116,6 @@ export interface FileRoutesByTo {
   '/api/health': typeof ApiHealthRoute
   '/dagordning/$shareId': typeof DagordningShareIdRoute
   '/protokoll/$shareId': typeof ProtokollShareIdRoute
-  '/styrelser': typeof StyrelserIndexRoute
   '/styrelser/$boardId/installningar': typeof StyrelserBoardIdInstallningarRoute
   '/styrelser/$boardId': typeof StyrelserBoardIdIndexRoute
   '/styrelser/$boardId/dagordningar/$agendaId': typeof StyrelserBoardIdDagordningarAgendaIdRoute
@@ -136,11 +128,10 @@ export interface FileRoutesById {
   '/konto': typeof KontoRoute
   '/logga-in': typeof LoggaInRoute
   '/registrera': typeof RegistreraRoute
-  '/styrelser': typeof StyrelserRouteWithChildren
   '/api/health': typeof ApiHealthRoute
   '/dagordning/$shareId': typeof DagordningShareIdRoute
   '/protokoll/$shareId': typeof ProtokollShareIdRoute
-  '/styrelser/': typeof StyrelserIndexRoute
+  '/styrelser/$boardId': typeof StyrelserBoardIdRouteWithChildren
   '/styrelser/$boardId/installningar': typeof StyrelserBoardIdInstallningarRoute
   '/styrelser/$boardId/': typeof StyrelserBoardIdIndexRoute
   '/styrelser/$boardId/dagordningar/$agendaId': typeof StyrelserBoardIdDagordningarAgendaIdRoute
@@ -154,11 +145,10 @@ export interface FileRouteTypes {
     | '/konto'
     | '/logga-in'
     | '/registrera'
-    | '/styrelser'
     | '/api/health'
     | '/dagordning/$shareId'
     | '/protokoll/$shareId'
-    | '/styrelser/'
+    | '/styrelser/$boardId'
     | '/styrelser/$boardId/installningar'
     | '/styrelser/$boardId/'
     | '/styrelser/$boardId/dagordningar/$agendaId'
@@ -173,7 +163,6 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/dagordning/$shareId'
     | '/protokoll/$shareId'
-    | '/styrelser'
     | '/styrelser/$boardId/installningar'
     | '/styrelser/$boardId'
     | '/styrelser/$boardId/dagordningar/$agendaId'
@@ -185,11 +174,10 @@ export interface FileRouteTypes {
     | '/konto'
     | '/logga-in'
     | '/registrera'
-    | '/styrelser'
     | '/api/health'
     | '/dagordning/$shareId'
     | '/protokoll/$shareId'
-    | '/styrelser/'
+    | '/styrelser/$boardId'
     | '/styrelser/$boardId/installningar'
     | '/styrelser/$boardId/'
     | '/styrelser/$boardId/dagordningar/$agendaId'
@@ -202,10 +190,10 @@ export interface RootRouteChildren {
   KontoRoute: typeof KontoRoute
   LoggaInRoute: typeof LoggaInRoute
   RegistreraRoute: typeof RegistreraRoute
-  StyrelserRoute: typeof StyrelserRouteWithChildren
   ApiHealthRoute: typeof ApiHealthRoute
   DagordningShareIdRoute: typeof DagordningShareIdRoute
   ProtokollShareIdRoute: typeof ProtokollShareIdRoute
+  StyrelserBoardIdRoute: typeof StyrelserBoardIdRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -238,13 +226,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegistreraRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/styrelser': {
-      id: '/styrelser'
-      path: '/styrelser'
-      fullPath: '/styrelser'
-      preLoaderRoute: typeof StyrelserRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/health': {
       id: '/api/health'
       path: '/api/health'
@@ -266,53 +247,52 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtokollShareIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/styrelser/': {
-      id: '/styrelser/'
-      path: '/'
-      fullPath: '/styrelser/'
-      preLoaderRoute: typeof StyrelserIndexRouteImport
-      parentRoute: typeof StyrelserRoute
+    '/styrelser/$boardId': {
+      id: '/styrelser/$boardId'
+      path: '/styrelser/$boardId'
+      fullPath: '/styrelser/$boardId'
+      preLoaderRoute: typeof StyrelserBoardIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/styrelser/$boardId/': {
       id: '/styrelser/$boardId/'
-      path: '/$boardId'
+      path: '/'
       fullPath: '/styrelser/$boardId/'
       preLoaderRoute: typeof StyrelserBoardIdIndexRouteImport
-      parentRoute: typeof StyrelserRoute
+      parentRoute: typeof StyrelserBoardIdRoute
     }
     '/styrelser/$boardId/installningar': {
       id: '/styrelser/$boardId/installningar'
-      path: '/$boardId/installningar'
+      path: '/installningar'
       fullPath: '/styrelser/$boardId/installningar'
       preLoaderRoute: typeof StyrelserBoardIdInstallningarRouteImport
-      parentRoute: typeof StyrelserRoute
+      parentRoute: typeof StyrelserBoardIdRoute
     }
     '/styrelser/$boardId/dagordningar/$agendaId': {
       id: '/styrelser/$boardId/dagordningar/$agendaId'
-      path: '/$boardId/dagordningar/$agendaId'
+      path: '/dagordningar/$agendaId'
       fullPath: '/styrelser/$boardId/dagordningar/$agendaId'
       preLoaderRoute: typeof StyrelserBoardIdDagordningarAgendaIdRouteImport
-      parentRoute: typeof StyrelserRoute
+      parentRoute: typeof StyrelserBoardIdRoute
     }
     '/styrelser/$boardId/mallar/$templateId': {
       id: '/styrelser/$boardId/mallar/$templateId'
-      path: '/$boardId/mallar/$templateId'
+      path: '/mallar/$templateId'
       fullPath: '/styrelser/$boardId/mallar/$templateId'
       preLoaderRoute: typeof StyrelserBoardIdMallarTemplateIdRouteImport
-      parentRoute: typeof StyrelserRoute
+      parentRoute: typeof StyrelserBoardIdRoute
     }
     '/styrelser/$boardId/protokoll/$protocolId': {
       id: '/styrelser/$boardId/protokoll/$protocolId'
-      path: '/$boardId/protokoll/$protocolId'
+      path: '/protokoll/$protocolId'
       fullPath: '/styrelser/$boardId/protokoll/$protocolId'
       preLoaderRoute: typeof StyrelserBoardIdProtokollProtocolIdRouteImport
-      parentRoute: typeof StyrelserRoute
+      parentRoute: typeof StyrelserBoardIdRoute
     }
   }
 }
 
-interface StyrelserRouteChildren {
-  StyrelserIndexRoute: typeof StyrelserIndexRoute
+interface StyrelserBoardIdRouteChildren {
   StyrelserBoardIdInstallningarRoute: typeof StyrelserBoardIdInstallningarRoute
   StyrelserBoardIdIndexRoute: typeof StyrelserBoardIdIndexRoute
   StyrelserBoardIdDagordningarAgendaIdRoute: typeof StyrelserBoardIdDagordningarAgendaIdRoute
@@ -320,8 +300,7 @@ interface StyrelserRouteChildren {
   StyrelserBoardIdProtokollProtocolIdRoute: typeof StyrelserBoardIdProtokollProtocolIdRoute
 }
 
-const StyrelserRouteChildren: StyrelserRouteChildren = {
-  StyrelserIndexRoute: StyrelserIndexRoute,
+const StyrelserBoardIdRouteChildren: StyrelserBoardIdRouteChildren = {
   StyrelserBoardIdInstallningarRoute: StyrelserBoardIdInstallningarRoute,
   StyrelserBoardIdIndexRoute: StyrelserBoardIdIndexRoute,
   StyrelserBoardIdDagordningarAgendaIdRoute:
@@ -331,19 +310,18 @@ const StyrelserRouteChildren: StyrelserRouteChildren = {
     StyrelserBoardIdProtokollProtocolIdRoute,
 }
 
-const StyrelserRouteWithChildren = StyrelserRoute._addFileChildren(
-  StyrelserRouteChildren,
-)
+const StyrelserBoardIdRouteWithChildren =
+  StyrelserBoardIdRoute._addFileChildren(StyrelserBoardIdRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   KontoRoute: KontoRoute,
   LoggaInRoute: LoggaInRoute,
   RegistreraRoute: RegistreraRoute,
-  StyrelserRoute: StyrelserRouteWithChildren,
   ApiHealthRoute: ApiHealthRoute,
   DagordningShareIdRoute: DagordningShareIdRoute,
   ProtokollShareIdRoute: ProtokollShareIdRoute,
+  StyrelserBoardIdRoute: StyrelserBoardIdRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

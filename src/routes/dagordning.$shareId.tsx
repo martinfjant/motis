@@ -25,7 +25,7 @@ export const Route = createFileRoute("/dagordning/$shareId")({
 		],
 	}),
 	notFoundComponent: () => (
-		<main>
+		<main className="mx-auto w-4/5 space-y-2.5 p-4">
 			<h1>Dagordningen hittades inte</h1>
 			<p>
 				Länken kan vara felskriven, eller så har styrelsen bytt ut eller tagit
@@ -39,7 +39,7 @@ export const Route = createFileRoute("/dagordning/$shareId")({
 function PublicAgenda() {
 	const { boardName, agenda, items } = Route.useLoaderData();
 	return (
-		<main>
+		<main className="mx-auto w-4/5 space-y-2.5 p-4">
 			<article>
 				<header>
 					<p>{boardName}</p>

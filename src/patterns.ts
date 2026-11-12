@@ -1,6 +1,6 @@
 // Board background patterns; the CSS lives in patterns.css (generated from
 // https://css-pattern.com by Temani Afif). "standard" means no pattern
-// attribute, so the html background in styles.css is used.
+// attribute, so the "Standard" background at the top of patterns.css is used.
 
 export const DEFAULT_PATTERN = "standard";
 

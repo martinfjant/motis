@@ -7,7 +7,7 @@ import { signUp } from "#/server/auth.functions";
 
 export const Route = createFileRoute("/registrera")({
 	beforeLoad: ({ context }) => {
-		if (context.user) throw redirect({ to: "/styrelser" });
+		if (context.user) throw redirect({ to: "/" });
 	},
 	component: SignUp,
 });
@@ -31,7 +31,7 @@ function SignUp() {
 				},
 			});
 			await router.invalidate();
-			await router.navigate({ to: "/styrelser" });
+			await router.navigate({ to: "/" });
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Något gick fel.");
 			setPending(false);
@@ -39,7 +39,7 @@ function SignUp() {
 	}
 
 	return (
-		<main>
+		<main className="mx-auto w-4/5 space-y-2.5 p-4">
 			<h1>Skapa konto</h1>
 			<form onSubmit={onSubmit}>
 				<Field id="name" label="Namn">

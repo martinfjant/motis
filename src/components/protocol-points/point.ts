@@ -1,5 +1,6 @@
 import type {
 	CarryOverFlags,
+	PointState,
 	ProtocolItem,
 	ProtocolValue,
 } from "#/server/items";
@@ -7,6 +8,11 @@ import type {
 /** What every kind of point gets from ProtocolPoint. */
 export type PointProps = {
 	item: ProtocolItem;
+	/**
+	 * Where the point is: "open", "done" or "tabled". A done point opened
+	 * again with "Ändra" is "open" until it is saved or cancelled.
+	 */
+	state: PointState;
 	/**
 	 * Dealt with (value.done, set by "Klar"), and not opened again with
 	 * "Ändra": show what was recorded, with "Ändra".

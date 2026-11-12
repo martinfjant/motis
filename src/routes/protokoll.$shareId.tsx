@@ -27,7 +27,7 @@ export const Route = createFileRoute("/protokoll/$shareId")({
 		],
 	}),
 	notFoundComponent: () => (
-		<main>
+		<main className="mx-auto w-4/5 p-4">
 			<h1>Protokollet hittades inte</h1>
 			<p>
 				Länken kan vara felskriven, eller så har styrelsen bytt ut eller tagit
@@ -43,7 +43,7 @@ function PublicProtocol() {
 
 	if (data.status === "open")
 		return (
-			<main>
+			<main className="mx-auto w-4/5 space-y-2.5 p-4">
 				<p>{data.board.name}</p>
 				<h1>Protokollet är inte klart ännu</h1>
 				<p>
@@ -54,7 +54,7 @@ function PublicProtocol() {
 		);
 
 	return (
-		<main>
+		<main className="mx-auto w-4/5 space-y-2.5 p-4">
 			<article>
 				<header>
 					<p>{data.board.name}</p>

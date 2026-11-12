@@ -27,10 +27,10 @@ export const Route = createFileRoute("/styrelser/$boardId/")({
 		return overview;
 	},
 	notFoundComponent: () => (
-		<main>
+		<main className="mx-auto w-4/5 space-y-2.5 p-4">
 			<h1>Styrelsen hittades inte</h1>
 			<p>
-				<Link to="/styrelser">Tillbaka till styrelser</Link>
+				<Link to="/">Tillbaka till Mina föreningar</Link>
 			</p>
 		</main>
 	),
@@ -67,9 +67,9 @@ function Board() {
 	}
 
 	return (
-		<main>
+		<main className="mx-auto w-4/5 space-y-2.5 p-4">
 			<Breadcrumbs>
-				<Link to="/styrelser">Styrelser</Link>
+				<Link to="/">Mina föreningar</Link>
 			</Breadcrumbs>
 			<h1>{board.name}</h1>
 			<p>

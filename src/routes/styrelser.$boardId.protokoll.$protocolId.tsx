@@ -39,10 +39,10 @@ export const Route = createFileRoute(
 		return data;
 	},
 	notFoundComponent: () => (
-		<main>
+		<main className="mx-auto w-4/5 space-y-2.5 p-4">
 			<h1>Protokollet hittades inte</h1>
 			<p>
-				<Link to="/styrelser">Tillbaka till styrelser</Link>
+				<Link to="/">Tillbaka till Mina föreningar</Link>
 			</p>
 		</main>
 	),
@@ -50,8 +50,15 @@ export const Route = createFileRoute(
 });
 
 function ProtocolPage() {
-	const { board, protocol, items, memberNames, people, edits } =
-		Route.useLoaderData();
+	const {
+		board,
+		protocol,
+		items,
+		memberNames,
+		reviewerCandidates,
+		people,
+		edits,
+	} = Route.useLoaderData();
 	const router = useRouter();
 	const [error, setError] = useState<string | null>(null);
 	const [addFormKey, setAddFormKey] = useState(0);
@@ -121,6 +128,7 @@ function ProtocolPage() {
 					type: String(f.get("type") ?? ""),
 					description: String(f.get("description") ?? ""),
 					extraNames: String(f.get("extraNames") ?? "").split("\n"),
+					reviewerCount: String(f.get("reviewerCount") ?? ""),
 				},
 			}),
 		);
@@ -172,9 +180,9 @@ function ProtocolPage() {
 
 	return (
 		<MentionNames.Provider value={mentionable}>
-			<main>
+			<main className="mx-auto w-4/5 space-y-2.5 p-4">
 				<Breadcrumbs>
-					<Link to="/styrelser">Styrelser</Link>
+					<Link to="/">Mina föreningar</Link>
 					<Link to="/styrelser/$boardId" params={{ boardId: board.id }}>
 						{board.name}
 					</Link>
@@ -257,35 +265,39 @@ function ProtocolPage() {
 							</Section>
 						)}
 
-						<Section id="points" title="Punkter">
+						<Section id="points" title="Dagordning">
 							<ErrorMessage error={error} />
 							{items.length === 0 ? (
 								<p>Inga punkter ännu.</p>
 							) : (
 								<ol>
-									{items.map((item) => (
-										<li key={item.id}>
-											<ProtocolPoint
-												item={item}
-												invited={invited}
-												choosable={choosable}
-												onSave={saveValue(item.id)}
-												onCarryOver={saveCarryOver(item.id)}
-												onDelete={() => {
-													if (confirm(`Ta bort punkten ”${item.title}”?`))
-														run(() =>
-															deleteItem({
-																data: {
-																	kind: "protocol",
-																	itemId: item.id,
-																	editSession: session,
-																},
-															}),
-														);
-												}}
-											/>
-										</li>
-									))}
+									{items.map((item) => {
+										return (
+											<li key={item.id}>
+												<ProtocolPoint
+													item={item}
+													invited={invited}
+													choosable={choosable}
+													present={present}
+													reviewerCandidates={reviewerCandidates}
+													onSave={saveValue(item.id)}
+													onCarryOver={saveCarryOver(item.id)}
+													onDelete={() => {
+														if (confirm(`Ta bort punkten ”${item.title}”?`))
+															run(() =>
+																deleteItem({
+																	data: {
+																		kind: "protocol",
+																		itemId: item.id,
+																		editSession: session,
+																	},
+																}),
+															);
+													}}
+												/>
+											</li>
+										);
+									})}
 								</ol>
 							)}
 

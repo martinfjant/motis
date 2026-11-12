@@ -7,7 +7,7 @@ import { logIn } from "#/server/auth.functions";
 
 export const Route = createFileRoute("/logga-in")({
 	beforeLoad: ({ context }) => {
-		if (context.user) throw redirect({ to: "/styrelser" });
+		if (context.user) throw redirect({ to: "/" });
 	},
 	component: LogIn,
 });
@@ -30,7 +30,7 @@ function LogIn() {
 				},
 			});
 			await router.invalidate();
-			await router.navigate({ to: "/styrelser" });
+			await router.navigate({ to: "/" });
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Något gick fel.");
 			setPending(false);
@@ -38,7 +38,7 @@ function LogIn() {
 	}
 
 	return (
-		<main>
+		<main className="mx-auto w-4/5 space-y-2.5 p-4">
 			<h1>Logga in</h1>
 			<form onSubmit={onSubmit}>
 				<Field id="email" label="E-post">

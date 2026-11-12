@@ -34,7 +34,7 @@ export function Field({
 	const hintId = hint ? `${id}-hint` : undefined;
 	return (
 		<FieldContext.Provider value={{ id, hintId }}>
-			<p>
+			<p className="flex flex-col">
 				<label htmlFor={id}>{label}</label>
 				{children}
 				{hint && <small id={hintId}>{hint}</small>}
@@ -55,15 +55,19 @@ export function useFieldProps(props: {
 	};
 }
 
+export const fieldStyle =
+	"w-full border-1 border-stone-400 rounded-lg text-lg w-full";
 /** A text-like <input> (text, email, password, date…). */
 export function Input(props: ComponentProps<"input">) {
-	return <input {...props} {...useFieldProps(props)} />;
+	return <input {...props} className={fieldStyle} {...useFieldProps(props)} />;
 }
 
 export function Textarea(props: ComponentProps<"textarea">) {
-	return <textarea {...props} {...useFieldProps(props)} />;
+	return (
+		<textarea {...props} className={fieldStyle} {...useFieldProps(props)} />
+	);
 }
 
 export function Select(props: ComponentProps<"select">) {
-	return <select {...props} {...useFieldProps(props)} />;
+	return <select {...props} className={fieldStyle} {...useFieldProps(props)} />;
 }

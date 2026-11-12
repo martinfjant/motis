@@ -7,11 +7,11 @@ import {
 	useMatches,
 	useRouter,
 } from "@tanstack/react-router";
-import { Button } from "#/components/Button";
+import { NotFound } from "#/components/NotFound";
+import { UserMenu } from "#/components/UserMenu";
 import { DEFAULT_PATTERN } from "#/patterns";
 import { getCurrentUser, logOut } from "#/server/auth.functions";
 import patternsCss from "../patterns.css?url";
-import appCss from "../styles.css?url";
 import tailwindCss from "../tailwind.css?url";
 
 export const Route = createRootRoute({
@@ -24,13 +24,13 @@ export const Route = createRootRoute({
 		],
 		links: [
 			{ rel: "stylesheet", href: tailwindCss },
-			{ rel: "stylesheet", href: appCss },
 			// Board background patterns, chosen per board in its settings.
 			{ rel: "stylesheet", href: patternsCss },
 		],
 	}),
 	shellComponent: RootDocument,
 	component: () => <Outlet />,
+	notFoundComponent: NotFound,
 });
 
 function SiteHeader() {
@@ -45,23 +45,16 @@ function SiteHeader() {
 	}
 
 	return (
-		<header>
-			<Link to="/">BRF-protokoll</Link>
-			<nav aria-label="Huvudmeny">
+		<header className="flex flex-row justify-between">
+			<div className="bg-white rounded-xl content-center px-5 m-5">
+				<Link to="/">BRF-protokoll</Link>
+			</div>
+			<nav
+				aria-label="Huvudmeny"
+				className="bg-white rounded-xl content-center px-5 m-5"
+			>
 				{user ? (
-					<ul>
-						<li>
-							<Link to="/styrelser">Styrelser</Link>
-						</li>
-						<li>
-							<Link to="/konto">Mitt konto</Link>
-						</li>
-						<li>
-							<form onSubmit={handleLogOut}>
-								<Button type="submit">Logga ut ({user.name})</Button>
-							</form>
-						</li>
-					</ul>
+					<UserMenu name={user.name} onLogOut={handleLogOut} />
 				) : (
 					<ul>
 						<li>

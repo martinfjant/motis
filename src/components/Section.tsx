@@ -12,8 +12,14 @@ export function Section({
 	title: ReactNode;
 }) {
 	return (
-		<section aria-labelledby={id} {...props}>
-			<h2 id={id}>{title}</h2>
+		<section
+			aria-labelledby={id}
+			{...props}
+			className="bg-white rounded-2xl p-2.5"
+		>
+			<h2 id={id} className="text-2xl">
+				{title}
+			</h2>
 			{children}
 		</section>
 	);

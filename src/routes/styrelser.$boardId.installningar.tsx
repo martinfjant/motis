@@ -47,10 +47,10 @@ export const Route = createFileRoute("/styrelser/$boardId/installningar")({
 		return { ...details, templates: overview.templates };
 	},
 	notFoundComponent: () => (
-		<main>
+		<main className="mx-auto w-4/5 space-y-2.5 p-4">
 			<h1>Styrelsen hittades inte</h1>
 			<p>
-				<Link to="/styrelser">Tillbaka till styrelser</Link>
+				<Link to="/">Tillbaka till Mina föreningar</Link>
 			</p>
 		</main>
 	),
@@ -110,13 +110,13 @@ function Settings() {
 
 	async function onLeave(userId: string) {
 		await run(() => removeBoardMember({ data: { boardId: board.id, userId } }));
-		if (userId === currentUserId) await router.navigate({ to: "/styrelser" });
+		if (userId === currentUserId) await router.navigate({ to: "/" });
 	}
 
 	return (
-		<main>
+		<main className="mx-auto w-4/5 space-y-2.5 p-4">
 			<Breadcrumbs>
-				<Link to="/styrelser">Styrelser</Link>
+				<Link to="/">Mina föreningar</Link>
 				<Link to="/styrelser/$boardId" params={{ boardId: board.id }}>
 					{board.name}
 				</Link>

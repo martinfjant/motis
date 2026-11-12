@@ -27,7 +27,7 @@ function Account() {
 	const { user } = Route.useRouteContext();
 	const boards = Route.useLoaderData();
 	return (
-		<main>
+		<main className="mx-auto w-4/5 space-y-2.5 p-4">
 			<h1>Mitt konto</h1>
 			<ProfileSection user={user} />
 			<Section id="titles" title="Titlar i styrelser">

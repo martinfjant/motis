@@ -9,7 +9,7 @@ export function Checkbox({ label, id: givenId, ...props }: ChoiceProps) {
 	const generatedId = useId();
 	const id = givenId ?? generatedId;
 	return (
-		<p>
+		<p className="flex flex-row justify-normal">
 			<input {...props} id={id} type="checkbox" />{" "}
 			<label htmlFor={id}>{label}</label>
 		</p>

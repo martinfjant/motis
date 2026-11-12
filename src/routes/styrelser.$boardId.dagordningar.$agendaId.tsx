@@ -31,10 +31,10 @@ export const Route = createFileRoute(
 		return data;
 	},
 	notFoundComponent: () => (
-		<main>
+		<main className="mx-auto w-4/5 space-y-2.5 p-4">
 			<h1>Dagordningen hittades inte</h1>
 			<p>
-				<Link to="/styrelser">Tillbaka till styrelser</Link>
+				<Link to="/">Tillbaka till Mina föreningar</Link>
 			</p>
 		</main>
 	),
@@ -71,9 +71,9 @@ function AgendaPage() {
 	}
 
 	return (
-		<main>
+		<main className="mx-auto w-4/5 space-y-2.5 p-4">
 			<Breadcrumbs>
-				<Link to="/styrelser">Styrelser</Link>
+				<Link to="/">Mina föreningar</Link>
 				<Link to="/styrelser/$boardId" params={{ boardId: board.id }}>
 					{board.name}
 				</Link>
