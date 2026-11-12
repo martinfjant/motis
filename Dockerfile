@@ -1,3 +1,7 @@
+# check=skip=FromPlatformFlagConstDisallowed
+# (The platform is fixed on purpose: Bunny only runs linux/amd64, and this
+# way an image built on an Apple Silicon Mac can't end up arm64 by mistake.)
+
 # The app as a container image for Bunny Magic Containers, which only runs
 # linux/amd64 images. Build on a Mac with:
 #   docker build --platform linux/amd64 -t brf-protokoll .
