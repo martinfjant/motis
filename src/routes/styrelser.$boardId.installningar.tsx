@@ -200,7 +200,6 @@ function Settings() {
 								"Namn",
 								"Titel",
 								"E-postadress",
-								"Konto",
 								...(isAdmin ? ["Åtgärder"] : []),
 							]}
 						>
@@ -505,7 +504,7 @@ function UnregisteredRow({
 	if (editing)
 		return (
 			<tr>
-				<Cell colSpan={5}>
+				<Cell colSpan={4}>
 					<form
 						aria-label={`Ändra ${member.name}`}
 						onSubmit={(e) => {
@@ -531,10 +530,18 @@ function UnregisteredRow({
 
 	return (
 		<tr>
-			<RowHeader>{member.name}</RowHeader>
+			<RowHeader>
+				{member.name}
+				{/* Registered since with the same email: can be linked. */}
+				{member.hasAccount && (
+					<>
+						{" "}
+						<small>(har nu ett konto)</small>
+					</>
+				)}
+			</RowHeader>
 			<Cell>{member.title}</Cell>
 			<Cell>{member.email}</Cell>
-			<Cell>{member.hasAccount ? "Har nu ett konto" : "Inget konto"}</Cell>
 			{canEdit && (
 				<Cell>
 					{member.hasAccount && (
