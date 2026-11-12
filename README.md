@@ -47,11 +47,17 @@ and `503` with the problems otherwise; use it as the host's health check.
 Magic Containers runs Docker images built for **linux/amd64** from a
 registry (Docker Hub, GitHub Container Registry, …).
 
-1. Build and push the image:
+1. Push to `main`. The GitHub Action in `.github/workflows/image.yml` checks
+   and tests the code, then builds the image and publishes it as
+   `ghcr.io/martinfjant/motis:latest` (and tagged with the commit). New
+   packages on GitHub are private: either make the package public, or give
+   Bunny a GitHub token with `read:packages` under Image Registries.
+
+   To build by hand instead:
 
    ```bash
-   docker build --platform linux/amd64 -t ghcr.io/<owner>/brf-protokoll:latest .
-   docker push ghcr.io/<owner>/brf-protokoll:latest
+   docker build --platform linux/amd64 -t ghcr.io/martinfjant/motis:latest .
+   docker push ghcr.io/martinfjant/motis:latest
    ```
 
 2. Create a Bunny Database, and under its Access page generate tokens and
@@ -60,13 +66,13 @@ registry (Docker Hub, GitHub Container Registry, …).
 3. Create the app from the image, with container port 3000, `APP_URL` set to
    the site's https address, `RESEND_API_KEY` and `MAIL_FROM`, and
    `/api/health` as health check.
+4. The database is migrated when the first instance starts. Several
+   instances starting at once take turns.
 
 Email goes through [Resend](https://resend.com). Verify the sending domain
 there first (preferably a subdomain such as `mail.example.se`): Resend shows
 the DNS records (SPF and DKIM) to add. Until a domain is verified, Resend
 only delivers to the Resend account's own address.
-4. The database is migrated when the first instance starts. Several
-   instances starting at once take turns.
 
 Still to check on the first deploy: which header carries the visitor's IP
 address (for `TRUST_PROXY`), backups of the database, and response times
