@@ -16,6 +16,7 @@ import { Route as RegistreraRouteImport } from './routes/registrera'
 import { Route as UtkorgRouteImport } from './routes/utkorg'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as DagordningShareIdRouteImport } from './routes/dagordning.$shareId'
+import { Route as JusteraTokenRouteImport } from './routes/justera.$token'
 import { Route as ProtokollShareIdRouteImport } from './routes/protokoll.$shareId'
 import { Route as StyrelserBoardIdRouteImport } from './routes/styrelser.$boardId'
 import { Route as StyrelserBoardIdIndexRouteImport } from './routes/styrelser.$boardId.index'
@@ -57,6 +58,11 @@ const ApiHealthRoute = ApiHealthRouteImport.update({
 const DagordningShareIdRoute = DagordningShareIdRouteImport.update({
   id: '/dagordning/$shareId',
   path: '/dagordning/$shareId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JusteraTokenRoute = JusteraTokenRouteImport.update({
+  id: '/justera/$token',
+  path: '/justera/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProtokollShareIdRoute = ProtokollShareIdRouteImport.update({
@@ -107,6 +113,7 @@ export interface FileRoutesByFullPath {
   '/utkorg': typeof UtkorgRoute
   '/api/health': typeof ApiHealthRoute
   '/dagordning/$shareId': typeof DagordningShareIdRoute
+  '/justera/$token': typeof JusteraTokenRoute
   '/protokoll/$shareId': typeof ProtokollShareIdRoute
   '/styrelser/$boardId': typeof StyrelserBoardIdRouteWithChildren
   '/styrelser/$boardId/installningar': typeof StyrelserBoardIdInstallningarRoute
@@ -123,6 +130,7 @@ export interface FileRoutesByTo {
   '/utkorg': typeof UtkorgRoute
   '/api/health': typeof ApiHealthRoute
   '/dagordning/$shareId': typeof DagordningShareIdRoute
+  '/justera/$token': typeof JusteraTokenRoute
   '/protokoll/$shareId': typeof ProtokollShareIdRoute
   '/styrelser/$boardId/installningar': typeof StyrelserBoardIdInstallningarRoute
   '/styrelser/$boardId': typeof StyrelserBoardIdIndexRoute
@@ -139,6 +147,7 @@ export interface FileRoutesById {
   '/utkorg': typeof UtkorgRoute
   '/api/health': typeof ApiHealthRoute
   '/dagordning/$shareId': typeof DagordningShareIdRoute
+  '/justera/$token': typeof JusteraTokenRoute
   '/protokoll/$shareId': typeof ProtokollShareIdRoute
   '/styrelser/$boardId': typeof StyrelserBoardIdRouteWithChildren
   '/styrelser/$boardId/installningar': typeof StyrelserBoardIdInstallningarRoute
@@ -157,6 +166,7 @@ export interface FileRouteTypes {
     | '/utkorg'
     | '/api/health'
     | '/dagordning/$shareId'
+    | '/justera/$token'
     | '/protokoll/$shareId'
     | '/styrelser/$boardId'
     | '/styrelser/$boardId/installningar'
@@ -173,6 +183,7 @@ export interface FileRouteTypes {
     | '/utkorg'
     | '/api/health'
     | '/dagordning/$shareId'
+    | '/justera/$token'
     | '/protokoll/$shareId'
     | '/styrelser/$boardId/installningar'
     | '/styrelser/$boardId'
@@ -188,6 +199,7 @@ export interface FileRouteTypes {
     | '/utkorg'
     | '/api/health'
     | '/dagordning/$shareId'
+    | '/justera/$token'
     | '/protokoll/$shareId'
     | '/styrelser/$boardId'
     | '/styrelser/$boardId/installningar'
@@ -205,6 +217,7 @@ export interface RootRouteChildren {
   UtkorgRoute: typeof UtkorgRoute
   ApiHealthRoute: typeof ApiHealthRoute
   DagordningShareIdRoute: typeof DagordningShareIdRoute
+  JusteraTokenRoute: typeof JusteraTokenRoute
   ProtokollShareIdRoute: typeof ProtokollShareIdRoute
   StyrelserBoardIdRoute: typeof StyrelserBoardIdRouteWithChildren
 }
@@ -258,6 +271,13 @@ declare module '@tanstack/react-router' {
       path: '/dagordning/$shareId'
       fullPath: '/dagordning/$shareId'
       preLoaderRoute: typeof DagordningShareIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/justera/$token': {
+      id: '/justera/$token'
+      path: '/justera/$token'
+      fullPath: '/justera/$token'
+      preLoaderRoute: typeof JusteraTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/protokoll/$shareId': {
@@ -341,6 +361,7 @@ const rootRouteChildren: RootRouteChildren = {
   UtkorgRoute: UtkorgRoute,
   ApiHealthRoute: ApiHealthRoute,
   DagordningShareIdRoute: DagordningShareIdRoute,
+  JusteraTokenRoute: JusteraTokenRoute,
   ProtokollShareIdRoute: ProtokollShareIdRoute,
   StyrelserBoardIdRoute: StyrelserBoardIdRouteWithChildren,
 }

@@ -47,7 +47,7 @@ export type Protocol = {
 	closedAt: string | null;
 };
 
-const toProtocol = (r: Row): Protocol => ({
+export const toProtocol = (r: Row): Protocol => ({
 	id: String(r.id),
 	boardId: String(r.board_id),
 	agendaId: r.agenda_id == null ? null : String(r.agenda_id),
@@ -223,21 +223,13 @@ export async function getProtocol(
 		listMembers(db, userId, board.id),
 		listUnregistered(db, userId, board.id),
 	]);
-	const edits = await db.execute({
-		sql: "SELECT user_name, edited_at FROM protocol_edits WHERE protocol_id = ? ORDER BY edited_at",
-		args: [protocolId],
-	});
+	const edits = await listEdits(db, protocolId);
 	return {
 		board,
 		protocol: toProtocol(row),
 		items: await listProtocolItems(db, protocolId),
 		/** Changes made after the protocol was closed, oldest first. */
-		edits: edits.rows.map(
-			(r): ProtocolEdit => ({
-				userName: String(r.user_name),
-				editedAt: String(r.edited_at),
-			}),
-		),
+		edits,
 		/**
 		 * Board members as written in the protocol, "Namn (Titel)", for
 		 * attendance and person choices, with and without an account, in one
@@ -520,10 +512,7 @@ export async function getPublicProtocol(db: Client, shareId: string) {
 
 	const [items, edits] = await Promise.all([
 		listProtocolItems(db, protocol.id),
-		db.execute({
-			sql: "SELECT user_name, edited_at FROM protocol_edits WHERE protocol_id = ? ORDER BY edited_at",
-			args: [protocol.id],
-		}),
+		listEdits(db, protocol.id),
 	]);
 	return {
 		status: "closed" as const,
@@ -541,17 +530,27 @@ export async function getPublicProtocol(db: Client, shareId: string) {
 			type,
 			value: publicValue(value),
 		})),
-		edits: edits.rows.map(
-			(r): ProtocolEdit => ({
-				userName: String(r.user_name),
-				editedAt: String(r.edited_at),
-			}),
-		),
+		edits,
 	};
 }
 
+/** Changes made after the protocol was closed, oldest first. */
+export async function listEdits(
+	db: Client,
+	protocolId: string,
+): Promise<ProtocolEdit[]> {
+	const res = await db.execute({
+		sql: "SELECT user_name, edited_at FROM protocol_edits WHERE protocol_id = ? ORDER BY edited_at",
+		args: [protocolId],
+	});
+	return res.rows.map((r) => ({
+		userName: String(r.user_name),
+		editedAt: String(r.edited_at),
+	}));
+}
+
 /** A recorded value without what only the board should see: who is who. */
-function publicValue(v: ProtocolValue): ProtocolValue {
+export function publicValue(v: ProtocolValue): ProtocolValue {
 	return v.reviewers
 		? { ...v, reviewers: v.reviewers.map(({ name }) => ({ name })) }
 		: v;

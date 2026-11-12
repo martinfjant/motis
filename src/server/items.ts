@@ -139,3 +139,33 @@ export function personLabel(name: string, title: string): string {
 
 /** A change made after a protocol was closed: who (as written) and when (UTC). */
 export type ProtocolEdit = { userName: string; editedAt: string };
+
+// ---------- Justering (see reviews.server.ts) ----------
+
+export type ReviewStatus = "pending" | "approved" | "declined";
+
+export type Review = {
+	id: string;
+	name: string;
+	email: string;
+	status: ReviewStatus;
+	/** Why it was declined; "" otherwise. */
+	comment: string;
+	/** ISO 8601 UTC, or null while pending. */
+	decidedAt: string | null;
+};
+
+/** The latest sending of a protocol for justering. */
+export type ReviewRound = {
+	round: number;
+	sentAt: string;
+	sentByName: string;
+	reviews: Review[];
+	/**
+	 * Declined if anyone declined, approved once everyone has approved,
+	 * otherwise pending.
+	 */
+	state: ReviewStatus;
+	/** The protocol has changed since it was sent, so the round no longer holds. */
+	changed: boolean;
+};

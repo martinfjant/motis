@@ -14,10 +14,15 @@ import { MeetingForm } from "#/components/MeetingForm";
 import { MentionNames } from "#/components/MentionTextarea";
 import { ProtocolDisplay, ProtocolHistory } from "#/components/ProtocolView";
 import { ProtocolPoint } from "#/components/protocol-points/ProtocolPoint";
+import { ReviewSection } from "#/components/ReviewSection";
 import { Section } from "#/components/Section";
 import { ShareSection } from "#/components/ShareSection";
 import { addItem, deleteItem } from "#/server/agendas.functions";
-import type { CarryOverFlags, ProtocolValue } from "#/server/items";
+import type {
+	CarryOverFlags,
+	ProtocolValue,
+	ReviewRound,
+} from "#/server/items";
 import {
 	closeProtocol,
 	deleteProtocol,
@@ -27,6 +32,7 @@ import {
 	setCarryOver,
 	updateProtocol,
 } from "#/server/protocols.functions";
+import { sendForReview } from "#/server/reviews.functions";
 
 export const Route = createFileRoute(
 	"/styrelser/$boardId/protokoll/$protocolId",
@@ -58,6 +64,7 @@ function ProtocolPage() {
 		reviewerCandidates,
 		people,
 		edits,
+		review,
 	} = Route.useLoaderData();
 	const router = useRouter();
 	const [error, setError] = useState<string | null>(null);
@@ -205,12 +212,25 @@ function ProtocolPage() {
 						<p>
 							<Button
 								type="button"
-								onClick={() => setEditSession(crypto.randomUUID())}
+								onClick={() => {
+									const warning = review && editWarning(review);
+									if (!warning || confirm(warning))
+										setEditSession(crypto.randomUUID());
+								}}
 							>
 								Redigera protokollet
 							</Button>
 						</p>
 						<ProtocolDisplay protocol={protocol} items={items} edits={edits} />
+						<ErrorMessage error={error} />
+						<ReviewSection
+							items={items}
+							reviewerCandidates={reviewerCandidates}
+							review={review}
+							onSend={() =>
+								run(() => sendForReview({ data: { protocolId: protocol.id } }))
+							}
+						/>
 						{share}
 					</>
 				) : (
@@ -340,4 +360,16 @@ function ProtocolPage() {
 
 function unique(names: string[]) {
 	return [...new Set(names.map((n) => n.trim()).filter(Boolean))];
+}
+
+/**
+ * What to ask before editing a protocol that has been sent for justering:
+ * a change means sending it again. Nothing to ask if it was declined (it
+ * is meant to be edited) or has already changed.
+ */
+function editWarning(review: ReviewRound): string | null {
+	if (review.changed || review.state === "declined") return null;
+	return review.state === "approved"
+		? "Protokollet är justerat. Ändrar du något gäller inte justeringen längre, och protokollet måste justeras igen. Redigera ändå?"
+		: "Protokollet väntar på justering. Ändrar du något måste det skickas för justering igen. Redigera ändå?";
 }

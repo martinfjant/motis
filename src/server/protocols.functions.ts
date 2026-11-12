@@ -29,8 +29,16 @@ export const getProtocol = createServerFn({ method: "GET" })
 	.handler(async ({ data }) => {
 		const { db, user, protocols } = await ctx();
 		const { BoardError } = await import("./boards.server");
+		const { getReviewRound } = await import("./reviews.server");
 		try {
-			return await protocols.getProtocol(db, user.id, data.protocolId);
+			const protocol = await protocols.getProtocol(
+				db,
+				user.id,
+				data.protocolId,
+			);
+			/** The latest sending for justering, or null. */
+			const review = await getReviewRound(db, data.protocolId);
+			return { ...protocol, review };
 		} catch (err) {
 			if (err instanceof BoardError) return null;
 			throw err;
