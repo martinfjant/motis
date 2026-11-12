@@ -1,6 +1,6 @@
 import type { Client } from "@libsql/client";
 import { AuthError, type User, validateSignUp } from "./auth.server";
-import { appUrl, sendMail } from "./mail/send.server";
+import { appUrl, MailError, sendMail } from "./mail/send.server";
 import { passwordResetMail, verifyEmailMail } from "./mail/templates.server";
 import { hashPassword } from "./password.server";
 import { checkToken, createToken, redeemToken } from "./tokens.server";
@@ -155,15 +155,22 @@ export async function requestPasswordReset(
 		{ purpose: "reset", subjectId: userId, email, minutes: RESET_LINK_MINUTES },
 		now,
 	);
-	await sendMail(
-		db,
-		passwordResetMail({
-			to: email,
-			name: String(row.name),
-			url: appUrl(`/nytt-losenord/${token}`),
-			minutes: RESET_LINK_MINUTES,
-		}),
-	);
+	try {
+		await sendMail(
+			db,
+			passwordResetMail({
+				to: email,
+				name: String(row.name),
+				url: appUrl(`/nytt-losenord/${token}`),
+				minutes: RESET_LINK_MINUTES,
+			}),
+		);
+	} catch (err) {
+		// An error here would reveal that the account exists; the answer
+		// stays the same, and the person can ask again.
+		if (!(err instanceof MailError)) throw err;
+		console.error("Password reset email not sent:", err.message);
+	}
 }
 
 /** Whether a password link still works, to show the form or say it doesn't. */

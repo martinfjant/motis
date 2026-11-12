@@ -54,6 +54,7 @@ const heading = { fontSize: "22px", margin: "0 0 12px" };
 /** To a justerare: read the protocol and approve or decline it. */
 export function reviewRequestMail(input: {
 	to: string;
+	replyTo?: string;
 	name: string;
 	senderName: string;
 	boardName: string;
@@ -68,6 +69,7 @@ export function reviewRequestMail(input: {
 	const personal = `Länken är personlig och fungerar i ${input.days} dagar. Skicka inte vidare mejlet.`;
 	return {
 		to: input.to,
+		replyTo: input.replyTo,
 		subject: `Justera protokollet: ${meeting} – ${input.boardName}`,
 		html: renderEmail(
 			<>
@@ -241,6 +243,7 @@ export function passwordResetMail(input: {
 /** "Skicka kallelse": the agenda of a coming meeting, to each board member. */
 export function callMail(input: {
 	to: string;
+	replyTo?: string;
 	senderName: string;
 	boardName: string;
 	agenda: { title: string; meetingAt: string; location: string };
@@ -253,6 +256,7 @@ export function callMail(input: {
 	const intro = `${input.senderName} kallar till möte i ${input.boardName}.`;
 	return {
 		to: input.to,
+		replyTo: input.replyTo,
 		subject: `Kallelse: ${meeting} – ${input.boardName}`,
 		html: renderEmail(
 			<>

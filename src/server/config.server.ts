@@ -43,6 +43,41 @@ export function appBaseUrl(): string {
 	return url;
 }
 
+/** Sending email through Resend. */
+export type MailConfig = {
+	apiKey: string;
+	/** The sender, e.g. "BRF-protokoll <noreply@mail.example.se>". */
+	from: string;
+	/**
+	 * Development only: every email goes to this address instead, so test
+	 * data's addresses never get real mail.
+	 */
+	devTo?: string;
+};
+
+/**
+ * Email through Resend, or null for the development outbox. Production
+ * requires RESEND_API_KEY and MAIL_FROM. In development the outbox is used
+ * unless RESEND_API_KEY is set, and then DEV_MAIL_TO must be too.
+ */
+export function mailConfig(): MailConfig | null {
+	const apiKey = env.RESEND_API_KEY?.trim();
+	if (!apiKey) {
+		if (isProduction)
+			throw new ConfigError("Inställningen RESEND_API_KEY saknas.");
+		return null;
+	}
+	const from = env.MAIL_FROM?.trim();
+	if (!from) throw new ConfigError("Inställningen MAIL_FROM saknas.");
+	if (isProduction) return { apiKey, from };
+	const devTo = env.DEV_MAIL_TO?.trim();
+	if (!devTo)
+		throw new ConfigError(
+			"Sätt DEV_MAIL_TO till din egen adress när RESEND_API_KEY används under utveckling.",
+		);
+	return { apiKey, from, devTo };
+}
+
 /**
  * Whether to trust X-Forwarded-For for the client's IP address (login rate
  * limiting). Only when a proxy in front of the app always sets it, or
@@ -56,7 +91,7 @@ export const secureCookies = isProduction;
 /** Every problem with the settings, for the health check. Empty when fine. */
 export function configProblems(): string[] {
 	const problems: string[] = [];
-	for (const check of [databaseConfig, appBaseUrl])
+	for (const check of [databaseConfig, appBaseUrl, mailConfig])
 		try {
 			check();
 		} catch (err) {

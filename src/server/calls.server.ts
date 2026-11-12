@@ -3,7 +3,7 @@ import type { Client } from "@libsql/client";
 import { listItems, requireParent } from "./agendas.server";
 import { BoardError, listMembers, listUnregistered } from "./boards.server";
 import { personLabel } from "./items";
-import { appUrl, sendMail } from "./mail/send.server";
+import { appUrl, MailError, sendMail } from "./mail/send.server";
 import { callMail } from "./mail/templates.server";
 
 // "Skicka kallelse": the agenda emailed to everyone on the board, with the
@@ -84,10 +84,11 @@ export async function sendCall(
 		throw new BoardError("Ingen i styrelsen har en e-postadress.");
 
 	const sender = await db.execute({
-		sql: "SELECT name FROM users WHERE id = ?",
+		sql: "SELECT name, email FROM users WHERE id = ?",
 		args: [userId],
 	});
 	const senderName = String(sender.rows[0]?.name ?? "");
+	const senderEmail = String(sender.rows[0]?.email ?? "");
 	const items = await listItems(db, "agenda", agendaId);
 	const agenda = {
 		title: String(row.title),
@@ -95,18 +96,47 @@ export async function sendCall(
 		location: String(row.location),
 	};
 	const url = appUrl(`/dagordning/${String(row.share_id)}`);
+	// Everyone who can be reached gets it, even if someone's email fails.
+	const sent: CallRecipient[] = [];
+	const failed: string[] = [];
+	let failure: MailError | undefined;
 	for (const r of recipients)
-		await sendMail(
-			db,
-			callMail({
-				to: r.email,
-				senderName,
-				boardName: board.name,
-				agenda,
-				items,
-				url,
-			}),
+		try {
+			await sendMail(
+				db,
+				callMail({
+					to: r.email,
+					// Replies go to whoever called the meeting.
+					replyTo: senderEmail || undefined,
+					senderName,
+					boardName: board.name,
+					agenda,
+					items,
+					url,
+				}),
+			);
+			sent.push(r);
+		} catch (err) {
+			if (!(err instanceof MailError)) throw err;
+			failed.push(r.name);
+			failure = err;
+		}
+	if (sent.length > 0)
+		await recordCall(db, agendaId, userId, senderName, sent, now);
+	if (failure)
+		throw new BoardError(
+			`Kallelsen kom inte fram till ${failed.join(", ")}. ${failure.message}`,
 		);
+}
+
+async function recordCall(
+	db: Client,
+	agendaId: string,
+	userId: string,
+	senderName: string,
+	recipients: CallRecipient[],
+	now: Date,
+) {
 	await db.execute({
 		sql: `INSERT INTO agenda_calls (id, agenda_id, sent_at, sent_by, sent_by_name, recipients)
           VALUES (?, ?, ?, ?, ?, ?)`,

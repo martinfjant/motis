@@ -16,7 +16,8 @@ corepack pnpm check    # biome: lint and format
 
 No settings are needed in development. Emails are not sent: they land in
 the outbox at <http://localhost:3000/utkorg>, where the links in them can be
-followed.
+followed. To try real delivery, set `RESEND_API_KEY`, `MAIL_FROM` and
+`DEV_MAIL_TO`; every email then goes to `DEV_MAIL_TO`.
 
 Database changes are numbered SQL files in `src/server/migrations/`. They
 run automatically, in order, the first time the server uses the database;
@@ -36,7 +37,8 @@ part and is loaded from `node_modules` at runtime.
 ## Settings
 
 Environment variables, all described in [`.env.example`](.env.example). In
-production the database and `APP_URL` are required. `/api/health` answers
+production the database, `APP_URL`, `RESEND_API_KEY` and `MAIL_FROM` are
+required. `/api/health` answers
 `200 {"ok":true}` when the settings are in place and the database answers,
 and `503` with the problems otherwise; use it as the host's health check.
 
@@ -56,7 +58,13 @@ registry (Docker Hub, GitHub Container Registry, …).
    add them as secrets to the Magic Container app. That sets
    `BUNNY_DATABASE_URL` and `BUNNY_DATABASE_AUTH_TOKEN`.
 3. Create the app from the image, with container port 3000, `APP_URL` set to
-   the site's https address, and `/api/health` as health check.
+   the site's https address, `RESEND_API_KEY` and `MAIL_FROM`, and
+   `/api/health` as health check.
+
+Email goes through [Resend](https://resend.com). Verify the sending domain
+there first (preferably a subdomain such as `mail.example.se`): Resend shows
+the DNS records (SPF and DKIM) to add. Until a domain is verified, Resend
+only delivers to the Resend account's own address.
 4. The database is migrated when the first instance starts. Several
    instances starting at once take turns.
 

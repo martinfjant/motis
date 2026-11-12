@@ -32,6 +32,9 @@ beforeEach(() => {
 });
 afterEach(() => {
 	vi.useRealTimers();
+	vi.unstubAllEnvs();
+	vi.unstubAllGlobals();
+	vi.restoreAllMocks();
 });
 
 beforeEach(async () => {
@@ -105,4 +108,33 @@ test("no kallelse once the meeting has started, or from outside the board", asyn
 	await createProtocol(db, anna, agendaId);
 	await expect(sendCall(db, anna, agendaId)).rejects.toThrow(/redan startat/);
 	expect(await listOutbox(db)).toEqual([]);
+});
+
+test("if some emails fail, the others still go out and are recorded", async () => {
+	vi.stubEnv("RESEND_API_KEY", "re_test");
+	vi.stubEnv("MAIL_FROM", "noreply@mail.example.se");
+	vi.stubEnv("DEV_MAIL_TO", "jag@example.se");
+	vi.spyOn(console, "error").mockImplementation(() => {});
+	const subjects: string[] = [];
+	// Resend refuses the email meant for Dora.
+	vi.stubGlobal(
+		"fetch",
+		vi.fn(async (_url: string, init: RequestInit) => {
+			const body = JSON.parse(String(init.body));
+			subjects.push(body.subject);
+			expect(body.reply_to).toBe("bo@example.se");
+			return body.subject.includes("dora@")
+				? Response.json({ name: "validation_error" }, { status: 422 })
+				: Response.json({ id: "x" });
+		}),
+	);
+	await expect(sendCall(db, bo, agendaId)).rejects.toThrow(
+		/kom inte fram till Dora \(Kassör\)/,
+	);
+	expect(subjects).toHaveLength(3);
+	const { sent } = await getCallStatus(db, anna, agendaId);
+	expect(sent[0].recipients.map((r) => r.email)).toEqual([
+		"anna@example.se",
+		"bo@example.se",
+	]);
 });

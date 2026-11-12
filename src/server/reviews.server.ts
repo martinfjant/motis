@@ -9,7 +9,7 @@ import type {
 	ReviewRound,
 	ReviewStatus,
 } from "./items";
-import { appUrl, sendMail } from "./mail/send.server";
+import { appUrl, MailError, sendMail } from "./mail/send.server";
 import {
 	reviewDecidedMail,
 	reviewDoneMail,
@@ -209,10 +209,11 @@ export async function sendForReview(
 		);
 
 	const sender = await db.execute({
-		sql: "SELECT name FROM users WHERE id = ?",
+		sql: "SELECT name, email FROM users WHERE id = ?",
 		args: [userId],
 	});
 	const senderName = String(sender.rows[0]?.name ?? "");
+	const senderEmail = String(sender.rows[0]?.email ?? "");
 	const round = (current?.round ?? 0) + 1;
 	const contentHash = await protocolFingerprint(db, protocolId);
 	const sends = withEmail.flatMap(({ contact, ...r }) =>
@@ -247,6 +248,8 @@ export async function sendForReview(
 		})),
 		"write",
 	);
+	const failed: string[] = [];
+	let failure: MailError | undefined;
 	for (const r of sends) {
 		const token = await createToken(
 			db,
@@ -258,19 +261,32 @@ export async function sendForReview(
 			},
 			now,
 		);
-		await sendMail(
-			db,
-			reviewRequestMail({
-				to: r.email,
-				name: r.plainName,
-				senderName,
-				boardName: board.name,
-				protocol,
-				url: appUrl(`/justera/${token}`),
-				days: REVIEW_LINK_DAYS,
-			}),
-		);
+		try {
+			await sendMail(
+				db,
+				reviewRequestMail({
+					to: r.email,
+					// Questions about the minutes go to whoever sent them.
+					replyTo: senderEmail || undefined,
+					name: r.plainName,
+					senderName,
+					boardName: board.name,
+					protocol,
+					url: appUrl(`/justera/${token}`),
+					days: REVIEW_LINK_DAYS,
+				}),
+			);
+		} catch (err) {
+			if (!(err instanceof MailError)) throw err;
+			failed.push(r.name);
+			failure = err;
+		}
 	}
+	// The round is sent; whoever didn't get the email gets it on sending again.
+	if (failure)
+		throw new BoardError(
+			`Mejlet kom inte fram till ${failed.join(" och ")}. ${failure.message} Skicka för justering igen för att försöka på nytt.`,
+		);
 }
 
 /** The review a link is for, with its protocol and round. */
@@ -397,7 +413,22 @@ export async function decideReview(
 	if (res.rowsAffected === 0)
 		throw new BoardError("Du har redan svarat på det här utskicket.");
 
-	// Tell the sender, if they still have an account.
+	// Tell the sender, if they still have an account. The answer is saved
+	// either way, so a failed email is only logged.
+	try {
+		await notifySender(db, found, input.approve, comment);
+	} catch (err) {
+		if (!(err instanceof MailError)) throw err;
+		console.error("Justering notice not sent:", err.message);
+	}
+}
+
+async function notifySender(
+	db: Client,
+	found: NonNullable<Awaited<ReturnType<typeof reviewForToken>>>,
+	approve: boolean,
+	comment: string,
+) {
 	const senderId = found.row.sent_by;
 	if (senderId == null) return;
 	const sender = await db.execute({
@@ -418,7 +449,7 @@ export async function decideReview(
 		protocol,
 		url,
 	};
-	if (!input.approve) {
+	if (!approve) {
 		await sendMail(
 			db,
 			reviewDecidedMail({ ...mail, reviewerName: found.review.name, comment }),
