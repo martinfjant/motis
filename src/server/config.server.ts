@@ -4,6 +4,19 @@
 // fails with a clear message (and /api/health reports it) instead of
 // half-working.
 
+import { existsSync } from "node:fs";
+
+// Development: settings can be kept in a .env file in the project folder
+// (ignored by git and Docker), e.g. a Resend key for trying real email.
+// Settings already in the environment win. Production gets everything from
+// the environment, and tests never read the file, so they can't send mail.
+if (
+	process.env.NODE_ENV !== "production" &&
+	!process.env.VITEST &&
+	existsSync(".env")
+)
+	process.loadEnvFile(".env");
+
 const env = process.env;
 
 /** Running the production build (the Docker image sets NODE_ENV). */
