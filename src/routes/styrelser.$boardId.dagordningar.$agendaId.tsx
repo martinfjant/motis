@@ -8,6 +8,7 @@ import { useState } from "react";
 import { AgendaItems, MeetingDetails } from "#/components/AgendaView";
 import { Breadcrumbs } from "#/components/Breadcrumbs";
 import { Button } from "#/components/Button";
+import { CallSection } from "#/components/CallSection";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { ItemEditor } from "#/components/ItemEditor";
 import { MeetingForm } from "#/components/MeetingForm";
@@ -18,6 +19,7 @@ import {
 	deleteAgenda,
 	getAgenda,
 	regenerateAgendaShareId,
+	sendCall,
 	updateAgenda,
 } from "#/server/agendas.functions";
 import { createProtocol } from "#/server/protocols.functions";
@@ -42,7 +44,8 @@ export const Route = createFileRoute(
 });
 
 function AgendaPage() {
-	const { board, agenda, items, protocolId, today } = Route.useLoaderData();
+	const { board, agenda, items, protocolId, today, call } =
+		Route.useLoaderData();
 	const router = useRouter();
 	const [editing, setEditing] = useState(false);
 	const [startError, setStartError] = useState<string | null>(null);
@@ -126,6 +129,16 @@ function AgendaPage() {
 						<AgendaItems items={items} headingLevel={3} />
 					</Section>
 				</>
+			)}
+
+			{!protocolId && (
+				<CallSection
+					{...call}
+					onSend={async () => {
+						await sendCall({ data: { agendaId: agenda.id } });
+						await router.invalidate();
+					}}
+				/>
 			)}
 
 			<Section id="protocol" title="Protokoll">

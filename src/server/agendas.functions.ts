@@ -123,8 +123,15 @@ export const getAgenda = createServerFn({ method: "GET" })
 	.handler(async ({ data }) => {
 		const { db, user, agendas, meetings } = await ctx();
 		const result = await orNull(agendas.getAgenda(db, user.id, data.agendaId));
-		// Today in Sweden, to tell whether the meeting can be started.
-		return result && { ...result, today: meetings.today() };
+		if (!result) return null;
+		const { getCallStatus } = await import("./calls.server");
+		return {
+			...result,
+			// Today in Sweden, to tell whether the meeting can be started.
+			today: meetings.today(),
+			/** Who gets the kallelse, and when it has been sent. */
+			call: await getCallStatus(db, user.id, data.agendaId),
+		};
 	});
 
 export const updateAgenda = createServerFn({ method: "POST" })
@@ -247,4 +254,12 @@ export const regenerateAgendaShareId = createServerFn({ method: "POST" })
 	.handler(async ({ data }) => {
 		const { db, user, agendas } = await ctx();
 		return agendas.regenerateShareId(db, user.id, data.agendaId);
+	});
+
+export const sendCall = createServerFn({ method: "POST" })
+	.validator((d: unknown) => ({ agendaId: str(obj(d).agendaId) }))
+	.handler(async ({ data }) => {
+		const { db, user } = await ctx();
+		const { sendCall } = await import("./calls.server");
+		await sendCall(db, user.id, data.agendaId);
 	});

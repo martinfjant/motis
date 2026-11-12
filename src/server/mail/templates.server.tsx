@@ -42,6 +42,13 @@ const meetingName = (p: ProtocolInfo) =>
 const genitive = (name: string) => (/[sxz]$/i.test(name) ? name : `${name}s`);
 
 const muted = { color: "#78716c", fontSize: "14px" };
+const detailHead = {
+	textAlign: "left" as const,
+	padding: "2px 16px 2px 0",
+	color: "#78716c",
+	fontWeight: 400,
+};
+
 const heading = { fontSize: "22px", margin: "0 0 12px" };
 
 /** To a justerare: read the protocol and approve or decline it. */
@@ -227,6 +234,88 @@ export function passwordResetMail(input: {
 			`Välj nytt lösenord: ${input.url}`,
 			"",
 			notYou,
+		].join("\n"),
+	};
+}
+
+/** "Skicka kallelse": the agenda of a coming meeting, to each board member. */
+export function callMail(input: {
+	to: string;
+	senderName: string;
+	boardName: string;
+	agenda: { title: string; meetingAt: string; location: string };
+	items: { title: string; description: string }[];
+	url: string;
+}): Mail {
+	const { agenda } = input;
+	const meeting = meetingName(agenda);
+	const when = agenda.meetingAt ? formatMeetingAt(agenda.meetingAt) : "";
+	const intro = `${input.senderName} kallar till möte i ${input.boardName}.`;
+	return {
+		to: input.to,
+		subject: `Kallelse: ${meeting} – ${input.boardName}`,
+		html: renderEmail(
+			<>
+				<h1 style={heading}>Kallelse: {agenda.title}</h1>
+				<p>{intro}</p>
+				{(when || agenda.location) && (
+					<table style={{ borderCollapse: "collapse", margin: "12px 0" }}>
+						<tbody>
+							{when && (
+								<tr>
+									<th style={detailHead}>Tid</th>
+									<td>{when}</td>
+								</tr>
+							)}
+							{agenda.location && (
+								<tr>
+									<th style={detailHead}>Plats</th>
+									<td>{agenda.location}</td>
+								</tr>
+							)}
+						</tbody>
+					</table>
+				)}
+				<h2 style={{ fontSize: "18px", margin: "20px 0 8px" }}>Dagordning</h2>
+				{input.items.length === 0 ? (
+					<p>Dagordningen har inga punkter ännu.</p>
+				) : (
+					<ol style={{ paddingLeft: "24px", margin: 0 }}>
+						{input.items.map((item, i) => (
+							// biome-ignore lint/suspicious/noArrayIndexKey: a fixed list rendered once
+							<li key={i} style={{ margin: "6px 0" }}>
+								<strong>{item.title}</strong>
+								{item.description && (
+									<div style={{ ...muted, whiteSpace: "pre-wrap" }}>
+										{item.description}
+									</div>
+								)}
+							</li>
+						))}
+					</ol>
+				)}
+				<EmailButton href={input.url}>Visa dagordningen</EmailButton>
+				<p style={muted}>
+					Dagordningen kan ändras fram till mötet; länken visar alltid den
+					senaste. Fungerar inte knappen? Kopiera adressen: {input.url}
+				</p>
+			</>,
+		),
+		text: [
+			intro,
+			"",
+			...(when ? [`Tid: ${when}`] : []),
+			...(agenda.location ? [`Plats: ${agenda.location}`] : []),
+			"",
+			"Dagordning",
+			...input.items.flatMap((item, i) => [
+				`${i + 1}. ${item.title}`,
+				...(item.description
+					? item.description.split("\n").map((l) => `   ${l}`)
+					: []),
+			]),
+			"",
+			`Visa dagordningen (den senaste versionen): ${input.url}`,
 		].join("\n"),
 	};
 }
