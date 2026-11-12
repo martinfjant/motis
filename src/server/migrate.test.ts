@@ -1,3 +1,6 @@
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { createClient } from "@libsql/client";
 import { expect, test } from "vitest";
 import { migrate, migrations } from "./migrate";
@@ -108,4 +111,43 @@ test("0017: attendance moves to right after the opening", async () => {
 			"SELECT id, position FROM agenda_items ORDER BY agenda_id, position",
 		),
 	).toEqual(["1:a1a", "2:a1c", "3:a1b", "1:a2a", "2:a2b", "3:a2c"]);
+});
+
+test("a failing migration leaves nothing behind", async () => {
+	const db = createClient({ url: ":memory:" });
+	await migrate(db);
+	const broken = {
+		name: "9999_broken.sql",
+		sql: "CREATE TABLE half (id TEXT); INSERT INTO nowhere VALUES (1);",
+	};
+	migrations.push(broken);
+	try {
+		await expect(migrate(db)).rejects.toThrow();
+	} finally {
+		migrations.pop();
+	}
+	const half = await db.execute(
+		"SELECT name FROM sqlite_master WHERE name = 'half'",
+	);
+	expect(half.rows).toHaveLength(0);
+	const recorded = await db.execute(
+		"SELECT 1 FROM _migrations WHERE name = '9999_broken.sql'",
+	);
+	expect(recorded.rows).toHaveLength(0);
+});
+
+test("two instances migrating the same database at once apply everything once", async () => {
+	const dir = mkdtempSync(join(tmpdir(), "migrate-"));
+	try {
+		const url = `file:${join(dir, "db.sqlite")}`;
+		const a = createClient({ url });
+		const b = createClient({ url });
+		await Promise.all([migrate(a), migrate(b)]);
+		const applied = await a.execute("SELECT COUNT(*) AS n FROM _migrations");
+		expect(Number(applied.rows[0].n)).toBe(migrations.length);
+		a.close();
+		b.close();
+	} finally {
+		rmSync(dir, { recursive: true, force: true });
+	}
 });

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Client } from "@libsql/client";
+import { appBaseUrl } from "../config.server";
 
 /** An email, with an HTML and a plain-text version of the same content. */
 export type Mail = { to: string; subject: string; html: string; text: string };
@@ -34,7 +35,7 @@ export async function sendMail(db: Client, mail: Mail): Promise<void> {
  * appUrl("/dagordning/abc"). APP_URL is the site's address in production.
  */
 export function appUrl(path: string): string {
-	return new URL(path, process.env.APP_URL ?? "http://localhost:3000").href;
+	return new URL(path, appBaseUrl()).href;
 }
 
 export type OutboxMail = Mail & { id: string; createdAt: string };

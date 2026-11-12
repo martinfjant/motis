@@ -7,6 +7,7 @@ import {
 	setCookie,
 } from "@tanstack/react-start/server";
 import type { User } from "./auth.server";
+import { secureCookies, trustProxy } from "./config.server";
 
 const COOKIE = "session";
 
@@ -20,7 +21,7 @@ async function startSession(userId: string) {
 	setCookie(COOKIE, token, {
 		httpOnly: true,
 		sameSite: "lax",
-		secure: process.env.NODE_ENV === "production",
+		secure: secureCookies,
 		path: "/",
 		expires,
 	});
@@ -64,7 +65,7 @@ export const logIn = createServerFn({ method: "POST" })
 		// Behind a proxy (e.g. in production) the client's address is only in
 		// X-Forwarded-For. Trust that header only when told to, since clients
 		// can set it themselves when nothing in front of the app overwrites it.
-		const ip = getRequestIP({ xForwardedFor: process.env.TRUST_PROXY === "1" });
+		const ip = getRequestIP({ xForwardedFor: trustProxy });
 		const user = await logInWithLimit(await getDb(), { ...data, ip });
 		await startSession(user.id);
 		return user;

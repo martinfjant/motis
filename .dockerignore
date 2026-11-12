@@ -1,0 +1,16 @@
+# Kept out of the image build: installed and built inside it, or local only.
+node_modules
+.output
+.nitro
+.tanstack
+.vinxi
+dist
+local.db*
+.env
+.env.*
+!.env.example
+.git
+.claude
+.vscode
+.DS_Store
+*.log
