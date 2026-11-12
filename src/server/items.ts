@@ -137,6 +137,29 @@ export function personLabel(name: string, title: string): string {
 	return title ? `${name} (${title})` : name;
 }
 
+/**
+ * A person point that chooses the meeting's secretary, recognised by its
+ * title ("Val av sekreterare", "Mötessekreterare"…). The secretary writes
+ * the minutes, so they can't also be a justerare of them.
+ */
+export function isSecretaryPoint(item: { type: ItemType; title: string }) {
+	return item.type === "person" && /sekreterare/i.test(item.title);
+}
+
+/** The names chosen as secretary in a protocol. */
+export function secretaryNames(items: ProtocolItem[]): string[] {
+	return items.flatMap((i) =>
+		isSecretaryPoint(i) && i.value.person ? [i.value.person] : [],
+	);
+}
+
+/** The names chosen as justerare in a protocol. */
+export function reviewerNames(items: ProtocolItem[]): string[] {
+	return items.flatMap((i) =>
+		i.type === "reviewers" ? (i.value.reviewers ?? []).map((r) => r.name) : [],
+	);
+}
+
 /** A change made after a protocol was closed: who (as written) and when (UTC). */
 export type ProtocolEdit = { userName: string; editedAt: string };
 

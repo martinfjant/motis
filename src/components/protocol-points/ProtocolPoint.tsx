@@ -32,6 +32,7 @@ export function ProtocolPoint({
 	choosable,
 	present,
 	reviewerCandidates,
+	secretaries,
 	onSave,
 	onCarryOver,
 	onDelete,
@@ -45,6 +46,8 @@ export function ProtocolPoint({
 	present: string[];
 	/** Board members who can be justerare, if present. */
 	reviewerCandidates: ReviewerCandidate[];
+	/** Chosen as secretary, so not justerare. */
+	secretaries: string[];
 	onSave: (value: ProtocolValue) => Promise<boolean>;
 	onCarryOver: (flags: CarryOverFlags) => Promise<boolean>;
 	onDelete: () => void;
@@ -81,6 +84,7 @@ export function ProtocolPoint({
 					choosable={choosable}
 					present={present}
 					reviewerCandidates={reviewerCandidates}
+					secretaries={secretaries}
 				/>
 			)}
 		</fieldset>
@@ -93,6 +97,7 @@ function PointBody(
 		choosable: string[];
 		present: string[];
 		reviewerCandidates: ReviewerCandidate[];
+		secretaries: string[];
 	},
 ) {
 	switch (props.item.type) {

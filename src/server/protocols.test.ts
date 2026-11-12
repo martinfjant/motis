@@ -452,12 +452,14 @@ test("justerare: one or two, among the board members present, each once", async 
 		});
 	const rejects = (...members: string[]) =>
 		expect(choose(...members)).rejects.toThrow(BoardError);
-	await rejects(`user:${anna}`); // the point asks for two
+	await rejects(); // at least one
 	await rejects(`user:${anna}`, `user:${anna}`);
 	await rejects(`user:${anna}`, `user:${bo}`); // bo was not present
 	await rejects(`user:${anna}`, `user:${cia}`); // cia is not on the board
 	await rejects(`user:${anna}`, "user:nobody");
 
+	// One is enough, even where two are allowed.
+	await choose(`user:${anna}`);
 	await choose(`user:${anna}`, dora?.member ?? "");
 	const saved = (await getProtocol(db, anna, protocol.id)).items.find(
 		(i) => i.id === reviewers.id,
@@ -502,4 +504,27 @@ test("justerare: one or two, among the board members present, each once", async 
 		done: true,
 		reviewers: [{ name: "anna" }, { name: "Dora" }],
 	});
+});
+
+test("the secretary can't be justerare, whichever is chosen first", async () => {
+	const protocol = await createProtocol(db, anna, agendaId);
+	const { items } = await getProtocol(db, anna, protocol.id);
+	const id = (t: string) => items.find((i) => i.title === t)?.id ?? "";
+	await saveItemValue(db, anna, id("Närvarande ledamöter"), {
+		present: ["anna", "bo"],
+	});
+	await saveItemValue(db, anna, id("Val av sekreterare"), { person: "anna" });
+	await expect(
+		saveItemValue(db, anna, id("Val av justerare"), {
+			reviewers: [{ name: "", member: `user:${anna}` }],
+		}),
+	).rejects.toThrow(/sekreterare och kan inte/);
+	await saveItemValue(db, anna, id("Val av justerare"), {
+		reviewers: [{ name: "", member: `user:${bo}` }],
+	});
+	await expect(
+		saveItemValue(db, anna, id("Val av sekreterare"), { person: "bo" }),
+	).rejects.toThrow(/justerare och kan inte/);
+	// The chair may be justerare.
+	await saveItemValue(db, anna, id("Val av ordförande"), { person: "bo" });
 });

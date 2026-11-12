@@ -24,6 +24,7 @@ import {
 	type CarryOverFlags,
 	canCarryOver,
 	type ItemType,
+	isSecretaryPoint,
 	type MemberRef,
 	type ProtocolEdit,
 	type ProtocolItem,
@@ -32,6 +33,8 @@ import {
 	type Reviewer,
 	type ReviewerCandidate,
 	type ReviewerCount,
+	reviewerNames,
+	secretaryNames,
 } from "./items";
 import { guardProtocolEdit } from "./protocol-edits.server";
 
@@ -275,8 +278,9 @@ function candidates(
 
 /**
  * Checks the chosen justerare and gives them their names as written in the
- * protocol: board members, as many as the point asks for, each once, and
- * all marked present in the protocol's attendance.
+ * protocol: board members, one or at most as many as the point allows,
+ * each once, all marked present in the protocol's attendance, and not the
+ * meeting's secretary.
  */
 async function resolveReviewers(
 	db: Client,
@@ -288,9 +292,10 @@ async function resolveReviewers(
 	const unique = [...new Set(chosen)];
 	if (unique.length !== chosen.length)
 		throw new BoardError("Välj olika personer som justerare.");
-	if (unique.length !== count)
+	if (unique.length === 0) throw new BoardError("Välj en justerare.");
+	if (unique.length > count)
 		throw new BoardError(
-			count === 1 ? "Välj en justerare." : "Välj två justerare.",
+			count === 1 ? "Välj bara en justerare." : "Välj högst två justerare.",
 		);
 	const protocol = await db.execute({
 		sql: "SELECT board_id FROM protocols WHERE id = ?",
@@ -310,11 +315,16 @@ async function resolveReviewers(
 			i.type === "attendance" ? (i.value.present ?? []) : [],
 		),
 	);
+	const secretaries = secretaryNames(items);
 	return unique.map((member) => {
 		const name = byRef.get(member);
 		if (!name) throw new BoardError("Justeraren finns inte i styrelsen.");
 		if (!present.has(name))
 			throw new BoardError(`${name} är inte markerad som närvarande.`);
+		if (secretaries.includes(name))
+			throw new BoardError(
+				`${name} är sekreterare och kan inte också vara justerare.`,
+			);
 		return { name, member };
 	});
 }
@@ -421,6 +431,13 @@ export async function saveItemValue(
 					item.reviewerCount,
 				)
 			: undefined;
+	if (isSecretaryPoint(item) && input.person) {
+		const person = input.person.trim();
+		if (reviewerNames(await listProtocolItems(db, parentId)).includes(person))
+			throw new BoardError(
+				`${person} är justerare och kan inte också vara sekreterare.`,
+			);
+	}
 	const value = {
 		...cleanValue(item.type, { ...input, reviewers }),
 		...(done ? { done } : {}),

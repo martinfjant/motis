@@ -18,10 +18,11 @@ import { ReviewSection } from "#/components/ReviewSection";
 import { Section } from "#/components/Section";
 import { ShareSection } from "#/components/ShareSection";
 import { addItem, deleteItem } from "#/server/agendas.functions";
-import type {
-	CarryOverFlags,
-	ProtocolValue,
-	ReviewRound,
+import {
+	type CarryOverFlags,
+	type ProtocolValue,
+	type ReviewRound,
+	secretaryNames,
 } from "#/server/items";
 import {
 	closeProtocol,
@@ -300,6 +301,7 @@ function ProtocolPage() {
 													choosable={choosable}
 													present={present}
 													reviewerCandidates={reviewerCandidates}
+													secretaries={secretaryNames(items)}
 													onSave={saveValue(item.id)}
 													onCarryOver={saveCarryOver(item.id)}
 													onDelete={() => {

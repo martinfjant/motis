@@ -210,7 +210,7 @@ export function ItemFields({
 						defaultValue={String(item?.reviewerCount ?? DEFAULT_REVIEWER_COUNT)}
 					>
 						<option value="1">En</option>
-						<option value="2">Två</option>
+						<option value="2">En eller två</option>
 					</Select>
 				</Field>
 			)}

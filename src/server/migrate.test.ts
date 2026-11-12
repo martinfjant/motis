@@ -54,3 +54,58 @@ test("0012: Val av justerare becomes the reviewers type, except in protocols", a
 		["t2", "person", "{}"],
 	]);
 });
+
+test("0017: attendance moves to right after the opening", async () => {
+	const db = createClient({ url: ":memory:" });
+	await db.execute(
+		"CREATE TABLE _migrations (name TEXT PRIMARY KEY, applied_at TEXT)",
+	);
+	for (const m of migrations.filter((m) => m.name < "0017")) {
+		await db.executeMultiple(m.sql);
+		await db.execute({
+			sql: "INSERT INTO _migrations (name) VALUES (?)",
+			args: [m.name],
+		});
+	}
+	await db.executeMultiple(`
+		INSERT INTO users (id, email, name, password_hash) VALUES ('u', 'u@x.se', 'U', 'x');
+		INSERT INTO boards (id, name, created_by) VALUES ('b', 'B', 'u');
+		INSERT INTO templates (id, board_id, name) VALUES ('t', 'b', 'Mall'), ('t2', 'b', 'Utan öppning');
+		INSERT INTO template_items (id, template_id, position, title, type) VALUES
+			('t1', 't', 1, 'Öppnande', 'open'),
+			('t2', 't', 2, 'Ordförande', 'person'),
+			('t3', 't', 3, 'Justerare', 'reviewers'),
+			('t4', 't', 4, 'Närvaro', 'attendance'),
+			('t5', 't', 5, 'Ekonomi', 'text'),
+			('u1', 't2', 1, 'Ekonomi', 'text'),
+			('u2', 't2', 2, 'Närvaro', 'attendance');
+		INSERT INTO agendas (id, board_id, share_id, title) VALUES ('a1', 'b', 's1', 'Ej startat'), ('a2', 'b', 's2', 'Startat');
+		INSERT INTO agenda_items (id, agenda_id, position, title, type) VALUES
+			('a1a', 'a1', 1, 'Öppnande', 'open'),
+			('a1b', 'a1', 2, 'Ordförande', 'person'),
+			('a1c', 'a1', 3, 'Närvaro', 'attendance'),
+			('a2a', 'a2', 1, 'Öppnande', 'open'),
+			('a2b', 'a2', 2, 'Ordförande', 'person'),
+			('a2c', 'a2', 3, 'Närvaro', 'attendance');
+		INSERT INTO protocols (id, board_id, agenda_id, share_id, title) VALUES ('p', 'b', 'a2', 'ps', 'Startat');
+	`);
+	await migrate(db);
+	const order = async (sql: string) =>
+		(await db.execute(sql)).rows.map((r) => `${r.position}:${r.id}`);
+	expect(
+		await order(
+			"SELECT id, position FROM template_items WHERE template_id = 't' ORDER BY position",
+		),
+	).toEqual(["1:t1", "2:t4", "3:t2", "4:t3", "5:t5"]);
+	// Without an opening point, nothing moves.
+	expect(
+		await order(
+			"SELECT id, position FROM template_items WHERE template_id = 't2' ORDER BY position",
+		),
+	).toEqual(["1:u1", "2:u2"]);
+	expect(
+		await order(
+			"SELECT id, position FROM agenda_items ORDER BY agenda_id, position",
+		),
+	).toEqual(["1:a1a", "2:a1c", "3:a1b", "1:a2a", "2:a2b", "3:a2c"]);
+});
