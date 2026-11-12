@@ -28,7 +28,7 @@ export function Table({
 							<th
 								key={column}
 								scope="col"
-								className="px-2 py-1 text-left text-sm font-medium text-stone-500"
+								className="px-2 py-1 text-left text-sm font-medium whitespace-nowrap text-stone-500"
 							>
 								{column}
 							</th>

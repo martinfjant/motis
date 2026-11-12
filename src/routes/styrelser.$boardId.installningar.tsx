@@ -9,15 +9,16 @@ import { Breadcrumbs } from "#/components/Breadcrumbs";
 import { Button } from "#/components/Button";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Input, Select } from "#/components/Field";
-import { IconButton, PenIcon } from "#/components/IconButton";
+import {
+	CheckIcon,
+	CloseIcon,
+	IconButton,
+	PenIcon,
+} from "#/components/IconButton";
 import { Notice } from "#/components/Notice";
 import { Section } from "#/components/Section";
 import { Cell, RowHeader, Table } from "#/components/Table";
-import {
-	TITLE_LIST_ID,
-	TitleForm,
-	TitleSuggestions,
-} from "#/components/TitleForm";
+import { TITLE_LIST_ID, TitleSuggestions } from "#/components/TitleForm";
 import { DEFAULT_PATTERN, PATTERNS } from "#/patterns";
 import { createTemplate, getBoardOverview } from "#/server/agendas.functions";
 import {
@@ -380,7 +381,6 @@ function MemberRow({
 	run: Run;
 	onLeave: () => void;
 }) {
-	const router = useRouter();
 	const [editing, setEditing] = useState<"title" | "role" | null>(null);
 	const canEditTitle = isAdmin || isSelf;
 	const roleName = (role: string) =>
@@ -391,19 +391,50 @@ function MemberRow({
 			<RowHeader>{member.name}</RowHeader>
 			<Cell>
 				{editing === "title" ? (
-					<TitleForm
-						id={`title-${member.userId}`}
-						label={`Titel för ${member.name}`}
-						title={member.title}
-						onSave={async (title) => {
-							await setMemberTitle({
-								data: { boardId, userId: member.userId, title },
-							});
-							await router.invalidate();
-							setEditing(null);
+					<form
+						aria-label={`Titel för ${member.name}`}
+						className="inline-flex flex-wrap items-center gap-1"
+						onSubmit={(e) => {
+							e.preventDefault();
+							const title = String(
+								new FormData(e.currentTarget).get("title") ?? "",
+							);
+							run(
+								() =>
+									setMemberTitle({
+										data: { boardId, userId: member.userId, title },
+									}),
+								() => setEditing(null),
+							);
 						}}
-						onCancel={() => setEditing(null)}
-					/>
+						onKeyDown={(e) => {
+							if (e.key === "Escape") setEditing(null);
+						}}
+					>
+						<label htmlFor={`title-${member.userId}`} className="sr-only">
+							Titel för {member.name}
+						</label>
+						<input
+							id={`title-${member.userId}`}
+							name="title"
+							list={TITLE_LIST_ID}
+							maxLength={60}
+							defaultValue={member.title}
+							// biome-ignore lint/a11y/noAutofocus: opened on purpose with the pen
+							autoFocus
+							className="w-28 rounded-md border border-stone-400 px-1 text-sm"
+						/>
+						<IconButton
+							type="submit"
+							label="Spara titel"
+							icon={<CheckIcon />}
+						/>
+						<IconButton
+							label="Avbryt"
+							icon={<CloseIcon />}
+							onClick={() => setEditing(null)}
+						/>
+					</form>
 				) : (
 					<span className="inline-flex items-center gap-1">
 						{member.title}
@@ -447,7 +478,7 @@ function MemberRow({
 						</select>
 						<IconButton
 							label="Avbryt"
-							icon={<span aria-hidden="true">✕</span>}
+							icon={<CloseIcon />}
 							onClick={() => setEditing(null)}
 						/>
 					</span>
