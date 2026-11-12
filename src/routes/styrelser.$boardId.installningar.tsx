@@ -190,7 +190,7 @@ function Settings() {
 
 				{unregistered.length > 0 && (
 					<>
-						<p>
+						<p className="mt-6 text-stone-600">
 							Ledamöter utan konto kan väljas i närvaro och val i protokollen,
 							men kan inte logga in.
 						</p>
@@ -331,6 +331,12 @@ function BackgroundSection({
 	);
 }
 
+// Row buttons, smaller than elsewhere so a row's actions fit side by side.
+// mt-0! undoes the flow spacing (main * + *) in styles.css, which would
+// otherwise push every button after the first down.
+const ACTIONS =
+	"flex flex-wrap items-center gap-y-1 [&_button]:px-2 [&_button]:py-0.5 [&_button]:text-sm [&_button]:whitespace-nowrap [&>*]:mt-0!";
+
 type Run = (
 	action: () => Promise<unknown>,
 	after?: () => void,
@@ -387,39 +393,53 @@ function MemberRow({
 					member.title
 				)}
 			</Cell>
-			<Cell>{member.email}</Cell>
-			<Cell>{member.role === "admin" ? "Administratör" : "Ledamot"}</Cell>
+			<Cell className="text-sm whitespace-nowrap text-stone-600">
+				{member.email}
+			</Cell>
 			<Cell>
-				{canEditTitle && !editing && (
-					<Button type="button" onClick={() => setEditing(true)}>
-						{member.title ? "Ändra titel" : "Lägg till titel"}
-					</Button>
-				)}
-				{isAdmin && (
-					<Button
-						type="button"
-						onClick={() =>
-							run(() =>
-								changeMemberRole({
-									data: {
-										boardId,
-										userId: member.userId,
-										role: member.role === "admin" ? "member" : "admin",
-									},
-								}),
-							)
-						}
-					>
-						{member.role === "admin"
-							? "Gör till ledamot"
-							: "Gör till administratör"}
-					</Button>
-				)}
-				{(isAdmin || isSelf) && (
-					<Button type="button" onClick={onLeave}>
-						{isSelf ? "Lämna styrelsen" : "Ta bort"}
-					</Button>
-				)}
+				<span
+					className={`rounded-full px-2 py-0.5 text-sm whitespace-nowrap ${
+						member.role === "admin"
+							? "bg-sky-100 text-sky-800"
+							: "bg-stone-100 text-stone-700"
+					}`}
+				>
+					{member.role === "admin" ? "Administratör" : "Ledamot"}
+				</span>
+			</Cell>
+			<Cell>
+				<div className={ACTIONS}>
+					{canEditTitle && !editing && (
+						<Button type="button" onClick={() => setEditing(true)}>
+							{member.title ? "Ändra titel" : "Lägg till titel"}
+						</Button>
+					)}
+					{isAdmin && (
+						<Button
+							type="button"
+							onClick={() =>
+								run(() =>
+									changeMemberRole({
+										data: {
+											boardId,
+											userId: member.userId,
+											role: member.role === "admin" ? "member" : "admin",
+										},
+									}),
+								)
+							}
+						>
+							{member.role === "admin"
+								? "Gör till ledamot"
+								: "Gör till administratör"}
+						</Button>
+					)}
+					{(isAdmin || isSelf) && (
+						<Button type="button" onClick={onLeave}>
+							{isSelf ? "Lämna styrelsen" : "Ta bort"}
+						</Button>
+					)}
+				</div>
 			</Cell>
 		</tr>
 	);
@@ -536,41 +556,47 @@ function UnregisteredRow({
 				{member.hasAccount && (
 					<>
 						{" "}
-						<small>(har nu ett konto)</small>
+						<small className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 font-normal whitespace-nowrap text-amber-800">
+							har nu ett konto
+						</small>
 					</>
 				)}
 			</RowHeader>
 			<Cell>{member.title}</Cell>
-			<Cell>{member.email}</Cell>
+			<Cell className="text-sm whitespace-nowrap text-stone-600">
+				{member.email}
+			</Cell>
 			{canEdit && (
 				<Cell>
-					{member.hasAccount && (
+					<div className={ACTIONS}>
+						{member.hasAccount && (
+							<Button
+								type="button"
+								onClick={() => {
+									if (
+										confirm(
+											`Gör ${member.name} till registrerad ledamot? Kontot med ${member.email} får då tillgång till styrelsen.`,
+										)
+									)
+										run(() => linkUnregistered({ data: ref }));
+								}}
+							>
+								Gör till registrerad ledamot
+							</Button>
+						)}
+						<Button type="button" onClick={() => setEditing(true)}>
+							Ändra
+						</Button>
 						<Button
 							type="button"
 							onClick={() => {
-								if (
-									confirm(
-										`Gör ${member.name} till registrerad ledamot? Kontot med ${member.email} får då tillgång till styrelsen.`,
-									)
-								)
-									run(() => linkUnregistered({ data: ref }));
+								if (confirm(`Ta bort ${member.name} från styrelsen?`))
+									run(() => removeUnregistered({ data: ref }));
 							}}
 						>
-							Gör till registrerad ledamot
+							Ta bort
 						</Button>
-					)}
-					<Button type="button" onClick={() => setEditing(true)}>
-						Ändra
-					</Button>
-					<Button
-						type="button"
-						onClick={() => {
-							if (confirm(`Ta bort ${member.name} från styrelsen?`))
-								run(() => removeUnregistered({ data: ref }));
-						}}
-					>
-						Ta bort
-					</Button>
+					</div>
 				</Cell>
 			)}
 		</tr>
