@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import type { MemberRef } from "./items";
 
 const str = (v: unknown) => (typeof v === "string" ? v : "");
 const obj = (d: unknown) => (d ?? {}) as Record<string, unknown>;
@@ -74,6 +75,12 @@ export const saveItemValue = createServerFn({ method: "POST" })
 				at: str(v.at),
 				present: Array.isArray(v.present) ? v.present.map(str) : [],
 				person: str(v.person),
+				reviewers: Array.isArray(v.reviewers)
+					? v.reviewers.map((r) => ({
+							name: "",
+							member: str(obj(r).member) as MemberRef,
+						}))
+					: [],
 				decision: str(v.decision),
 				notes: str(v.notes),
 			},

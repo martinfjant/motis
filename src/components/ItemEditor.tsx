@@ -11,6 +11,7 @@ import {
 	updateItem,
 } from "#/server/agendas.functions";
 import {
+	DEFAULT_REVIEWER_COUNT,
 	ITEM_TYPE_LABELS,
 	ITEM_TYPES,
 	type Item,
@@ -26,6 +27,7 @@ function readItem(form: HTMLFormElement) {
 		type: String(f.get("type") ?? ""),
 		description: String(f.get("description") ?? ""),
 		extraNames: String(f.get("extraNames") ?? "").split("\n"),
+		reviewerCount: String(f.get("reviewerCount") ?? ""),
 	};
 }
 
@@ -199,6 +201,17 @@ export function ItemFields({
 						name="extraNames"
 						defaultValue={item?.extraNames.join("\n")}
 					/>
+				</Field>
+			)}
+			{type === "reviewers" && (
+				<Field id={id("reviewerCount")} label="Antal justerare">
+					<Select
+						name="reviewerCount"
+						defaultValue={String(item?.reviewerCount ?? DEFAULT_REVIEWER_COUNT)}
+					>
+						<option value="1">En</option>
+						<option value="2">Två</option>
+					</Select>
 				</Field>
 			)}
 		</>

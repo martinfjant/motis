@@ -145,6 +145,7 @@ const itemInput = (d: unknown) => ({
 	type: str(obj(d).type),
 	description: str(obj(d).description),
 	extraNames: strList(obj(d).extraNames),
+	reviewerCount: obj(d).reviewerCount,
 });
 
 export const addItem = createServerFn({ method: "POST" })

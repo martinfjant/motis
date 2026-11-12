@@ -2,7 +2,14 @@ import { randomBytes, randomUUID } from "node:crypto";
 import type { Client, InStatement, Row } from "@libsql/client";
 import { type Board, BoardError, requireMember } from "./boards.server";
 import { defaultTemplateStatements } from "./default-template";
-import { type Item, type ItemType, isItemType } from "./items";
+import {
+	DEFAULT_REVIEWER_COUNT,
+	type Item,
+	type ItemType,
+	isItemType,
+	type ReviewerCount,
+	toReviewerCount,
+} from "./items";
 import { guardProtocolEdit } from "./protocol-edits.server";
 
 export type Template = { id: string; boardId: string; name: string };
@@ -52,7 +59,7 @@ const toAgenda = (r: Row): Agenda => ({
 });
 
 function toItem(r: Row): Item {
-	let config: { extraNames?: unknown } = {};
+	let config: { extraNames?: unknown; reviewerCount?: unknown } = {};
 	try {
 		config = JSON.parse(String(r.config));
 	} catch {}
@@ -65,6 +72,7 @@ function toItem(r: Row): Item {
 		extraNames: Array.isArray(config.extraNames)
 			? config.extraNames.map(String)
 			: [],
+		reviewerCount: toReviewerCount(config.reviewerCount),
 	};
 }
 
@@ -72,10 +80,20 @@ export function cleanNames(names: string[]): string[] {
 	return [...new Set(names.map((n) => n.trim()).filter(Boolean))];
 }
 
-export function configJson(type: ItemType, extraNames: string[]) {
-	return type === "attendance"
-		? JSON.stringify({ extraNames: cleanNames(extraNames) })
-		: "{}";
+/** The item's settings as stored; only attendance and reviewers have any. */
+export function configJson(item: {
+	type: ItemType;
+	extraNames: string[];
+	reviewerCount: ReviewerCount;
+}) {
+	switch (item.type) {
+		case "attendance":
+			return JSON.stringify({ extraNames: cleanNames(item.extraNames) });
+		case "reviewers":
+			return JSON.stringify({ reviewerCount: item.reviewerCount });
+		default:
+			return "{}";
+	}
 }
 
 export function requireTitle(input: string, message: string) {
@@ -263,7 +281,10 @@ export type CarriedItem = {
 	sourceItemId: string;
 };
 
-type NewItem = Pick<Item, "title" | "type" | "description" | "extraNames"> & {
+type NewItem = Pick<
+	Item,
+	"title" | "type" | "description" | "extraNames" | "reviewerCount"
+> & {
 	sourceItemId?: string;
 };
 
@@ -328,7 +349,11 @@ export async function createAgenda(
 	}
 	const items = mergeCarried(
 		fromTemplate,
-		(input.carried ?? []).map((c) => ({ ...c, extraNames: [] })),
+		(input.carried ?? []).map((c) => ({
+			...c,
+			extraNames: [],
+			reviewerCount: DEFAULT_REVIEWER_COUNT,
+		})),
 	);
 
 	const statements: InStatement[] = [
@@ -355,7 +380,7 @@ export async function createAgenda(
 				item.title,
 				item.type,
 				item.description,
-				configJson(item.type, item.extraNames),
+				configJson(item),
 				item.sourceItemId ?? null,
 			],
 		})),
@@ -415,6 +440,8 @@ export type ItemInput = {
 	type: string;
 	description: string;
 	extraNames: string[];
+	/** Only for reviewers items; anything but 1 means 2. */
+	reviewerCount?: unknown;
 };
 
 function cleanItem(input: ItemInput) {
@@ -423,7 +450,11 @@ function cleanItem(input: ItemInput) {
 		title: requireTitle(input.title, "Ange en rubrik för punkten."),
 		type: input.type,
 		description: input.description.trim(),
-		config: configJson(input.type, input.extraNames),
+		config: configJson({
+			type: input.type,
+			extraNames: input.extraNames,
+			reviewerCount: toReviewerCount(input.reviewerCount),
+		}),
 	};
 }
 

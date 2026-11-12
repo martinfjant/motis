@@ -11,6 +11,7 @@ import {
 } from "./agendas.server";
 import { createUser } from "./auth.server";
 import {
+	addMember,
 	addMemberByEmail,
 	BoardError,
 	createBoard,
@@ -416,4 +417,89 @@ test("in development a meeting can be started any day", async () => {
 		anyDay: true,
 	});
 	expect(protocol.agendaId).toBe(agendaId);
+});
+
+test("justerare: one or two, among the board members present, each once", async () => {
+	await addMember(db, anna, boardId, { name: "Dora", email: "", title: "" });
+	const protocol = await createProtocol(db, anna, agendaId);
+	const loaded = await getProtocol(db, anna, protocol.id);
+	const item = (t: string) => {
+		const found = loaded.items.find((i) => i.title === t);
+		if (!found) throw new Error(t);
+		return found;
+	};
+	const reviewers = item("Val av justerare");
+	expect(reviewers).toMatchObject({ type: "reviewers", reviewerCount: 2 });
+
+	const dora = loaded.reviewerCandidates.find((c) => c.label === "Dora");
+	expect(dora).toMatchObject({ hasEmail: false });
+	expect(loaded.reviewerCandidates).toContainEqual({
+		member: `user:${anna}`,
+		label: "anna",
+		hasEmail: true,
+	});
+
+	await saveItemValue(db, anna, item("Närvarande ledamöter").id, {
+		present: ["anna", "Dora", "Revisor Lisa"],
+	});
+	const choose = (...members: string[]) =>
+		saveItemValue(db, anna, reviewers.id, {
+			done: true,
+			reviewers: members.map((member) => ({
+				name: "",
+				member: member as `user:${string}`,
+			})),
+		});
+	const rejects = (...members: string[]) =>
+		expect(choose(...members)).rejects.toThrow(BoardError);
+	await rejects(`user:${anna}`); // the point asks for two
+	await rejects(`user:${anna}`, `user:${anna}`);
+	await rejects(`user:${anna}`, `user:${bo}`); // bo was not present
+	await rejects(`user:${anna}`, `user:${cia}`); // cia is not on the board
+	await rejects(`user:${anna}`, "user:nobody");
+
+	await choose(`user:${anna}`, dora?.member ?? "");
+	const saved = (await getProtocol(db, anna, protocol.id)).items.find(
+		(i) => i.id === reviewers.id,
+	);
+	expect(saved?.value).toEqual({
+		done: true,
+		reviewers: [
+			{ name: "anna", member: `user:${anna}` },
+			{ name: "Dora", member: dora?.member },
+		],
+	});
+
+	// A point for one justerare.
+	await addItem(db, anna, "protocol", protocol.id, {
+		title: "Justering",
+		type: "reviewers",
+		description: "",
+		extraNames: [],
+		reviewerCount: "1",
+	});
+	const one = (await getProtocol(db, anna, protocol.id)).items.find(
+		(i) => i.title === "Justering",
+	);
+	expect(one?.reviewerCount).toBe(1);
+	await expect(
+		saveItemValue(db, anna, one?.id ?? "", {
+			reviewers: [
+				{ name: "", member: `user:${anna}` },
+				{ name: "", member: dora?.member },
+			],
+		}),
+	).rejects.toThrow(BoardError);
+	await saveItemValue(db, anna, one?.id ?? "", {
+		reviewers: [{ name: "", member: `user:${anna}` }],
+	});
+
+	// The public protocol shows the names, not who is who.
+	await closeProtocol(db, anna, protocol.id);
+	const pub = await getPublicProtocol(db, protocol.shareId);
+	if (pub?.status !== "closed") throw new Error("expected closed");
+	expect(pub.items.find((i) => i.id === reviewers.id)?.value).toEqual({
+		done: true,
+		reviewers: [{ name: "anna" }, { name: "Dora" }],
+	});
 });

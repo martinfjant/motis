@@ -227,6 +227,7 @@ test("carried points merge into standing points, others go before Övriga frågo
 		type,
 		description: "",
 		extraNames: [],
+		reviewerCount: 2 as const,
 		sourceItemId,
 	});
 	const carried = [

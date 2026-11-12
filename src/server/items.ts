@@ -9,6 +9,7 @@ export const ITEM_TYPES = [
 	"decision",
 	"text",
 	"next_meeting",
+	"reviewers",
 ] as const;
 export type ItemType = (typeof ITEM_TYPES)[number];
 
@@ -21,6 +22,7 @@ export const ITEM_TYPE_LABELS: Record<ItemType, string> = {
 	decision: "Beslut",
 	text: "Fritext",
 	next_meeting: "Nästa möte (datum och tid)",
+	reviewers: "Val av justerare (bland de närvarande)",
 };
 
 /**
@@ -40,6 +42,37 @@ export type Item = {
 	description: string;
 	/** Only used by attendance items: people who are not board members. */
 	extraNames: string[];
+	/** Only used by reviewers items: how many justerare, 1 or 2. */
+	reviewerCount: ReviewerCount;
+};
+
+export type ReviewerCount = 1 | 2;
+export const DEFAULT_REVIEWER_COUNT: ReviewerCount = 2;
+
+export function toReviewerCount(v: unknown): ReviewerCount {
+	return Number(v) === 1 ? 1 : 2;
+}
+
+/**
+ * A board member as a reference that survives name and title changes:
+ * "user:<id>" for members with an account, "unregistered:<id>" for those
+ * without. Used to find a justerare's email address.
+ */
+export type MemberRef = `user:${string}` | `unregistered:${string}`;
+
+/**
+ * A chosen justerare: the name as written in the protocol, and who it is
+ * (always stored; left out of public views).
+ */
+export type Reviewer = { name: string; member?: MemberRef };
+
+/** A board member who can be chosen as justerare, if present at the meeting. */
+export type ReviewerCandidate = {
+	member: MemberRef;
+	/** As written in the protocol, "Namn (Titel)", the same as in attendance. */
+	label: string;
+	/** Whether there is an address to send the protocol to. */
+	hasEmail: boolean;
 };
 
 export function isItemType(v: unknown): v is ItemType {
@@ -64,6 +97,11 @@ export type ProtocolValue = {
 	present?: string[];
 	/** person: the chosen person's name. */
 	person?: string;
+	/**
+	 * reviewers: the chosen justerare, as many as the point asks for, all
+	 * among those present.
+	 */
+	reviewers?: Reviewer[];
 	/** decision: the decision as it should read in the minutes. */
 	decision?: string;
 	/** All types: free-form minutes for the point. */

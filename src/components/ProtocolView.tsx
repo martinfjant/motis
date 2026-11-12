@@ -116,6 +116,17 @@ export function RecordedValue({ item }: { item: RecordedItem }) {
 					Vald: <strong>{v.person}</strong>
 				</p>
 			)}
+			{item.type === "reviewers" && v.reviewers?.length ? (
+				<p>
+					Justerare:{" "}
+					{v.reviewers.map((r, i) => (
+						<span key={r.name}>
+							{i > 0 && " och "}
+							<strong>{r.name}</strong>
+						</span>
+					))}
+				</p>
+			) : null}
 			{item.type === "decision" && v.decision && (
 				<>
 					<p>Beslut:</p>

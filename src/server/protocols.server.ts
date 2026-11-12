@@ -16,16 +16,22 @@ import {
 	BoardError,
 	listMembers,
 	listUnregistered,
+	type Member,
 	requireMember,
+	type UnregisteredMember,
 } from "./boards.server";
 import {
 	type CarryOverFlags,
 	canCarryOver,
 	type ItemType,
+	type MemberRef,
 	type ProtocolEdit,
 	type ProtocolItem,
 	type ProtocolValue,
 	personLabel,
+	type Reviewer,
+	type ReviewerCandidate,
+	type ReviewerCount,
 } from "./items";
 import { guardProtocolEdit } from "./protocol-edits.server";
 
@@ -87,6 +93,11 @@ export function cleanValue(
 			const person = (input.person ?? "").trim();
 			return person ? { ...base, person } : base;
 		}
+		// Already checked and given their names by resolveReviewers.
+		case "reviewers":
+			return input.reviewers?.length
+				? { ...base, reviewers: input.reviewers }
+				: base;
 		case "decision": {
 			const decision = (input.decision ?? "").trim();
 			return decision ? { ...base, decision } : base;
@@ -188,7 +199,7 @@ export async function createProtocol(
 					item.title,
 					item.type,
 					item.description,
-					configJson(item.type, item.extraNames),
+					configJson(item),
 				],
 			})),
 		],
@@ -236,11 +247,84 @@ export async function getProtocol(
 		memberNames: [...members, ...unregistered]
 			.map((m) => personLabel(m.name, m.title))
 			.sort((a, b) => a.localeCompare(b, "sv")),
+		/**
+		 * Board members who can be chosen as justerare (if present), with
+		 * whether they have an email address to receive the protocol at.
+		 */
+		reviewerCandidates: candidates(members, unregistered),
 		/** Everyone on the board by plain name, for @-mentions in notes. */
 		people: [...members, ...unregistered]
 			.map((m) => ({ name: m.name, label: personLabel(m.name, m.title) }))
 			.sort((a, b) => a.name.localeCompare(b.name, "sv")),
 	};
+}
+
+function candidates(
+	members: Member[],
+	unregistered: UnregisteredMember[],
+): ReviewerCandidate[] {
+	return [
+		...members.map(
+			(m): ReviewerCandidate => ({
+				member: `user:${m.userId}`,
+				label: personLabel(m.name, m.title),
+				hasEmail: true,
+			}),
+		),
+		...unregistered.map(
+			(m): ReviewerCandidate => ({
+				member: `unregistered:${m.id}`,
+				label: personLabel(m.name, m.title),
+				hasEmail: m.email !== "",
+			}),
+		),
+	].sort((a, b) => a.label.localeCompare(b.label, "sv"));
+}
+
+/**
+ * Checks the chosen justerare and gives them their names as written in the
+ * protocol: board members, as many as the point asks for, each once, and
+ * all marked present in the protocol's attendance.
+ */
+async function resolveReviewers(
+	db: Client,
+	userId: string,
+	protocolId: string,
+	chosen: MemberRef[],
+	count: ReviewerCount,
+): Promise<Reviewer[]> {
+	const unique = [...new Set(chosen)];
+	if (unique.length !== chosen.length)
+		throw new BoardError("Välj olika personer som justerare.");
+	if (unique.length !== count)
+		throw new BoardError(
+			count === 1 ? "Välj en justerare." : "Välj två justerare.",
+		);
+	const protocol = await db.execute({
+		sql: "SELECT board_id FROM protocols WHERE id = ?",
+		args: [protocolId],
+	});
+	const boardId = String(protocol.rows[0]?.board_id);
+	const [members, unregistered, items] = await Promise.all([
+		listMembers(db, userId, boardId),
+		listUnregistered(db, userId, boardId),
+		listProtocolItems(db, protocolId),
+	]);
+	const byRef = new Map(
+		candidates(members, unregistered).map((c) => [c.member, c.label]),
+	);
+	const present = new Set(
+		items.flatMap((i) =>
+			i.type === "attendance" ? (i.value.present ?? []) : [],
+		),
+	);
+	return unique.map((member) => {
+		const name = byRef.get(member);
+		if (!name) throw new BoardError("Justeraren finns inte i styrelsen.");
+		if (!present.has(name))
+			throw new BoardError(`${name} är inte markerad som närvarande.`);
+		return { name, member };
+	});
 }
 
 export async function updateProtocol(
@@ -291,6 +375,8 @@ export function missingValue(type: ItemType, v: ProtocolValue): string | null {
 			return v.present?.length ? null : "Ange minst en närvarande.";
 		case "person":
 			return v.person ? null : "Välj en person.";
+		case "reviewers":
+			return v.reviewers?.length ? null : "Välj justerare.";
 		case "decision":
 			return v.decision ? null : "Skriv beslutet.";
 		case "next_meeting":
@@ -333,8 +419,18 @@ export async function saveItemValue(
 	const stored = await storedValue(db, itemId);
 	const flags = flagsOf(stored);
 	const done = !flags.tabled && (input.done === true || stored.done === true);
+	const reviewers =
+		item.type === "reviewers"
+			? await resolveReviewers(
+					db,
+					userId,
+					parentId,
+					(input.reviewers ?? []).flatMap((r) => (r.member ? [r.member] : [])),
+					item.reviewerCount,
+				)
+			: undefined;
 	const value = {
-		...cleanValue(item.type, input),
+		...cleanValue(item.type, { ...input, reviewers }),
 		...(done ? { done } : {}),
 		...flags,
 	};
@@ -443,7 +539,7 @@ export async function getPublicProtocol(db: Client, shareId: string) {
 			title,
 			description,
 			type,
-			value,
+			value: publicValue(value),
 		})),
 		edits: edits.rows.map(
 			(r): ProtocolEdit => ({
@@ -452,6 +548,13 @@ export async function getPublicProtocol(db: Client, shareId: string) {
 			}),
 		),
 	};
+}
+
+/** A recorded value without what only the board should see: who is who. */
+function publicValue(v: ProtocolValue): ProtocolValue {
+	return v.reviewers
+		? { ...v, reviewers: v.reviewers.map(({ name }) => ({ name })) }
+		: v;
 }
 
 /** Replaces the protocol's share link, so the old one stops working. */
