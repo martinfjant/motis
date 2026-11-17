@@ -36,20 +36,28 @@ export function Checkbox({ label, id: givenId, ...props }: ChoiceProps) {
 }
 
 /**
- * A radio button shown as a box with its label. The real radio is only
- * hidden visually, so it can still be reached and chosen with the keyboard.
- * Put a group in one <p>.
+ * A radio button shown as a box with a round marker and its label, left
+ * aligned (labels can be whole sentences). The real radio is only hidden
+ * visually, so it can still be reached and chosen with the keyboard (Tab,
+ * then the arrow keys). Chosen: filled teal, with a tick in the marker.
+ * Put a group in one element.
  */
 export function Radio({ label, id: givenId, ...props }: ChoiceProps) {
 	const generatedId = useId();
 	const id = givenId ?? generatedId;
 	return (
-		<span>
-			<input {...props} id={id} type="radio" className="peer sr-only" />{" "}
+		<span className="flex">
+			<input {...props} id={id} type="radio" className="peer sr-only" />
 			<label
 				htmlFor={id}
-				className="flex flex-col p-3 rounded-lg border-2 border-line hover:font-bold transition-all cursor-pointer text-xl text-center peer-checked:bg-accent-strong peer-checked:border-accent peer-checked:text-on-accent peer-focus-visible:ring-3 peer-focus-visible:ring-accent/30"
+				className="flex w-full cursor-pointer items-center gap-3 rounded-xl border border-line-strong bg-field px-4 py-3 text-left text-lg shadow-2xs transition-colors hover:border-accent peer-checked:border-accent-strong peer-checked:bg-accent-strong peer-checked:text-on-accent peer-focus-visible:ring-3 peer-focus-visible:ring-accent/30 peer-checked:[&_svg]:opacity-100"
 			>
+				<span
+					aria-hidden="true"
+					className="flex size-5 shrink-0 items-center justify-center rounded-full border-2 border-current"
+				>
+					<Icon name="check" className="size-3.5 opacity-0" />
+				</span>
 				{label}
 			</label>
 		</span>
