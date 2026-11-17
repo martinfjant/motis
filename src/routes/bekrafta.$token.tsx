@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { Main } from "#/components/Main";
 import { verifyEmail } from "#/server/auth.functions";
 
 // The link in the confirmation email. Following it confirms the address.
@@ -25,7 +26,7 @@ function Verify() {
 
 	if (!result)
 		return (
-			<main className="mx-auto w-4/5 space-y-2.5 p-4">
+			<Main>
 				<h1>Länken fungerar inte</h1>
 				<p>
 					Den kan redan ha använts, ha gått ut, eller gälla en e-postadress du
@@ -33,11 +34,11 @@ function Verify() {
 					bekräftad och kan få en ny länk.
 				</p>
 				{home}
-			</main>
+			</Main>
 		);
 
 	return (
-		<main className="mx-auto w-4/5 space-y-2.5 p-4">
+		<Main>
 			<h1>E-postadressen är bekräftad</h1>
 			<p>Tack! Nu vet vi att mejlen når dig.</p>
 			{result.joinedBoards.length > 0 && (
@@ -54,6 +55,6 @@ function Verify() {
 				</>
 			)}
 			{home}
-		</main>
+		</Main>
 	);
 }

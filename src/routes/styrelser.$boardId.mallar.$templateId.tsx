@@ -9,7 +9,8 @@ import { Breadcrumbs } from "#/components/Breadcrumbs";
 import { Button } from "#/components/Button";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Input } from "#/components/Field";
-import { ItemEditor } from "#/components/ItemEditor";
+import { Main } from "#/components/Main";
+import { EditPointList } from "#/components/points/lists/EditPointList";
 import { Section } from "#/components/Section";
 import {
 	deleteTemplate,
@@ -26,12 +27,12 @@ export const Route = createFileRoute("/styrelser/$boardId/mallar/$templateId")({
 		return data;
 	},
 	notFoundComponent: () => (
-		<main className="mx-auto w-4/5 space-y-2.5 p-4">
+		<Main>
 			<h1>Mallen hittades inte</h1>
 			<p>
 				<Link to="/">Tillbaka till Mina föreningar</Link>
 			</p>
-		</main>
+		</Main>
 	),
 	component: TemplatePage,
 });
@@ -63,7 +64,7 @@ function TemplatePage() {
 	}
 
 	return (
-		<main className="mx-auto w-4/5 space-y-2.5 p-4">
+		<Main>
 			<Breadcrumbs>
 				<Link to="/">Mina föreningar</Link>
 				<Link to="/styrelser/$boardId" params={{ boardId: board.id }}>
@@ -89,13 +90,13 @@ function TemplatePage() {
 				</form>
 			</Section>
 
-			<ItemEditor kind="template" parentId={template.id} items={items} />
+			<EditPointList kind="template" parentId={template.id} items={items} />
 
 			<Section id="danger" title="Ta bort">
 				<Button type="button" onClick={onDelete}>
 					Ta bort mallen
 				</Button>
 			</Section>
-		</main>
+		</Main>
 	);
 }

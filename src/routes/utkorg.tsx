@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button } from "#/components/Button";
 import { Instant } from "#/components/DateTime";
 import { ErrorMessage } from "#/components/ErrorMessage";
+import { Main } from "#/components/Main";
 import { Section } from "#/components/Section";
 import { clearOutbox, getOutbox, sendTestMail } from "#/server/mail.functions";
 
@@ -33,7 +34,7 @@ function Outbox() {
 	}
 
 	return (
-		<main className="mx-auto w-4/5 space-y-2.5 p-4">
+		<Main>
 			<h1>Utkorg</h1>
 			<p>
 				Under utveckling skickas inga mejl. De hamnar här i stället, så att du
@@ -87,6 +88,6 @@ function Outbox() {
 					</Section>
 				))
 			)}
-		</main>
+		</Main>
 	);
 }

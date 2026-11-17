@@ -1,6 +1,7 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { DownloadSection } from "#/components/DownloadSection";
-import { ProtocolDisplay } from "#/components/ProtocolView";
+import { Main } from "#/components/Main";
+import { ProtocolDisplay } from "#/components/ProtocolDisplay";
 import { getPublicProtocol } from "#/server/protocols.functions";
 
 // Public, read-only protocol. Anyone with the link can read it once the
@@ -28,13 +29,13 @@ export const Route = createFileRoute("/protokoll/$shareId")({
 		],
 	}),
 	notFoundComponent: () => (
-		<main className="mx-auto w-4/5 p-4">
+		<Main>
 			<h1>Protokollet hittades inte</h1>
 			<p>
 				Länken kan vara felskriven, eller så har styrelsen bytt ut eller tagit
 				bort den.
 			</p>
-		</main>
+		</Main>
 	),
 	component: PublicProtocol,
 });
@@ -45,18 +46,18 @@ function PublicProtocol() {
 
 	if (data.status === "open")
 		return (
-			<main className="mx-auto w-4/5 space-y-2.5 p-4">
+			<Main>
 				<p>{data.board.name}</p>
 				<h1>Protokollet är inte klart ännu</h1>
 				<p>
 					Mötet pågår eller protokollet håller på att skrivas. Det går att läsa
 					här när det är stängt.
 				</p>
-			</main>
+			</Main>
 		);
 
 	return (
-		<main className="mx-auto w-4/5 space-y-2.5 p-4">
+		<Main>
 			<article>
 				<header>
 					<p>{data.board.name}</p>
@@ -70,6 +71,6 @@ function PublicProtocol() {
 				/>
 			</article>
 			<DownloadSection base={`/api/delat-protokoll/${shareId}`} />
-		</main>
+		</Main>
 	);
 }

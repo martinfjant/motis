@@ -8,6 +8,7 @@ import { useState } from "react";
 import { Button } from "#/components/Button";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Input } from "#/components/Field";
+import { Main } from "#/components/Main";
 import { Notice } from "#/components/Notice";
 import { Section } from "#/components/Section";
 import { TitleForm, TitleSuggestions } from "#/components/TitleForm";
@@ -28,7 +29,7 @@ function Account() {
 	const { user } = Route.useRouteContext();
 	const boards = Route.useLoaderData();
 	return (
-		<main className="mx-auto w-4/5 space-y-2.5 p-4">
+		<Main>
 			<h1>Mitt konto</h1>
 			<VerifyEmailNotice user={user} />
 			<ProfileSection user={user} />
@@ -53,7 +54,7 @@ function Account() {
 					</>
 				)}
 			</Section>
-		</main>
+		</Main>
 	);
 }
 

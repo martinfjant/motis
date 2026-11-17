@@ -1,13 +1,9 @@
 import type { Client } from "@libsql/client";
+import { type Block, recordedBlocks } from "#/components/points/blocks";
 import { formatInstant, formatMeetingAt } from "../../meeting-time";
 import { requireParent } from "../agendas.server";
 import { BoardError } from "../boards.server";
-import type {
-	ItemType,
-	Justering,
-	ProtocolEdit,
-	ProtocolValue,
-} from "../items";
+import type { Justering, ProtocolEdit } from "../items";
 import {
 	listEdits,
 	listProtocolItems,
@@ -18,6 +14,8 @@ import { getJustering } from "../reviews.server";
 
 // A closed protocol as a document to download (Markdown or PDF): the same
 // content as the read-only protocol page, described once here.
+
+export type { Block };
 
 export type ProtocolDocument = {
 	boardName: string;
@@ -33,55 +31,6 @@ export type ProtocolDocument = {
 	edits: ProtocolEdit[];
 	justering: Justering | null;
 };
-
-/** What was recorded for a point, as plain pieces any format can render. */
-export type Block =
-	/** A paragraph; blank lines inside separate paragraphs. */
-	| { kind: "text"; text: string }
-	/** "Vald: Anna" with the value emphasised. */
-	| { kind: "value"; label: string; value: string }
-	| { kind: "list"; label: string; items: string[] }
-	| { kind: "quote"; label: string; text: string };
-
-/** The same wording as the protocol page (RecordedValue). */
-export function recordedBlocks(type: ItemType, v: ProtocolValue): Block[] {
-	const blocks: Block[] = [];
-	if (v.tabled)
-		blocks.push({ kind: "text", text: "Bordlagd till nästa möte." });
-	if ((type === "open" || type === "close") && v.at)
-		blocks.push({
-			kind: "text",
-			text: `${type === "open" ? "Mötet öppnades" : "Mötet avslutades"} ${formatMeetingAt(v.at)}`,
-		});
-	if (type === "toggle" && v.answer !== undefined)
-		blocks.push({ kind: "text", text: v.answer ? "Ja" : "Nej" });
-	if (type === "attendance")
-		blocks.push(
-			v.present?.length
-				? { kind: "list", label: "Närvarande:", items: v.present }
-				: { kind: "text", text: "Ingen närvaro registrerad." },
-		);
-	if (type === "person" && v.person)
-		blocks.push({ kind: "value", label: "Vald", value: v.person });
-	if (type === "reviewers" && v.reviewers?.length)
-		blocks.push({
-			kind: "value",
-			label: "Justerare",
-			value: v.reviewers.map((r) => r.name).join(" och "),
-		});
-	if (type === "decision" && v.decision)
-		blocks.push({ kind: "quote", label: "Beslut:", text: v.decision });
-	if (type === "next_meeting" && v.at)
-		blocks.push({
-			kind: "value",
-			label: "Nästa möte",
-			value: formatMeetingAt(v.at),
-		});
-	if (v.notes) blocks.push({ kind: "text", text: v.notes });
-	if (v.followUp)
-		blocks.push({ kind: "text", text: "Kommer följas upp på nästa möte." });
-	return blocks;
-}
 
 async function buildDocument(
 	db: Client,

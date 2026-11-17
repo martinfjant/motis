@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button } from "#/components/Button";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Input } from "#/components/Field";
+import { Main } from "#/components/Main";
 import { requestPasswordReset } from "#/server/auth.functions";
 
 export const Route = createFileRoute("/glomt-losenord")({
@@ -32,7 +33,7 @@ function ForgotPassword() {
 
 	if (sentTo)
 		return (
-			<main className="mx-auto w-4/5 space-y-2.5 p-4">
+			<Main>
 				<h1>Kolla din e-post</h1>
 				<p>
 					Om det finns ett konto med {sentTo} har vi skickat ett mejl med en
@@ -42,11 +43,11 @@ function ForgotPassword() {
 					Inget mejl? Titta i skräpposten, eller{" "}
 					<Button onClick={() => setSentTo(null)}>försök igen</Button>
 				</p>
-			</main>
+			</Main>
 		);
 
 	return (
-		<main className="mx-auto w-4/5 space-y-2.5 p-4">
+		<Main>
 			<h1>Glömt lösenordet?</h1>
 			<p>
 				Skriv e-postadressen du loggar in med, så skickar vi en länk där du kan
@@ -64,6 +65,6 @@ function ForgotPassword() {
 			<p>
 				<Link to="/logga-in">Tillbaka till inloggningen</Link>
 			</p>
-		</main>
+		</Main>
 	);
 }

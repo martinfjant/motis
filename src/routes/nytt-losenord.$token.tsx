@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button } from "#/components/Button";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Input } from "#/components/Field";
+import { Main } from "#/components/Main";
 import { checkPasswordReset, resetPassword } from "#/server/auth.functions";
 
 // The link in the "Välj ett nytt lösenord" email.
@@ -42,7 +43,7 @@ function NewPassword() {
 
 	if (!valid)
 		return (
-			<main className="mx-auto w-4/5 space-y-2.5 p-4">
+			<Main>
 				<h1>Länken fungerar inte längre</h1>
 				<p>
 					Länken har redan använts eller gått ut; den fungerar en gång och i en
@@ -51,11 +52,11 @@ function NewPassword() {
 				<p>
 					<Link to="/glomt-losenord">Be om en ny länk</Link>
 				</p>
-			</main>
+			</Main>
 		);
 
 	return (
-		<main className="mx-auto w-4/5 space-y-2.5 p-4">
+		<Main>
 			<h1>Välj ett nytt lösenord</h1>
 			<p>Du loggas in med det nya lösenordet, och ut överallt annars.</p>
 			<form onSubmit={onSubmit}>
@@ -73,6 +74,6 @@ function NewPassword() {
 					Spara lösenordet
 				</Button>
 			</form>
-		</main>
+		</Main>
 	);
 }

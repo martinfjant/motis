@@ -5,13 +5,15 @@ import {
 	useRouter,
 } from "@tanstack/react-router";
 import { useState } from "react";
-import { AgendaItems, MeetingDetails } from "#/components/AgendaView";
 import { Breadcrumbs } from "#/components/Breadcrumbs";
 import { Button } from "#/components/Button";
 import { CallSection } from "#/components/CallSection";
 import { ErrorMessage } from "#/components/ErrorMessage";
-import { ItemEditor } from "#/components/ItemEditor";
+import { Main } from "#/components/Main";
+import { MeetingDetails } from "#/components/MeetingDetails";
 import { MeetingForm } from "#/components/MeetingForm";
+import { AgendaPointList } from "#/components/points/lists/AgendaPointList";
+import { EditPointList } from "#/components/points/lists/EditPointList";
 import { Section } from "#/components/Section";
 import { ShareSection } from "#/components/ShareSection";
 import { cannotStart, START_ANY_DAY } from "#/meeting-time";
@@ -33,12 +35,12 @@ export const Route = createFileRoute(
 		return data;
 	},
 	notFoundComponent: () => (
-		<main className="mx-auto w-4/5 space-y-2.5 p-4">
+		<Main>
 			<h1>Dagordningen hittades inte</h1>
 			<p>
 				<Link to="/">Tillbaka till Mina föreningar</Link>
 			</p>
-		</main>
+		</Main>
 	),
 	component: AgendaPage,
 });
@@ -74,7 +76,7 @@ function AgendaPage() {
 	}
 
 	return (
-		<main className="mx-auto w-4/5 space-y-2.5 p-4">
+		<Main>
 			<Breadcrumbs>
 				<Link to="/">Mina föreningar</Link>
 				<Link to="/styrelser/$boardId" params={{ boardId: board.id }}>
@@ -97,7 +99,7 @@ function AgendaPage() {
 							await router.invalidate();
 						}}
 					/>
-					<ItemEditor kind="agenda" parentId={agenda.id} items={items} />
+					<EditPointList kind="agenda" parentId={agenda.id} items={items} />
 					<p>
 						<Button type="button" onClick={() => setEditing(false)}>
 							Klar med redigeringen
@@ -126,7 +128,7 @@ function AgendaPage() {
 						)}
 					</Section>
 					<Section id="points" title="Punkter">
-						<AgendaItems items={items} headingLevel={3} />
+						<AgendaPointList items={items} headingLevel={3} />
 					</Section>
 				</>
 			)}
@@ -179,6 +181,6 @@ function AgendaPage() {
 					regenerateAgendaShareId({ data: { agendaId: agenda.id } })
 				}
 			/>
-		</main>
+		</Main>
 	);
 }

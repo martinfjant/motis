@@ -9,8 +9,8 @@ export function Checkbox({ label, id: givenId, ...props }: ChoiceProps) {
 	const generatedId = useId();
 	const id = givenId ?? generatedId;
 	return (
-		<p className="flex flex-row justify-normal">
-			<input {...props} id={id} type="checkbox" />{" "}
+		<p className="flex flex-row justify-normal gap-2.5">
+			<input {...props} id={id} type="checkbox" className="m-1" />{" "}
 			<label htmlFor={id}>{label}</label>
 		</p>
 	);
@@ -22,8 +22,8 @@ export function Radio({ label, id: givenId, ...props }: ChoiceProps) {
 	const id = givenId ?? generatedId;
 	return (
 		<span>
-			<input {...props} id={id} type="radio" />{" "}
-			<label htmlFor={id}>{label}</label>
+			<input {...props} id={id} type="radio" className="hidden peer" />{" "}
+			<label htmlFor={id} className="flex flex-col p-3 rounded-lg border-2 border-stone-300 hover:font-bold transition-all cursor-pointer text-xl text-center peer-checked:bg-teal-700 peer-checked:border-teal-600 peer-checked:text-white">{label}</label>
 		</span>
 	);
 }

@@ -5,25 +5,25 @@ import {
 	useRouter,
 } from "@tanstack/react-router";
 import { useState } from "react";
-import { MeetingDetails } from "#/components/AgendaView";
 import { Breadcrumbs } from "#/components/Breadcrumbs";
 import { Button } from "#/components/Button";
 import { DownloadSection } from "#/components/DownloadSection";
 import { ErrorMessage } from "#/components/ErrorMessage";
-import { ItemFields } from "#/components/ItemEditor";
+import { Main } from "#/components/Main";
+import { MeetingDetails } from "#/components/MeetingDetails";
 import { MeetingForm } from "#/components/MeetingForm";
 import { MentionNames } from "#/components/MentionTextarea";
-import { ProtocolDisplay, ProtocolHistory } from "#/components/ProtocolView";
-import { ProtocolPoint } from "#/components/protocol-points/ProtocolPoint";
+import { ProtocolDisplay, ProtocolHistory } from "#/components/ProtocolDisplay";
+import { MeetingPointList } from "#/components/points/lists/MeetingPointList";
+import { PointFields } from "#/components/points/PointFields";
 import { ReviewSection } from "#/components/ReviewSection";
 import { Section } from "#/components/Section";
 import { ShareSection } from "#/components/ShareSection";
 import { addItem, deleteItem } from "#/server/agendas.functions";
-import {
-	type CarryOverFlags,
-	type ProtocolValue,
-	type ReviewRound,
-	secretaryNames,
+import type {
+	CarryOverFlags,
+	ProtocolValue,
+	ReviewRound,
 } from "#/server/items";
 import {
 	closeProtocol,
@@ -47,12 +47,12 @@ export const Route = createFileRoute(
 		return data;
 	},
 	notFoundComponent: () => (
-		<main className="mx-auto w-4/5 space-y-2.5 p-4">
+		<Main>
 			<h1>Protokollet hittades inte</h1>
 			<p>
 				<Link to="/">Tillbaka till Mina föreningar</Link>
 			</p>
-		</main>
+		</Main>
 	),
 	component: ProtocolPage,
 });
@@ -190,7 +190,7 @@ function ProtocolPage() {
 
 	return (
 		<MentionNames.Provider value={mentionable}>
-			<main className="mx-auto w-4/5 space-y-2.5 p-4">
+			<Main>
 				<Breadcrumbs>
 					<Link to="/">Mina föreningar</Link>
 					<Link to="/styrelser/$boardId" params={{ boardId: board.id }}>
@@ -296,44 +296,35 @@ function ProtocolPage() {
 
 						<Section id="points" title="Dagordning">
 							<ErrorMessage error={error} />
-							{items.length === 0 ? (
-								<p>Inga punkter ännu.</p>
-							) : (
-								<ol>
-									{items.map((item) => {
-										return (
-											<li key={item.id}>
-												<ProtocolPoint
-													item={item}
-													invited={invited}
-													choosable={choosable}
-													present={present}
-													reviewerCandidates={reviewerCandidates}
-													secretaries={secretaryNames(items)}
-													onSave={saveValue(item.id)}
-													onCarryOver={saveCarryOver(item.id)}
-													onDelete={() => {
-														if (confirm(`Ta bort punkten ”${item.title}”?`))
-															run(() =>
-																deleteItem({
-																	data: {
-																		kind: "protocol",
-																		itemId: item.id,
-																		editSession: session,
-																	},
-																}),
-															);
-													}}
-												/>
-											</li>
+							<MeetingPointList
+								items={items}
+								invited={invited}
+								choosable={choosable}
+								present={present}
+								reviewerCandidates={reviewerCandidates}
+								onSave={saveValue}
+								onCarryOver={saveCarryOver}
+								onDelete={(item) => {
+									if (confirm(`Ta bort punkten ”${item.title}”?`))
+										run(() =>
+											deleteItem({
+												data: {
+													kind: "protocol",
+													itemId: item.id,
+													editSession: session,
+												},
+											}),
 										);
-									})}
-								</ol>
-							)}
+								}}
+							/>
 
-							<h3>Lägg till punkt</h3>
-							<form key={addFormKey} onSubmit={onAdd}>
-								<ItemFields idPrefix="new-item" />
+							<h3 className="text-2xl">Lägg till mötespunkt</h3>
+							<form
+								key={addFormKey}
+								onSubmit={onAdd}
+								className="block space-y-5"
+							>
+								<PointFields idPrefix="new-item" />
 								<Button type="submit">Lägg till</Button>
 							</form>
 						</Section>
@@ -363,7 +354,7 @@ function ProtocolPage() {
 						</Section>
 					</>
 				)}
-			</main>
+			</Main>
 		</MentionNames.Provider>
 	);
 }

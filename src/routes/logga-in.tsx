@@ -8,7 +8,10 @@ import { useState } from "react";
 import { Button } from "#/components/Button";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Input } from "#/components/Field";
+import { Main } from "#/components/Main";
 import { logIn } from "#/server/auth.functions";
+import { Section } from "#/components/Section";
+import { LinkButton } from "#/components/LinkButton";
 
 export const Route = createFileRoute("/logga-in")({
 	beforeLoad: ({ context }) => {
@@ -43,9 +46,9 @@ function LogIn() {
 	}
 
 	return (
-		<main className="mx-auto w-4/5 space-y-2.5 p-4">
-			<h1>Logga in</h1>
-			<form onSubmit={onSubmit}>
+    <Main>
+      <Section id="logga-in" title="Logga in">
+			<form onSubmit={onSubmit} className="block space-y-5">
 				<Field id="email" label="E-post">
 					<Input name="email" type="email" autoComplete="email" required />
 				</Field>
@@ -60,11 +63,10 @@ function LogIn() {
 				<ErrorMessage error={error} />
 				<Button type="submit" disabled={pending}>
 					Logga in
-				</Button>
+          </Button>
+          <LinkButton to="/glomt-losenord">Glömt lösenordet?</LinkButton>
 			</form>
-			<p>
-				<Link to="/glomt-losenord">Glömt lösenordet?</Link>
-			</p>
-		</main>
+      </Section>
+		</Main>
 	);
 }

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button } from "#/components/Button";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Input } from "#/components/Field";
+import { Main } from "#/components/Main";
 import { getSignupPolicy, signUp } from "#/server/auth.functions";
 
 export const Route = createFileRoute("/registrera")({
@@ -43,14 +44,14 @@ function SignUp() {
 
 	if (policy.kind === "closed")
 		return (
-			<main className="mx-auto w-4/5 space-y-2.5 p-4">
+			<Main>
 				<h1>Skapa konto</h1>
 				<p>Det går inte att skapa konton just nu.</p>
-			</main>
+			</Main>
 		);
 
 	return (
-		<main className="mx-auto w-4/5 space-y-2.5 p-4">
+		<Main>
 			<h1>Skapa konto</h1>
 			{policy.kind === "password" && (
 				<p>
@@ -89,6 +90,6 @@ function SignUp() {
 					Skapa konto
 				</Button>
 			</form>
-		</main>
+		</Main>
 	);
 }

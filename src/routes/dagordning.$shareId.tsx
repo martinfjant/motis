@@ -1,5 +1,7 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { AgendaItems, MeetingDetails } from "#/components/AgendaView";
+import { Main } from "#/components/Main";
+import { MeetingDetails } from "#/components/MeetingDetails";
+import { AgendaPointList } from "#/components/points/lists/AgendaPointList";
 import { getPublicAgenda } from "#/server/agendas.functions";
 
 // Public, read-only agenda. Anyone with the link can see it, so it only
@@ -25,13 +27,13 @@ export const Route = createFileRoute("/dagordning/$shareId")({
 		],
 	}),
 	notFoundComponent: () => (
-		<main className="mx-auto w-4/5 space-y-2.5 p-4">
+		<Main>
 			<h1>Dagordningen hittades inte</h1>
 			<p>
 				Länken kan vara felskriven, eller så har styrelsen bytt ut eller tagit
 				bort den.
 			</p>
-		</main>
+		</Main>
 	),
 	component: PublicAgenda,
 });
@@ -39,7 +41,7 @@ export const Route = createFileRoute("/dagordning/$shareId")({
 function PublicAgenda() {
 	const { boardName, agenda, items } = Route.useLoaderData();
 	return (
-		<main className="mx-auto w-4/5 space-y-2.5 p-4">
+		<Main>
 			<article>
 				<header>
 					<p>{boardName}</p>
@@ -49,8 +51,8 @@ function PublicAgenda() {
 						location={agenda.location}
 					/>
 				</header>
-				<AgendaItems items={items} headingLevel={2} />
+				<AgendaPointList items={items} headingLevel={2} />
 			</article>
-		</main>
+		</Main>
 	);
 }

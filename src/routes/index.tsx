@@ -4,6 +4,7 @@ import { Button } from "#/components/Button";
 import { MeetingTime } from "#/components/DateTime";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Input } from "#/components/Field";
+import { Main } from "#/components/Main";
 import { MeetingItem, MeetingList } from "#/components/MeetingList";
 import { Section } from "#/components/Section";
 import { VerifyEmailNotice } from "#/components/VerifyEmailNotice";
@@ -11,6 +12,7 @@ import { daysUntilText } from "#/meeting-time";
 import { getUpcomingMeetings } from "#/server/agendas.functions";
 import { createBoard, getMyBoards } from "#/server/boards.functions";
 import type { UpcomingMeeting } from "#/server/meetings.server";
+import { LinkButton } from "#/components/LinkButton";
 
 // The start page: "Mina föreningar" when logged in, otherwise a welcome.
 export const Route = createFileRoute("/")({
@@ -29,14 +31,16 @@ function Home() {
 	const mine = Route.useLoaderData();
 	if (mine) return <MyAssociations {...mine} />;
 	return (
-		<main className="mx-auto w-4/5 space-y-2.5 p-4">
-			<h1>BRF-protokoll</h1>
+    <Main>
+      <Section id="enklare-motesprotokoll" title="Enklare mötesprotokoll">
+
 			<p>Skapa dagordningar och protokoll för styrelsemöten.</p>
-			<p>
-				<Link to="/registrera">Skapa konto</Link> eller{" "}
-				<Link to="/logga-in">logga in</Link>.
-			</p>
-		</main>
+
+				<LinkButton to="/registrera">Skapa konto</LinkButton>
+				<LinkButton to="/logga-in">Logga in</LinkButton>
+
+      </Section>
+		</Main>
 	);
 }
 
@@ -72,7 +76,7 @@ function MyAssociations({
 	}
 
 	return (
-		<main className="mx-auto w-4/5 space-y-2.5 p-4">
+		<Main>
 			<h1>Mina föreningar</h1>
 			{user && <VerifyEmailNotice user={user} />}
 			{boards.length > 0 && <Upcoming meetings={upcoming} />}
@@ -103,7 +107,7 @@ function MyAssociations({
 					</Button>
 				</form>
 			</Section>
-		</main>
+		</Main>
 	);
 }
 

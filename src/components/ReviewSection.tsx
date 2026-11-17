@@ -4,9 +4,9 @@ import type {
 	ReviewerCandidate,
 	ReviewRound,
 } from "#/server/items";
-import { MultilineText } from "./AgendaView";
 import { Button } from "./Button";
 import { Instant } from "./DateTime";
+import { MultilineText } from "./MultilineText";
 import { Section } from "./Section";
 
 /**

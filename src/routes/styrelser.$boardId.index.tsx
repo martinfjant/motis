@@ -12,6 +12,7 @@ import { Dialog } from "#/components/Dialog";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Input, Select } from "#/components/Field";
 import { LockIcon } from "#/components/IconButton";
+import { Main } from "#/components/Main";
 import { MeetingItem, MeetingList } from "#/components/MeetingList";
 import { Section } from "#/components/Section";
 import { cannotStart, daysBetween, START_ANY_DAY } from "#/meeting-time";
@@ -28,12 +29,12 @@ export const Route = createFileRoute("/styrelser/$boardId/")({
 		return overview;
 	},
 	notFoundComponent: () => (
-		<main className="mx-auto w-4/5 space-y-2.5 p-4">
+		<Main>
 			<h1>Styrelsen hittades inte</h1>
 			<p>
 				<Link to="/">Tillbaka till Mina föreningar</Link>
 			</p>
-		</main>
+		</Main>
 	),
 	component: Board,
 });
@@ -68,7 +69,7 @@ function Board() {
 	}
 
 	return (
-		<main className="mx-auto w-4/5 space-y-2.5 p-4">
+		<Main>
 			<Breadcrumbs>
 				<Link to="/">Mina föreningar</Link>
 			</Breadcrumbs>
@@ -187,7 +188,7 @@ function Board() {
 					</MeetingList>
 				)}
 			</Section>
-		</main>
+		</Main>
 	);
 }
 

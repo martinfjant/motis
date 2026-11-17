@@ -34,7 +34,7 @@ export function Field({
 	const hintId = hint ? `${id}-hint` : undefined;
 	return (
 		<FieldContext.Provider value={{ id, hintId }}>
-			<p className="flex flex-col">
+			<p className="flex flex-col gap-1.5">
 				<label htmlFor={id}>{label}</label>
 				{children}
 				{hint && <small id={hintId}>{hint}</small>}

@@ -15,6 +15,7 @@ import {
 	IconButton,
 	PenIcon,
 } from "#/components/IconButton";
+import { Main } from "#/components/Main";
 import { Notice } from "#/components/Notice";
 import { Section } from "#/components/Section";
 import { Cell, RowHeader, Table } from "#/components/Table";
@@ -47,12 +48,12 @@ export const Route = createFileRoute("/styrelser/$boardId/installningar")({
 		return { ...details, templates: overview.templates };
 	},
 	notFoundComponent: () => (
-		<main className="mx-auto w-4/5 space-y-2.5 p-4">
+		<Main>
 			<h1>Styrelsen hittades inte</h1>
 			<p>
 				<Link to="/">Tillbaka till Mina föreningar</Link>
 			</p>
-		</main>
+		</Main>
 	),
 	component: Settings,
 });
@@ -114,7 +115,7 @@ function Settings() {
 	}
 
 	return (
-		<main className="mx-auto w-4/5 space-y-2.5 p-4">
+		<Main>
 			<Breadcrumbs>
 				<Link to="/">Mina föreningar</Link>
 				<Link to="/styrelser/$boardId" params={{ boardId: board.id }}>
@@ -233,7 +234,7 @@ function Settings() {
 					{added && <Notice>{added}</Notice>}
 				</Section>
 			)}
-		</main>
+		</Main>
 	);
 }
 

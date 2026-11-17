@@ -15,7 +15,7 @@ export function Section({
 		<section
 			aria-labelledby={id}
 			{...props}
-			className="bg-white rounded-2xl p-2.5"
+			className="bg-white rounded-2xl p-4 space-y-2.5 shadow-2xs"
 		>
 			<h2 id={id} className="text-2xl">
 				{title}

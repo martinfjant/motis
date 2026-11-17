@@ -1,11 +1,12 @@
 import { createFileRoute, notFound, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
-import { MultilineText } from "#/components/AgendaView";
 import { Button } from "#/components/Button";
 import { Instant } from "#/components/DateTime";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Textarea } from "#/components/Field";
-import { ProtocolDisplay } from "#/components/ProtocolView";
+import { Main } from "#/components/Main";
+import { MultilineText } from "#/components/MultilineText";
+import { ProtocolDisplay } from "#/components/ProtocolDisplay";
 import { Section } from "#/components/Section";
 import { SignatureField } from "#/components/SignatureField";
 import type { ReviewStatus } from "#/server/items";
@@ -34,13 +35,13 @@ export const Route = createFileRoute("/justera/$token")({
 		],
 	}),
 	notFoundComponent: () => (
-		<main className="mx-auto w-4/5 space-y-2.5 p-4">
+		<Main>
 			<h1>Länken fungerar inte</h1>
 			<p>
 				Länken kan ha gått ut eller vara felskriven. Be den som skickade
 				protokollet att skicka det igen.
 			</p>
-		</main>
+		</Main>
 	),
 	component: ReviewPage,
 });
@@ -51,18 +52,18 @@ function ReviewPage() {
 
 	if (data.replaced)
 		return (
-			<main className="mx-auto w-4/5 space-y-2.5 p-4">
+			<Main>
 				<p>{data.board.name}</p>
 				<h1>Protokollet har skickats på nytt</h1>
 				<p>
 					Det här mejlet har ersatts av ett nyare. Använd länken i det senaste
 					mejlet om justering av ”{data.protocol.title}”.
 				</p>
-			</main>
+			</Main>
 		);
 
 	return (
-		<main className="mx-auto w-4/5 space-y-2.5 p-4">
+		<Main>
 			<article>
 				<header>
 					<p>{data.board.name}</p>
@@ -107,7 +108,7 @@ function ReviewPage() {
 					</>
 				)}
 			</Section>
-		</main>
+		</Main>
 	);
 }
 
