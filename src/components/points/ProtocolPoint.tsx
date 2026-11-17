@@ -1,4 +1,5 @@
-import { type ComponentType, useState } from "react";
+import { type ComponentType, useRef, useState } from "react";
+import { Icon } from "#/components/Icon";
 import { MultilineText } from "#/components/MultilineText";
 import {
 	type CarryOverFlags,
@@ -33,6 +34,8 @@ export type MeetingContext = {
 	reviewerCandidates: ReviewerCandidate[];
 	/** Chosen as secretary, so not justerare. */
 	secretaries: string[];
+	/** Points neither done nor tabled; the meeting can't close until none. */
+	unfinished: string[];
 };
 
 const FORMS: Record<ItemType, ComponentType<PointProps & MeetingContext>> = {
@@ -60,6 +63,7 @@ export function ProtocolPoint({
 	present,
 	reviewerCandidates,
 	secretaries,
+	unfinished,
 	onSave,
 	onCarryOver,
 	onDelete,
@@ -71,6 +75,10 @@ export function ProtocolPoint({
 }) {
 	const [reopened, setReopened] = useState(false);
 	const state: PointState = reopened ? "open" : pointState(item.value);
+	// Animate the switch between form and summary, but not on page load.
+	const firstState = useRef(state);
+	const changed = useRef(false);
+	if (state !== firstState.current) changed.current = true;
 
 	const props: PointProps = {
 		item,
@@ -90,21 +98,43 @@ export function ProtocolPoint({
 
 	const Form = FORMS[item.type];
 	return (
-		<fieldset className={`block space-y-2.5 ${pointStyle(state)}`}>
-			<legend className="text-xl font-bold">{item.title}</legend>
+		<fieldset
+			className={`block space-y-2.5 transition-colors duration-300 ${pointStyle(state)}`}
+		>
+			<legend className="text-xl font-bold">
+				{item.title}
+				{state === "done" && <DoneMark />}
+			</legend>
 			{item.description && <MultilineText text={item.description} />}
-			{item.value.tabled ? (
-				<TabledPoint {...props} />
-			) : (
-				<Form
-					{...props}
-					invited={invited}
-					choosable={choosable}
-					present={present}
-					reviewerCandidates={reviewerCandidates}
-					secretaries={secretaries}
-				/>
-			)}
+			{/* Keyed on the state, so the new content mounts and fades in. */}
+			<div
+				key={state}
+				className={`space-y-2.5 ${changed.current ? "motion-safe:animate-appear" : ""}`}
+			>
+				{item.value.tabled ? (
+					<TabledPoint {...props} />
+				) : (
+					<Form
+						{...props}
+						invited={invited}
+						choosable={choosable}
+						present={present}
+						reviewerCandidates={reviewerCandidates}
+						secretaries={secretaries}
+						unfinished={unfinished}
+					/>
+				)}
+			</div>
 		</fieldset>
+	);
+}
+
+/** A small tick after a done point's title; screen readers hear it in words. */
+function DoneMark() {
+	return (
+		<>
+			<Icon name="check" className="ml-2 size-5" />
+			<span className="sr-only"> (avklarad)</span>
+		</>
 	);
 }

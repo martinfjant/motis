@@ -14,7 +14,8 @@
     "format": "biome format",
     "lint": "biome lint",
     "check": "biome check",
-    "test": "vitest run"
+    "test": "vitest run",
+    "icons": "node scripts/generate-icons.mjs && biome format --write src/components/icons.gen.ts"
   },
   "dependencies": {
     "@libsql/client": "^0.18.0",
@@ -36,6 +37,7 @@
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^6.0.1",
     "code-inspector-plugin": "2.0.9",
+    "feather-icons": "4.29.2",
     "tailwindcss": "^4.3.5",
     "typescript": "^6.0.2",
     "vite": "^8.0.0",

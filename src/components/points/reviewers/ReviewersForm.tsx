@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Field, Select } from "#/components/Field";
+import { Form } from "#/components/Form";
 import type { MemberRef, ReviewerCandidate } from "#/server/items";
 import { DoneView } from "../shared/DoneView";
 import { NotesField } from "../shared/NotesField";
@@ -35,7 +36,7 @@ export function ReviewersForm(
 	const id = (name: string) => fieldId(item, name);
 
 	return (
-		<form
+		<Form
 			onSubmit={(e) => {
 				e.preventDefault();
 				const f = new FormData(e.currentTarget);
@@ -104,6 +105,6 @@ export function ReviewersForm(
 				onOpen={() => setNotesOpen(true)}
 			/>
 			<PointActions {...props} submit={choosable.length > 0} />
-		</form>
+		</Form>
 	);
 }

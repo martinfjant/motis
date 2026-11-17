@@ -8,8 +8,10 @@ import { useState } from "react";
 import { Button } from "#/components/Button";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Input } from "#/components/Field";
+import { Form } from "#/components/Form";
 import { Main } from "#/components/Main";
 import { Notice } from "#/components/Notice";
+import { PageHeader } from "#/components/PageHeader";
 import { Section } from "#/components/Section";
 import { TitleForm, TitleSuggestions } from "#/components/TitleForm";
 import { VerifyEmailNotice } from "#/components/VerifyEmailNotice";
@@ -30,7 +32,7 @@ function Account() {
 	const boards = Route.useLoaderData();
 	return (
 		<Main>
-			<h1>Mitt konto</h1>
+			<PageHeader title="Mitt konto" />
 			<VerifyEmailNotice user={user} />
 			<ProfileSection user={user} />
 			<Section id="titles" title="Titlar i styrelser">
@@ -40,7 +42,7 @@ function Account() {
 					<>
 						<p>Din titel visas i styrelsens lista över ledamöter.</p>
 						<TitleSuggestions />
-						<ul>
+						<ul className="list-disc pl-6">
 							{boards.map((board) => (
 								<li key={board.id}>
 									<TitleRow
@@ -99,6 +101,7 @@ function ProfileSection({ user }: { user: { name: string; email: string } }) {
 					{saved && <Notice>Sparat.</Notice>}
 					<p>
 						<Button
+							icon="edit-2"
 							type="button"
 							onClick={() => {
 								setSaved(false);
@@ -110,7 +113,7 @@ function ProfileSection({ user }: { user: { name: string; email: string } }) {
 					</p>
 				</>
 			) : (
-				<form onSubmit={onSubmit}>
+				<Form onSubmit={onSubmit}>
 					<Field id="name" label="Namn">
 						<Input
 							name="name"
@@ -148,8 +151,11 @@ function ProfileSection({ user }: { user: { name: string; email: string } }) {
 					)}
 					<ErrorMessage error={error} />
 					<p>
-						<Button type="submit">Spara</Button>{" "}
+						<Button icon="save" type="submit">
+							Spara
+						</Button>{" "}
 						<Button
+							icon="x"
 							type="button"
 							onClick={() => {
 								setEditing(false);
@@ -160,7 +166,7 @@ function ProfileSection({ user }: { user: { name: string; email: string } }) {
 							Avbryt
 						</Button>
 					</p>
-				</form>
+				</Form>
 			)}
 		</Section>
 	);
@@ -199,7 +205,7 @@ function TitleRow({
 				{boardName}
 			</Link>
 			: {title || <em>ingen titel</em>}{" "}
-			<Button type="button" onClick={() => setEditing(true)}>
+			<Button icon="edit-2" type="button" onClick={() => setEditing(true)}>
 				{title ? "Ändra" : "Lägg till titel"}
 			</Button>
 		</p>

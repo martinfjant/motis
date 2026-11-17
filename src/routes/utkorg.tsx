@@ -4,6 +4,7 @@ import { Button } from "#/components/Button";
 import { Instant } from "#/components/DateTime";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Main } from "#/components/Main";
+import { PageHeader } from "#/components/PageHeader";
 import { Section } from "#/components/Section";
 import { clearOutbox, getOutbox, sendTestMail } from "#/server/mail.functions";
 
@@ -35,20 +36,22 @@ function Outbox() {
 
 	return (
 		<Main>
-			<h1>Utkorg</h1>
-			<p>
-				Under utveckling skickas inga mejl. De hamnar här i stället, så att du
-				kan läsa dem och följa länkarna i dem.
-			</p>
+			<PageHeader title="Utkorg">
+				<p>
+					Under utveckling skickas inga mejl. De hamnar här i stället, så att du
+					kan läsa dem och följa länkarna i dem.
+				</p>
+			</PageHeader>
 			<ErrorMessage error={error} />
 			<p>
 				{user && (
-					<Button onClick={() => run(() => sendTestMail())}>
+					<Button icon="mail" onClick={() => run(() => sendTestMail())}>
 						Skicka testmejl till mig
 					</Button>
 				)}
 				{mails.length > 0 && (
 					<Button
+						icon="trash-2"
 						onClick={() => {
 							if (confirm("Ta bort alla mejl i utkorgen?"))
 								run(() => clearOutbox());
@@ -79,7 +82,7 @@ function Outbox() {
 								'<head><base target="_blank">',
 							)}
 							sandbox="allow-popups allow-popups-to-escape-sandbox"
-							className="h-96 w-full rounded-lg border border-stone-300"
+							className="h-96 w-full rounded-lg border border-line"
 						/>
 						<details>
 							<summary>Textversion</summary>

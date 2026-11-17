@@ -4,6 +4,7 @@ import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Input } from "#/components/Field";
 import { Notice } from "#/components/Notice";
 import { Section } from "#/components/Section";
+import { Form } from "./Form";
 
 export type MeetingDetails = {
 	title: string;
@@ -41,7 +42,7 @@ export function MeetingForm({
 
 	return (
 		<Section id="meeting" title="Mötet">
-			<form onSubmit={onSubmit}>
+			<Form onSubmit={onSubmit}>
 				<Field id="title" label="Rubrik">
 					<Input name="title" defaultValue={initial.title} required />
 				</Field>
@@ -57,8 +58,10 @@ export function MeetingForm({
 				</Field>
 				<ErrorMessage error={error} />
 				{saved && <Notice>Sparat.</Notice>}
-				<Button type="submit">Spara</Button>
-			</form>
+				<Button icon="save" type="submit">
+					Spara
+				</Button>
+			</Form>
 		</Section>
 	);
 }

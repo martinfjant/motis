@@ -1,4 +1,4 @@
-# BRF-protokoll
+# Mötis
 
 Dagordningar, protokoll och justering för bostadsrättsföreningars
 styrelser. TanStack Start (React) with libSQL/SQLite, Tailwind and Biome.

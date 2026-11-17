@@ -9,7 +9,9 @@ import { Breadcrumbs } from "#/components/Breadcrumbs";
 import { Button } from "#/components/Button";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Input } from "#/components/Field";
+import { Form } from "#/components/Form";
 import { Main } from "#/components/Main";
+import { PageHeader } from "#/components/PageHeader";
 import { EditPointList } from "#/components/points/lists/EditPointList";
 import { Section } from "#/components/Section";
 import {
@@ -28,10 +30,11 @@ export const Route = createFileRoute("/styrelser/$boardId/mallar/$templateId")({
 	},
 	notFoundComponent: () => (
 		<Main>
-			<h1>Mallen hittades inte</h1>
-			<p>
-				<Link to="/">Tillbaka till Mina föreningar</Link>
-			</p>
+			<PageHeader title="Mallen hittades inte">
+				<p>
+					<Link to="/">Tillbaka till Mina föreningar</Link>
+				</p>
+			</PageHeader>
 		</Main>
 	),
 	component: TemplatePage,
@@ -77,23 +80,26 @@ function TemplatePage() {
 					Inställningar
 				</Link>
 			</Breadcrumbs>
-			<h1>Mall: {template.name}</h1>
-			<p>Ändringar i mallen påverkar bara dagordningar som skapas efteråt.</p>
+			<PageHeader title={`Mall: ${template.name}`}>
+				<p>Ändringar i mallen påverkar bara dagordningar som skapas efteråt.</p>
+			</PageHeader>
 
 			<Section id="template-settings" title="Namn">
-				<form onSubmit={onRename}>
+				<Form onSubmit={onRename}>
 					<Field id="name" label="Mallens namn">
 						<Input name="name" defaultValue={template.name} required />
 					</Field>
 					<ErrorMessage error={error} />
-					<Button type="submit">Spara namn</Button>
-				</form>
+					<Button icon="save" type="submit">
+						Spara namn
+					</Button>
+				</Form>
 			</Section>
 
 			<EditPointList kind="template" parentId={template.id} items={items} />
 
 			<Section id="danger" title="Ta bort">
-				<Button type="button" onClick={onDelete}>
+				<Button icon="trash-2" type="button" onClick={onDelete}>
 					Ta bort mallen
 				</Button>
 			</Section>

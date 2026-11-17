@@ -18,6 +18,7 @@ import {
 	saveItemValue,
 	setCarryOver,
 } from "./protocols.server";
+import { settleRemainingPoints } from "./test-helpers";
 
 let db: ReturnType<typeof createClient>;
 let anna: string, boardId: string, templateId: string, protocolId: string;
@@ -139,6 +140,7 @@ test("calling the next meeting starts from what the last one decided", async () 
 	await setCarryOver(db, anna, pts.Cykelrum.id, { followUp: true });
 	await saveItemValue(db, anna, pts.Ekonomi.id, { notes: "Se över budgeten." });
 	await setCarryOver(db, anna, pts.Ekonomi.id, { followUp: true });
+	await settleRemainingPoints(db, protocolId);
 	await closeProtocol(db, anna, protocolId);
 
 	const plan = await getMeetingPlan(db, anna, boardId, now);
@@ -228,6 +230,8 @@ test("carried points merge into standing points, others go before Övriga frågo
 		description: "",
 		extraNames: [],
 		reviewerCount: 2 as const,
+		yesText: "",
+		noText: "",
 		sourceItemId,
 	});
 	const carried = [

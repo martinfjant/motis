@@ -22,8 +22,20 @@ export type Block =
 	| { kind: "list"; label: string; items: string[] }
 	| { kind: "quote"; label: string; text: string };
 
+/** The parts of a point the downloads need. */
+export type BlockItem = {
+	type: ItemType;
+	value: ProtocolValue;
+	yesText?: string;
+	noText?: string;
+};
+
 /** One type's own part: what is shown between "tabled" and the notes. */
-export type TypeBlocks = (v: ProtocolValue, type: ItemType) => Block[];
+export type TypeBlocks = (
+	v: ProtocolValue,
+	type: ItemType,
+	item: BlockItem,
+) => Block[];
 
 export const FOLLOW_UP_TEXT = "Kommer följas upp på nästa möte.";
 
@@ -39,12 +51,13 @@ const BLOCKS: Record<ItemType, TypeBlocks> = {
 	text: textBlocks,
 };
 
-export function recordedBlocks(type: ItemType, v: ProtocolValue): Block[] {
+export function recordedBlocks(item: BlockItem): Block[] {
+	const { type, value: v } = item;
 	return [
 		...(v.tabled
 			? [{ kind: "text", text: "Bordlagd till nästa möte." } as const]
 			: []),
-		...BLOCKS[type](v, type),
+		...BLOCKS[type](v, type, item),
 		...(v.notes ? [{ kind: "text", text: v.notes } as const] : []),
 		...(v.followUp ? [{ kind: "text", text: FOLLOW_UP_TEXT } as const] : []),
 	];

@@ -9,7 +9,8 @@
 
 /* Standard */
 html:not([data-pattern]) {
-background-color: ghostwhite;
+  /* ghostwhite shows until the picture has loaded. */
+  background: ghostwhite url("./bg.webp") center / cover no-repeat fixed;
 
   /*--s: 150px;
   --c1: #ff847c;

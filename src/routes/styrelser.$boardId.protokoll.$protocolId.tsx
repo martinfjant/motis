@@ -9,22 +9,28 @@ import { Breadcrumbs } from "#/components/Breadcrumbs";
 import { Button } from "#/components/Button";
 import { DownloadSection } from "#/components/DownloadSection";
 import { ErrorMessage } from "#/components/ErrorMessage";
+import { Form } from "#/components/Form";
+import { InfoBox } from "#/components/InfoBox";
 import { Main } from "#/components/Main";
 import { MeetingDetails } from "#/components/MeetingDetails";
 import { MeetingForm } from "#/components/MeetingForm";
 import { MentionNames } from "#/components/MentionTextarea";
+import { PageHeader } from "#/components/PageHeader";
 import { ProtocolDisplay, ProtocolHistory } from "#/components/ProtocolDisplay";
 import { MeetingPointList } from "#/components/points/lists/MeetingPointList";
+import { unfinishedHint } from "#/components/points/moment/MomentForm";
 import { PointFields } from "#/components/points/PointFields";
 import { ReviewSection } from "#/components/ReviewSection";
 import { Section } from "#/components/Section";
 import { ShareSection } from "#/components/ShareSection";
+import { useFocusMessage } from "#/components/useFocusMessage";
 import { addItem, deleteItem } from "#/server/agendas.functions";
 import type {
 	CarryOverFlags,
 	ProtocolValue,
 	ReviewRound,
 } from "#/server/items";
+import { unfinishedPoints } from "#/server/items";
 import {
 	closeProtocol,
 	deleteProtocol,
@@ -48,10 +54,11 @@ export const Route = createFileRoute(
 	},
 	notFoundComponent: () => (
 		<Main>
-			<h1>Protokollet hittades inte</h1>
-			<p>
-				<Link to="/">Tillbaka till Mina föreningar</Link>
-			</p>
+			<PageHeader title="Protokollet hittades inte">
+				<p>
+					<Link to="/">Tillbaka till Mina föreningar</Link>
+				</p>
+			</PageHeader>
 		</Main>
 	),
 	component: ProtocolPage,
@@ -81,6 +88,8 @@ function ProtocolPage() {
 	const editable = !closed || editSession !== null;
 	const session = editSession ?? undefined;
 	const hasClosePoint = items.some((i) => i.type === "close");
+	const unfinished = unfinishedPoints(items);
+	const closeBlocked = useFocusMessage();
 
 	// Who can be picked in person choices: those marked present if attendance
 	// has been taken, otherwise every member and invited guest.
@@ -139,6 +148,8 @@ function ProtocolPage() {
 					description: String(f.get("description") ?? ""),
 					extraNames: String(f.get("extraNames") ?? "").split("\n"),
 					reviewerCount: String(f.get("reviewerCount") ?? ""),
+					yesText: String(f.get("yesText") ?? ""),
+					noText: String(f.get("noText") ?? ""),
 				},
 			}),
 		);
@@ -182,7 +193,7 @@ function ProtocolPage() {
 
 	const doneEditing = (
 		<p>
-			<Button type="button" onClick={() => setEditSession(null)}>
+			<Button icon="check" type="button" onClick={() => setEditSession(null)}>
 				Klar med redigeringen
 			</Button>
 		</p>
@@ -197,23 +208,25 @@ function ProtocolPage() {
 						{board.name}
 					</Link>
 				</Breadcrumbs>
-				<h1>Protokoll: {protocol.title}</h1>
-				{/* The protocol sits next to its agenda, not under it. */}
-				{protocol.agendaId && (
-					<p>
-						<Link
-							to="/styrelser/$boardId/dagordningar/$agendaId"
-							params={{ boardId: board.id, agendaId: protocol.agendaId }}
-						>
-							Se dagordningen
-						</Link>
-					</p>
-				)}
+				<PageHeader title={`Protokoll: ${protocol.title}`}>
+					{/* The protocol sits next to its agenda, not under it. */}
+					{protocol.agendaId && (
+						<p>
+							<Link
+								to="/styrelser/$boardId/dagordningar/$agendaId"
+								params={{ boardId: board.id, agendaId: protocol.agendaId }}
+							>
+								Se dagordningen
+							</Link>
+						</p>
+					)}
+				</PageHeader>
 
 				{!editable ? (
 					<>
 						<p>
 							<Button
+								icon="edit"
 								type="button"
 								onClick={() => {
 									const warning = review && editWarning(review);
@@ -245,14 +258,14 @@ function ProtocolPage() {
 				) : (
 					<>
 						{closed && (
-							<>
+							<InfoBox aria-label="Stängt protokoll">
 								<p>
 									<strong>Du redigerar ett stängt protokoll.</strong> Att det
 									har redigerats, av vem och när, noteras i slutet av
 									protokollet.
 								</p>
 								{doneEditing}
-							</>
+							</InfoBox>
 						)}
 
 						{editingDetails ? (
@@ -273,6 +286,7 @@ function ProtocolPage() {
 								/>
 								<p>
 									<Button
+										icon="x"
 										type="button"
 										onClick={() => setEditingDetails(false)}
 									>
@@ -287,7 +301,11 @@ function ProtocolPage() {
 									location={protocol.location}
 								/>
 								<p>
-									<Button type="button" onClick={() => setEditingDetails(true)}>
+									<Button
+										icon="edit-2"
+										type="button"
+										onClick={() => setEditingDetails(true)}
+									>
 										Ändra mötesuppgifter
 									</Button>
 								</p>
@@ -319,22 +337,39 @@ function ProtocolPage() {
 							/>
 
 							<h3 className="text-2xl">Lägg till mötespunkt</h3>
-							<form
-								key={addFormKey}
-								onSubmit={onAdd}
-								className="block space-y-5"
-							>
+							<Form key={addFormKey} onSubmit={onAdd}>
 								<PointFields idPrefix="new-item" />
-								<Button type="submit">Lägg till</Button>
-							</form>
+								<Button icon="plus" type="submit">
+									Lägg till
+								</Button>
+							</Form>
 						</Section>
 
 						{!closed && !hasClosePoint && (
-							<p>
-								<Button type="button" onClick={onCloseProtocol}>
-									Stäng protokollet
-								</Button>
-							</p>
+							<>
+								<p>
+									<Button
+										icon="lock"
+										type="button"
+										onClick={() =>
+											unfinished.length > 0
+												? closeBlocked.show()
+												: onCloseProtocol()
+										}
+									>
+										Stäng protokollet
+									</Button>
+								</p>
+								{closeBlocked.shown && unfinished.length > 0 && (
+									<p
+										ref={closeBlocked.ref}
+										tabIndex={-1}
+										className="font-medium outline-none"
+									>
+										{unfinishedHint(unfinished)}
+									</p>
+								)}
+							</>
 						)}
 
 						{closed && (
@@ -348,7 +383,7 @@ function ProtocolPage() {
 
 						<Section id="danger" title="Ta bort">
 							<p>Dagordningen påverkas inte.</p>
-							<Button type="button" onClick={onDelete}>
+							<Button icon="trash-2" type="button" onClick={onDelete}>
 								Ta bort protokollet
 							</Button>
 						</Section>

@@ -1,14 +1,25 @@
 import { createLink } from "@tanstack/react-router";
 import type { ComponentProps } from "react";
-import { withButtonStyle } from "./Button";
+import { ButtonIcon, withButtonStyle } from "./Button";
+import type { IconName } from "./Icon";
 
 /**
  * The <a> a LinkButton renders, with the button classes. Classes passed in
  * are added, not swapped in: the router gives the current page's link
  * className="active" (and aria-current="page").
  */
-function ButtonAnchor({ className, ...props }: ComponentProps<"a">) {
-	return <a {...props} className={withButtonStyle(className)} />;
+function ButtonAnchor({
+	className,
+	icon,
+	children,
+	...props
+}: ComponentProps<"a"> & { icon?: IconName }) {
+	return (
+		<a {...props} className={withButtonStyle(className)}>
+			{icon && <ButtonIcon name={icon} />}
+			{children}
+		</a>
+	);
 }
 
 /**

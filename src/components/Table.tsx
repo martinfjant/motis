@@ -23,19 +23,19 @@ export function Table({
 					{caption}
 				</caption>
 				<thead>
-					<tr className="border-b border-stone-300">
+					<tr className="border-b border-line">
 						{columns.map((column) => (
 							<th
 								key={column}
 								scope="col"
-								className="px-2 py-1 text-left text-sm font-medium whitespace-nowrap text-stone-500"
+								className="px-2 py-1 text-left text-sm font-medium whitespace-nowrap text-muted"
 							>
 								{column}
 							</th>
 						))}
 					</tr>
 				</thead>
-				<tbody className="[&>tr]:border-b [&>tr]:border-stone-200 [&>tr:last-child]:border-0">
+				<tbody className="[&>tr]:border-b [&>tr]:border-line-faint [&>tr:last-child]:border-0">
 					{children}
 				</tbody>
 			</table>

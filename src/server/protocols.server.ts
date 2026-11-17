@@ -35,6 +35,8 @@ import {
 	type ReviewerCount,
 	reviewerNames,
 	secretaryNames,
+	unfinishedMessage,
+	unfinishedPoints,
 } from "./items";
 import { guardProtocolEdit } from "./protocol-edits.server";
 
@@ -446,6 +448,10 @@ export async function saveItemValue(
 	const missing = missingValue(item.type, value);
 	if (missing) throw new BoardError(missing);
 	await guardProtocolEdit(db, userId, parentId, editSession);
+	// Recording the closing time closes the meeting: only once everything
+	// else is dealt with. (Correcting it later, once closed, is fine.)
+	if (item.type === "close" && !(await isClosed(db, parentId)))
+		await requireAllDealtWith(db, parentId);
 	await db.execute({
 		sql: "UPDATE protocol_items SET value = ? WHERE id = ?",
 		args: [JSON.stringify(value), itemId],
@@ -487,6 +493,20 @@ export async function setCarryOver(
 	});
 }
 
+async function isClosed(db: Client, protocolId: string) {
+	const res = await db.execute({
+		sql: "SELECT closed_at FROM protocols WHERE id = ?",
+		args: [protocolId],
+	});
+	return res.rows[0]?.closed_at != null;
+}
+
+/** Refuses to close the meeting while any point is neither done nor tabled. */
+async function requireAllDealtWith(db: Client, protocolId: string) {
+	const left = unfinishedPoints(await listProtocolItems(db, protocolId));
+	if (left.length > 0) throw new BoardError(unfinishedMessage(left));
+}
+
 async function markClosed(db: Client, protocolId: string) {
 	await db.execute({
 		sql: "UPDATE protocols SET closed_at = ? WHERE id = ? AND closed_at IS NULL",
@@ -501,6 +521,8 @@ export async function closeProtocol(
 	protocolId: string,
 ) {
 	await requireParent(db, userId, "protocol", protocolId);
+	if (!(await isClosed(db, protocolId)))
+		await requireAllDealtWith(db, protocolId);
 	await markClosed(db, protocolId);
 }
 
@@ -540,13 +562,17 @@ export async function getPublicProtocol(db: Client, shareId: string) {
 			location: protocol.location,
 			closedAt: protocol.closedAt,
 		},
-		items: items.map(({ id, title, description, type, value }) => ({
-			id,
-			title,
-			description,
-			type,
-			value: publicValue(value),
-		})),
+		items: items.map(
+			({ id, title, description, type, value, yesText, noText }) => ({
+				id,
+				title,
+				description,
+				type,
+				value: publicValue(value),
+				yesText,
+				noText,
+			}),
+		),
 		edits,
 	};
 }

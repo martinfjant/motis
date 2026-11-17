@@ -52,10 +52,10 @@ export function ShareSection({
 				<a href={path}>{linkText}</a>
 			</p>
 			<p>
-				<Button type="button" onClick={onCopy}>
+				<Button icon="copy" type="button" onClick={onCopy}>
 					Kopiera länken
 				</Button>{" "}
-				<Button type="button" onClick={regenerate}>
+				<Button icon="refresh-cw" type="button" onClick={regenerate}>
 					Skapa ny länk
 				</Button>
 			</p>

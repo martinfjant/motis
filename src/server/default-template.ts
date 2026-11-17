@@ -6,14 +6,30 @@ export const DEFAULT_TEMPLATE_NAME = "Styrelsemöte";
 
 // Attendance comes before the choices, since justerare are chosen among
 // those present.
-export const DEFAULT_TEMPLATE_ITEMS: { title: string; type: ItemType }[] = [
+export const DEFAULT_TEMPLATE_ITEMS: {
+	title: string;
+	type: ItemType;
+	/** For ja/nej points: what the protocol says for each answer. */
+	yesText?: string;
+	noText?: string;
+}[] = [
 	{ title: "Mötets öppnande", type: "open" },
 	{ title: "Närvarande ledamöter", type: "attendance" },
 	{ title: "Val av ordförande", type: "person" },
 	{ title: "Val av sekreterare", type: "person" },
 	{ title: "Val av justerare", type: "reviewers" },
-	{ title: "Godkännande av dagordning", type: "toggle" },
-	{ title: "Föregående protokoll", type: "toggle" },
+	{
+		title: "Godkännande av dagordning",
+		type: "toggle",
+		yesText: "Dagordningen godkändes.",
+		noText: "Dagordningen godkändes inte.",
+	},
+	{
+		title: "Föregående protokoll",
+		type: "toggle",
+		yesText: "Föregående protokoll lades till handlingarna.",
+		noText: "Föregående protokoll lades inte till handlingarna.",
+	},
 	{ title: "Ekonomi", type: "text" },
 	{ title: "Driftsfrågor", type: "text" },
 	{ title: "Övriga frågor", type: "text" },
@@ -44,7 +60,9 @@ export function defaultTemplateStatements(boardId: string): {
 					item.type,
 					item.type === "reviewers"
 						? JSON.stringify({ reviewerCount: DEFAULT_REVIEWER_COUNT })
-						: "{}",
+						: item.type === "toggle"
+							? JSON.stringify({ yesText: item.yesText, noText: item.noText })
+							: "{}",
 				],
 			})),
 		],

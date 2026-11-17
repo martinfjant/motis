@@ -2,6 +2,7 @@ import { useState } from "react";
 import { resendVerification } from "#/server/auth.functions";
 import { Button } from "./Button";
 import { ErrorMessage } from "./ErrorMessage";
+import { InfoBox } from "./InfoBox";
 import { Notice } from "./Notice";
 
 /**
@@ -18,7 +19,7 @@ export function VerifyEmailNotice({
 	if (user.emailVerified) return null;
 
 	return (
-		<aside aria-label="Bekräfta e-postadress">
+		<InfoBox aria-label="Bekräfta e-postadress">
 			<p>
 				<strong>Bekräfta din e-postadress.</strong> Vi har skickat en länk till{" "}
 				{user.email}. När den är bekräftad kopplas du automatiskt till styrelser
@@ -29,6 +30,7 @@ export function VerifyEmailNotice({
 			) : (
 				<p>
 					<Button
+						icon="mail"
 						onClick={async () => {
 							setError(null);
 							try {
@@ -46,6 +48,6 @@ export function VerifyEmailNotice({
 				</p>
 			)}
 			<ErrorMessage error={error} />
-		</aside>
+		</InfoBox>
 	);
 }

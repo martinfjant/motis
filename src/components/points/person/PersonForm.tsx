@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Field, Input, Select } from "#/components/Field";
+import { Form } from "#/components/Form";
 import { DoneView } from "../shared/DoneView";
 import { NotesField } from "../shared/NotesField";
 import { PointActions } from "../shared/PointActions";
@@ -32,12 +33,11 @@ export function PersonForm(props: PointProps & { choosable: string[] }) {
 	};
 
 	return (
-		<form
+		<Form
 			onSubmit={(e) => {
 				e.preventDefault();
 				save(read(e.currentTarget));
 			}}
-			className="block space-y-5"
 		>
 			<Field id={id("person")} label={PERSON_LABEL}>
 				<Select
@@ -78,6 +78,6 @@ export function PersonForm(props: PointProps & { choosable: string[] }) {
 				onOpen={() => setNotesOpen(true)}
 			/>
 			<PointActions {...props} submit={notesOpen || otherPerson} />
-		</form>
+		</Form>
 	);
 }

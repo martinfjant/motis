@@ -1,5 +1,6 @@
 import { type ReactNode, useId, useRef } from "react";
 import { Button } from "./Button";
+import type { IconName } from "./Icon";
 
 /**
  * A button that opens a modal dialog with a heading. The content gets a
@@ -9,12 +10,15 @@ import { Button } from "./Button";
 export function Dialog({
 	title,
 	openLabel,
+	openIcon,
 	onClose,
 	children,
 }: {
 	title: ReactNode;
 	/** Text of the button that opens it. */
 	openLabel: ReactNode;
+	/** Icon on that button. */
+	openIcon?: IconName;
 	/** After closing, e.g. to clear an error message. */
 	onClose?: () => void;
 	children: (close: () => void) => ReactNode;
@@ -25,7 +29,9 @@ export function Dialog({
 	return (
 		<>
 			<p>
-				<Button onClick={() => dialog.current?.showModal()}>{openLabel}</Button>
+				<Button icon={openIcon} onClick={() => dialog.current?.showModal()}>
+					{openLabel}
+				</Button>
 			</p>
 			<dialog
 				ref={dialog}

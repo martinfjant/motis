@@ -8,6 +8,7 @@ import { Button } from "./Button";
 import { Instant } from "./DateTime";
 import { MultilineText } from "./MultilineText";
 import { Section } from "./Section";
+import { useFocusMessage } from "./useFocusMessage";
 
 /**
  * Justering of a closed protocol: who the justerare are, sending the
@@ -28,6 +29,7 @@ export function ReviewSection({
 	const chosen = items
 		.filter((i) => i.type === "reviewers" && !i.value.tabled)
 		.flatMap((i) => i.value.reviewers ?? []);
+	const missingEmail = useFocusMessage();
 
 	if (!review) {
 		if (chosen.length === 0)
@@ -49,7 +51,11 @@ export function ReviewSection({
 					, som läser det och godkänner eller avvisar det.
 				</p>
 				{noEmail.length > 0 && (
-					<p>
+					<p
+						ref={missingEmail.ref}
+						tabIndex={-1}
+						className="font-medium outline-none"
+					>
 						<strong>
 							{names(noEmail.map((r) => r.name))} saknar e-postadress.
 						</strong>{" "}
@@ -57,7 +63,12 @@ export function ReviewSection({
 					</p>
 				)}
 				<p>
-					<Button onClick={onSend} disabled={noEmail.length > 0}>
+					<Button
+						icon="send"
+						onClick={() =>
+							noEmail.length > 0 ? missingEmail.show() : onSend()
+						}
+					>
 						Skicka för justering
 					</Button>
 				</p>
@@ -86,7 +97,7 @@ export function ReviewSection({
 					justering igen.
 				</p>
 			)}
-			<ul>
+			<ul className="list-disc pl-6">
 				{review.reviews.map((r) => (
 					<li key={r.id}>
 						<ReviewAnswer review={r} />
@@ -96,6 +107,7 @@ export function ReviewSection({
 			{canSend && (
 				<p>
 					<Button
+						icon="send"
 						onClick={() => {
 							if (
 								review.changed ||

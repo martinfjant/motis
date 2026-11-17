@@ -18,7 +18,7 @@ const mail: Mail = {
 };
 const config = {
 	apiKey: "re_test",
-	from: "BRF-protokoll <noreply@mail.example.se>",
+	from: "Mötis <noreply@mail.example.se>",
 };
 
 /** A fake Resend answering with the given responses in turn. */
@@ -51,7 +51,7 @@ test("an email goes to Resend with the sender, reply-to and both versions", asyn
 	expect(headers["User-Agent"]).toBe("brf-protokoll");
 	expect(headers["Idempotency-Key"]).toMatch(/^[0-9a-f-]{36}$/);
 	expect(JSON.parse(String(init.body))).toEqual({
-		from: "BRF-protokoll <noreply@mail.example.se>",
+		from: "Mötis <noreply@mail.example.se>",
 		to: ["anna@example.se"],
 		subject: "Kallelse",
 		html: "<p>Hej</p>",

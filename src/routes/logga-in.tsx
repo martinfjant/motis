@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button } from "#/components/Button";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Input } from "#/components/Field";
+import { Form } from "#/components/Form";
 import { LinkButton } from "#/components/LinkButton";
 import { Main } from "#/components/Main";
 import { Section } from "#/components/Section";
@@ -22,6 +23,7 @@ function LogIn() {
 
 	async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
 		e.preventDefault();
+		if (pending) return; // already saving: ignore a second press
 		const form = new FormData(e.currentTarget);
 		setPending(true);
 		setError(null);
@@ -43,7 +45,7 @@ function LogIn() {
 	return (
 		<Main>
 			<Section id="logga-in" title="Logga in">
-				<form onSubmit={onSubmit} className="block space-y-5">
+				<Form onSubmit={onSubmit}>
 					<Field id="email" label="E-post">
 						<Input name="email" type="email" autoComplete="email" required />
 					</Field>
@@ -56,11 +58,13 @@ function LogIn() {
 						/>
 					</Field>
 					<ErrorMessage error={error} />
-					<Button type="submit" disabled={pending}>
+					<Button icon="log-in" type="submit" aria-busy={pending}>
 						Logga in
 					</Button>
-					<LinkButton to="/glomt-losenord">Glömt lösenordet?</LinkButton>
-				</form>
+					<LinkButton icon="help-circle" to="/glomt-losenord">
+						Glömt lösenordet?
+					</LinkButton>
+				</Form>
 			</Section>
 		</Main>
 	);

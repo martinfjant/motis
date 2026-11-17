@@ -47,7 +47,7 @@ export function JusteringSection({
 	return (
 		<Section id="justering" title="Justering">
 			<p>Protokollet är justerat av:</p>
-			<ul>
+			<ul className="list-disc pl-6">
 				{justering.reviewers.map((r) => (
 					<li key={r.name}>
 						<figure>
@@ -55,7 +55,7 @@ export function JusteringSection({
 								<img
 									src={r.signature}
 									alt={`Signatur: ${r.name}`}
-									className="h-16 w-auto"
+									className="h-16 w-auto rounded bg-white"
 								/>
 							)}
 							<figcaption>
@@ -81,7 +81,7 @@ export function ProtocolHistory({
 	if (!closedAt) return null;
 	return (
 		<Section id="history" title="Historik">
-			<ul>
+			<ul className="list-disc pl-6">
 				<li>
 					Protokollet stängdes <Instant at={closedAt} />.
 				</li>

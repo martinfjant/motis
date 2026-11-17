@@ -27,8 +27,10 @@ import {
 	listProtocols,
 	regenerateProtocolShareId,
 	saveItemValue,
+	setCarryOver,
 	updateProtocol,
 } from "./protocols.server";
+import { settleRemainingPoints } from "./test-helpers";
 
 let db: ReturnType<typeof createClient>;
 let anna: string, bo: string, cia: string, boardId: string, agendaId: string;
@@ -240,6 +242,7 @@ test("closing the meeting closes the protocol; later edits need a session and ar
 		(await getProtocol(db, anna, protocol.id)).protocol.closedAt,
 	).toBeNull();
 
+	await settleRemainingPoints(db, protocol.id);
 	await saveItemValue(db, anna, id("Mötets avslutande"), {
 		at: "2026-11-20T19:30",
 	});
@@ -299,9 +302,60 @@ test("closing the meeting closes the protocol; later edits need a session and ar
 	expect((await getProtocol(db, anna, protocol.id)).edits).toHaveLength(2);
 });
 
+test("the meeting can only be closed once every point is done or tabled", async () => {
+	const protocol = await createProtocol(db, anna, agendaId);
+	const items = (await getProtocol(db, anna, protocol.id)).items;
+	const id = (t: string) => items.find((i) => i.title === t)?.id ?? "";
+	const closedAt = async () =>
+		(await getProtocol(db, anna, protocol.id)).protocol.closedAt;
+
+	// Points are left: neither way of closing works, and the message says which.
+	await expect(
+		saveItemValue(db, anna, id("Mötets avslutande"), {
+			at: "2026-11-20T19:30",
+			done: true,
+		}),
+	).rejects.toThrow(/Kvar: .*Ekonomi/);
+	await expect(closeProtocol(db, anna, protocol.id)).rejects.toThrow(
+		/Kvar: .*Ekonomi/,
+	);
+	expect(await closedAt()).toBeNull();
+
+	// A tabled point counts as dealt with.
+	await setCarryOver(db, anna, id("Ekonomi"), { tabled: true });
+	await settleRemainingPoints(db, protocol.id);
+	await saveItemValue(db, anna, id("Mötets avslutande"), {
+		at: "2026-11-20T19:30",
+		done: true,
+	});
+	const closed = await closedAt();
+	expect(closed).not.toBeNull();
+
+	// Once closed, the closing time can still be corrected, even with a new
+	// point added while editing.
+	const session = "11111111-2222-4333-8444-555555555555";
+	await addItem(
+		db,
+		anna,
+		"protocol",
+		protocol.id,
+		{ title: "Tillägg", type: "text", description: "", extraNames: [] },
+		session,
+	);
+	await saveItemValue(
+		db,
+		anna,
+		id("Mötets avslutande"),
+		{ at: "2026-11-20T19:45", done: true },
+		session,
+	);
+	expect(await closedAt()).toBe(closed);
+});
+
 test("a protocol without a closing point can be closed by hand", async () => {
 	const protocol = await createProtocol(db, anna, agendaId);
 	await expect(closeProtocol(db, cia, protocol.id)).rejects.toThrow(BoardError);
+	await settleRemainingPoints(db, protocol.id);
 	await closeProtocol(db, bo, protocol.id);
 	expect(
 		(await getProtocol(db, anna, protocol.id)).protocol.closedAt,
@@ -319,6 +373,7 @@ test("members are written with their title, as it was when recorded", async () =
 	// The edit history uses the same form.
 	const items = (await getProtocol(db, anna, protocol.id)).items;
 	const close = items.find((i) => i.type === "close")?.id ?? "";
+	await settleRemainingPoints(db, protocol.id);
 	await saveItemValue(db, anna, close, { at: "2026-11-20T19:00" });
 	const session = "11111111-2222-4333-8444-555555555555";
 	await saveItemValue(db, anna, close, { at: "2026-11-20T19:05" }, session);
@@ -340,18 +395,22 @@ test("public protocol: only readable once closed, with just what the page needs"
 
 	const items = (await getProtocol(db, anna, protocol.id)).items;
 	const close = items.find((i) => i.type === "close")?.id ?? "";
+	await settleRemainingPoints(db, protocol.id);
 	await saveItemValue(db, anna, close, { at: "2026-11-20T19:30" });
 
 	const pub = await getPublicProtocol(db, protocol.shareId);
 	if (pub?.status !== "closed") throw new Error("expected closed");
 	expect(pub.protocol.title).toBe("Höstmöte");
 	expect(pub.items).toHaveLength(items.length);
+	// yesText/noText: the ja/nej wording, part of what the protocol says.
 	expect(Object.keys(pub.items[0]).sort()).toEqual([
 		"description",
 		"id",
+		"noText",
 		"title",
 		"type",
 		"value",
+		"yesText",
 	]);
 	expect(Object.keys(pub.protocol).sort()).toEqual([
 		"closedAt",
@@ -497,6 +556,7 @@ test("justerare: one or two, among the board members present, each once", async 
 	});
 
 	// The public protocol shows the names, not who is who.
+	await settleRemainingPoints(db, protocol.id);
 	await closeProtocol(db, anna, protocol.id);
 	const pub = await getPublicProtocol(db, protocol.shareId);
 	if (pub?.status !== "closed") throw new Error("expected closed");

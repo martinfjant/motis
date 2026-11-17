@@ -1,9 +1,11 @@
 import { useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { Button } from "./Button";
-import { UserIcon } from "./IconButton";
+import { Icon } from "./Icon";
 import { LinkButton } from "./LinkButton";
 
+/** Full width (without the usual gap after a button), text on the left. */
+const MENU_BUTTON = "w-full mr-0! text-left";
 const MENU_ID = "user-menu";
 
 /**
@@ -33,27 +35,34 @@ export function UserMenu({
 			<button
 				type="button"
 				popoverTarget={MENU_ID}
-				className="inline-flex items-center gap-2 rounded-lg px-2 py-1 [anchor-name:--user-menu] hover:bg-stone-100"
+				className="flex w-full items-center gap-2 rounded-xl px-5 [anchor-name:--user-menu] hover:bg-surface-muted"
 			>
-				<UserIcon />
+				<Icon name="user" className="size-5" />
 				{name}
 			</button>
 			<div
 				id={MENU_ID}
 				ref={menu}
 				popover="auto"
-				className="m-0 mt-2 rounded-xl bg-white p-3 shadow-lg [position-anchor:--user-menu] [position-area:bottom_span-left] [inset:auto]"
+				className="m-0 mt-2 rounded-xl border border-glass-line bg-glass-strong p-3 text-ink shadow-lg backdrop-blur-md [position-anchor:--user-menu] [position-area:bottom_span-left] [inset:auto]"
 			>
+				{/* The buttons all as wide as the widest, text lined up on the left. */}
 				<ul className="flex flex-col gap-2">
 					<li>
-						<LinkButton to="/">Mina föreningar</LinkButton>
+						<LinkButton icon="home" to="/" className={MENU_BUTTON}>
+							Mina föreningar
+						</LinkButton>
 					</li>
 					<li>
-						<LinkButton to="/konto">Mitt konto</LinkButton>
+						<LinkButton icon="user" to="/konto" className={MENU_BUTTON}>
+							Mitt konto
+						</LinkButton>
 					</li>
 					<li>
 						<form onSubmit={onLogOut}>
-							<Button type="submit">Logga ut</Button>
+							<Button icon="log-out" type="submit" className={MENU_BUTTON}>
+								Logga ut
+							</Button>
 						</form>
 					</li>
 				</ul>

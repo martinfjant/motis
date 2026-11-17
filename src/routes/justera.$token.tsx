@@ -4,11 +4,14 @@ import { Button } from "#/components/Button";
 import { Instant } from "#/components/DateTime";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Textarea } from "#/components/Field";
+import { Form } from "#/components/Form";
 import { Main } from "#/components/Main";
 import { MultilineText } from "#/components/MultilineText";
+import { PageHeader } from "#/components/PageHeader";
 import { ProtocolDisplay } from "#/components/ProtocolDisplay";
 import { Section } from "#/components/Section";
 import { SignatureField } from "#/components/SignatureField";
+import { useFocusMessage } from "#/components/useFocusMessage";
 import type { ReviewStatus } from "#/server/items";
 import { decideReview, getReviewPage } from "#/server/reviews.functions";
 
@@ -36,11 +39,12 @@ export const Route = createFileRoute("/justera/$token")({
 	}),
 	notFoundComponent: () => (
 		<Main>
-			<h1>Länken fungerar inte</h1>
-			<p>
-				Länken kan ha gått ut eller vara felskriven. Be den som skickade
-				protokollet att skicka det igen.
-			</p>
+			<PageHeader title="Länken fungerar inte">
+				<p>
+					Länken kan ha gått ut eller vara felskriven. Be den som skickade
+					protokollet att skicka det igen.
+				</p>
+			</PageHeader>
 		</Main>
 	),
 	component: ReviewPage,
@@ -53,26 +57,30 @@ function ReviewPage() {
 	if (data.replaced)
 		return (
 			<Main>
-				<p>{data.board.name}</p>
-				<h1>Protokollet har skickats på nytt</h1>
-				<p>
-					Det här mejlet har ersatts av ett nyare. Använd länken i det senaste
-					mejlet om justering av ”{data.protocol.title}”.
-				</p>
+				<PageHeader
+					title="Protokollet har skickats på nytt"
+					context={data.board.name}
+				>
+					<p>
+						Det här mejlet har ersatts av ett nyare. Använd länken i det senaste
+						mejlet om justering av ”{data.protocol.title}”.
+					</p>
+				</PageHeader>
 			</Main>
 		);
 
 	return (
 		<Main>
 			<article>
-				<header>
-					<p>{data.board.name}</p>
-					<h1>Justera protokollet: {data.protocol.title}</h1>
+				<PageHeader
+					title={`Justera protokollet: ${data.protocol.title}`}
+					context={data.board.name}
+				>
 					<p>
 						{data.sentByName} har skickat protokollet till dig, {review.name},
 						för justering.
 					</p>
-				</header>
+				</PageHeader>
 				<ProtocolDisplay
 					protocol={data.protocol}
 					items={data.items}
@@ -98,7 +106,7 @@ function ReviewPage() {
 								? "Den andra justeraren"
 								: "De andra justerarna"}
 						</h3>
-						<ul>
+						<ul className="list-disc pl-6">
 							{data.others.map((o) => (
 								<li key={o.name}>
 									{o.name}: {OTHER_STATUS[o.status]}
@@ -142,6 +150,7 @@ function AnswerForm() {
 	const router = useRouter();
 	const [mode, setMode] = useState<"choose" | "approve" | "decline">("choose");
 	const [signature, setSignature] = useState<string | null>(null);
+	const needSignature = useFocusMessage();
 	const [pending, setPending] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
@@ -150,6 +159,7 @@ function AnswerForm() {
 		comment?: string;
 		signature?: string;
 	}) {
+		if (pending) return; // already saving: ignore a second press
 		setError(null);
 		setPending(true);
 		try {
@@ -172,18 +182,21 @@ function AnswerForm() {
 						signatur, eller avvisa det och skriv vad som behöver ändras.
 					</p>
 					<p>
-						<Button onClick={() => setMode("approve")}>
+						<Button icon="pen-tool" onClick={() => setMode("approve")}>
 							Godkänn och signera…
 						</Button>
-						<Button onClick={() => setMode("decline")}>Avvisa…</Button>
+						<Button icon="x-circle" onClick={() => setMode("decline")}>
+							Avvisa…
+						</Button>
 					</p>
 				</>
 			)}
 			{mode === "approve" && (
-				<form
+				<Form
 					onSubmit={(e) => {
 						e.preventDefault();
-						if (signature) answer({ approve: true, signature });
+						if (!signature) return needSignature.show();
+						answer({ approve: true, signature });
 					}}
 				>
 					<SignatureField
@@ -191,10 +204,11 @@ function AnswerForm() {
 						onChange={setSignature}
 					/>
 					<p>
-						<Button type="submit" disabled={!signature || pending}>
+						<Button icon="pen-tool" type="submit" aria-busy={pending}>
 							Godkänn och signera
 						</Button>
 						<Button
+							icon="x"
 							onClick={() => {
 								setSignature(null);
 								setMode("choose");
@@ -203,10 +217,19 @@ function AnswerForm() {
 							Avbryt
 						</Button>
 					</p>
-				</form>
+					{needSignature.shown && !signature && (
+						<p
+							ref={needSignature.ref}
+							tabIndex={-1}
+							className="font-medium outline-none"
+						>
+							Rita din signatur först.
+						</p>
+					)}
+				</Form>
 			)}
 			{mode === "decline" && (
-				<form
+				<Form
 					onSubmit={(e) => {
 						e.preventDefault();
 						const f = new FormData(e.currentTarget);
@@ -220,12 +243,14 @@ function AnswerForm() {
 						<Textarea name="comment" required autoFocus />
 					</Field>
 					<p>
-						<Button type="submit" disabled={pending}>
+						<Button icon="x-circle" type="submit" aria-busy={pending}>
 							Avvisa protokollet
 						</Button>
-						<Button onClick={() => setMode("choose")}>Avbryt</Button>
+						<Button icon="x" onClick={() => setMode("choose")}>
+							Avbryt
+						</Button>
 					</p>
-				</form>
+				</Form>
 			)}
 		</>
 	);

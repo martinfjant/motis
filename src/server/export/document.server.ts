@@ -58,7 +58,7 @@ async function buildDocument(
 		points: items.map((item) => ({
 			title: item.title,
 			description: item.description,
-			blocks: recordedBlocks(item.type, publicValue(item.value)),
+			blocks: recordedBlocks({ ...item, value: publicValue(item.value) }),
 		})),
 		edits,
 		justering,

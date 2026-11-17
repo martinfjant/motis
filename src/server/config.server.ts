@@ -59,7 +59,7 @@ export function appBaseUrl(): string {
 /** Sending email through Resend. */
 export type MailConfig = {
 	apiKey: string;
-	/** The sender, e.g. "BRF-protokoll <noreply@mail.example.se>". */
+	/** The sender, e.g. "Mötis <noreply@mail.example.se>". */
 	from: string;
 	/**
 	 * Development only: every email goes to this address instead, so test

@@ -3,10 +3,13 @@ import type { Client, InStatement, Row } from "@libsql/client";
 import { type Board, BoardError, requireMember } from "./boards.server";
 import { defaultTemplateStatements } from "./default-template";
 import {
+	canMove,
 	DEFAULT_REVIEWER_COUNT,
 	type Item,
 	type ItemType,
+	inMeetingOrder,
 	isItemType,
+	ORDER_MESSAGE,
 	type ReviewerCount,
 	toReviewerCount,
 } from "./items";
@@ -59,7 +62,12 @@ const toAgenda = (r: Row): Agenda => ({
 });
 
 function toItem(r: Row): Item {
-	let config: { extraNames?: unknown; reviewerCount?: unknown } = {};
+	let config: {
+		extraNames?: unknown;
+		reviewerCount?: unknown;
+		yesText?: unknown;
+		noText?: unknown;
+	} = {};
 	try {
 		config = JSON.parse(String(r.config));
 	} catch {}
@@ -73,6 +81,8 @@ function toItem(r: Row): Item {
 			? config.extraNames.map(String)
 			: [],
 		reviewerCount: toReviewerCount(config.reviewerCount),
+		yesText: typeof config.yesText === "string" ? config.yesText : "",
+		noText: typeof config.noText === "string" ? config.noText : "",
 	};
 }
 
@@ -85,8 +95,18 @@ export function configJson(item: {
 	type: ItemType;
 	extraNames: string[];
 	reviewerCount: ReviewerCount;
+	yesText?: string;
+	noText?: string;
 }) {
 	switch (item.type) {
+		case "toggle": {
+			const yesText = (item.yesText ?? "").trim();
+			const noText = (item.noText ?? "").trim();
+			return JSON.stringify({
+				...(yesText ? { yesText } : {}),
+				...(noText ? { noText } : {}),
+			});
+		}
 		case "attendance":
 			return JSON.stringify({ extraNames: cleanNames(item.extraNames) });
 		case "reviewers":
@@ -115,7 +135,8 @@ export async function listItems(db: Client, kind: ItemKind, parentId: string) {
 		sql: `SELECT * FROM ${t.items} WHERE ${t.fk} = ? ORDER BY position, id`,
 		args: [parentId],
 	});
-	return res.rows.map(toItem);
+	// In meeting order even if stored otherwise (opening first, closing last).
+	return inMeetingOrder(res.rows.map(toItem));
 }
 
 /** Loads a template or agenda row and checks that the user is on its board. */
@@ -283,7 +304,13 @@ export type CarriedItem = {
 
 type NewItem = Pick<
 	Item,
-	"title" | "type" | "description" | "extraNames" | "reviewerCount"
+	| "title"
+	| "type"
+	| "description"
+	| "extraNames"
+	| "reviewerCount"
+	| "yesText"
+	| "noText"
 > & {
 	sourceItemId?: string;
 };
@@ -347,13 +374,17 @@ export async function createAgenda(
 			throw new BoardError("Mallen finns inte.");
 		fromTemplate = await listItems(db, "template", input.templateId);
 	}
-	const items = mergeCarried(
-		fromTemplate,
-		(input.carried ?? []).map((c) => ({
-			...c,
-			extraNames: [],
-			reviewerCount: DEFAULT_REVIEWER_COUNT,
-		})),
+	const items = inMeetingOrder(
+		mergeCarried(
+			fromTemplate,
+			(input.carried ?? []).map((c) => ({
+				...c,
+				extraNames: [],
+				reviewerCount: DEFAULT_REVIEWER_COUNT,
+				yesText: "",
+				noText: "",
+			})),
+		),
 	);
 
 	const statements: InStatement[] = [
@@ -442,6 +473,9 @@ export type ItemInput = {
 	extraNames: string[];
 	/** Only for reviewers items; anything but 1 means 2. */
 	reviewerCount?: unknown;
+	/** Only for toggle items: the protocol's wording for ja and nej. */
+	yesText?: string;
+	noText?: string;
 };
 
 function cleanItem(input: ItemInput) {
@@ -454,6 +488,8 @@ function cleanItem(input: ItemInput) {
 			type: input.type,
 			extraNames: input.extraNames,
 			reviewerCount: toReviewerCount(input.reviewerCount),
+			yesText: input.yesText,
+			noText: input.noText,
 		}),
 	};
 }
@@ -471,6 +507,7 @@ export async function addItem(
 		await guardProtocolEdit(db, userId, parentId, editSession);
 	const t = TABLES[kind];
 	const item = cleanItem(input);
+	await requireOnlyOne(db, kind, parentId, item.type);
 	await db.execute({
 		sql: `INSERT INTO ${t.items} (id, ${t.fk}, position, title, type, description, config)
           VALUES (?, ?, (SELECT COALESCE(MAX(position), 0) + 1 FROM ${t.items} WHERE ${t.fk} = ?), ?, ?, ?, ?)`,
@@ -484,6 +521,8 @@ export async function addItem(
 			item.config,
 		],
 	});
+	// Added last; put it before the closing (or first, if it is the opening).
+	await keepMeetingOrder(db, kind, parentId);
 }
 
 export async function updateItem(
@@ -498,13 +537,54 @@ export async function updateItem(
 	if (kind === "protocol")
 		await guardProtocolEdit(db, userId, parentId, editSession);
 	const item = cleanItem(input);
+	await requireOnlyOne(db, kind, parentId, item.type, itemId);
 	await db.execute({
 		sql: `UPDATE ${TABLES[kind].items} SET title = ?, type = ?, description = ?, config = ? WHERE id = ?`,
 		args: [item.title, item.type, item.description, item.config, itemId],
 	});
+	// A new type may move it: to the start as the opening, the end as the closing.
+	await keepMeetingOrder(db, kind, parentId);
 }
 
-/** Swaps the item with its neighbour above (-1) or below (+1). */
+/**
+ * Rewrites the positions so the opening comes first and the closing last
+ * (see inMeetingOrder), if they are not already.
+ */
+async function keepMeetingOrder(db: Client, kind: ItemKind, parentId: string) {
+	const items = await listItems(db, kind, parentId);
+	const ordered = inMeetingOrder(items);
+	if (ordered.every((it, k) => it.position === k + 1)) return;
+	await db.batch(
+		ordered.map((it, k) => ({
+			sql: `UPDATE ${TABLES[kind].items} SET position = ? WHERE id = ?`,
+			args: [k + 1, it.id],
+		})),
+		"write",
+	);
+}
+
+/** A meeting is opened once and closed once: one point of each, at most. */
+async function requireOnlyOne(
+	db: Client,
+	kind: ItemKind,
+	parentId: string,
+	type: ItemType,
+	exceptId?: string,
+) {
+	if (type !== "open" && type !== "close") return;
+	const items = await listItems(db, kind, parentId);
+	if (items.some((it) => it.type === type && it.id !== exceptId))
+		throw new BoardError(
+			type === "open"
+				? "Det finns redan en punkt för mötets öppnande."
+				: "Det finns redan en punkt för mötets avslutande.",
+		);
+}
+
+/**
+ * Swaps the item with its neighbour above (-1) or below (+1). The opening
+ * and the closing stay first and last.
+ */
 export async function moveItem(
 	db: Client,
 	userId: string,
@@ -520,6 +600,7 @@ export async function moveItem(
 	const i = items.findIndex((it) => it.id === itemId);
 	const j = i + direction;
 	if (j < 0 || j >= items.length) return;
+	if (!canMove(items, i, direction)) throw new BoardError(ORDER_MESSAGE);
 	const reordered = [...items];
 	[reordered[i], reordered[j]] = [reordered[j], reordered[i]];
 	await db.batch(

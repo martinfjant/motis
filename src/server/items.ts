@@ -34,6 +34,39 @@ export function canCarryOver(type: ItemType): boolean {
 	return type === "text" || type === "decision";
 }
 
+/**
+ * Where a point must sit: opening the meeting first, closing it last, every
+ * other point in between.
+ */
+function slot(type: ItemType): 0 | 1 | 2 {
+	return type === "open" ? 0 : type === "close" ? 2 : 1;
+}
+
+/**
+ * The points in their required order: the opening first, the closing last,
+ * the rest in the order they had. (Array sort keeps equal items in order.)
+ */
+export function inMeetingOrder<T extends { type: ItemType }>(items: T[]): T[] {
+	return [...items].sort((a, b) => slot(a.type) - slot(b.type));
+}
+
+/**
+ * Whether the point at index i can move up (-1) or down (+1): only between
+ * the opening and the closing, which stay where they are.
+ */
+export function canMove(
+	items: { type: ItemType }[],
+	i: number,
+	direction: -1 | 1,
+): boolean {
+	const j = i + direction;
+	if (j < 0 || j >= items.length) return false;
+	return slot(items[i].type) === 1 && slot(items[j].type) === 1;
+}
+
+export const ORDER_MESSAGE =
+	"Mötets öppnande är alltid först och mötets avslutande alltid sist.";
+
 export type Item = {
 	id: string;
 	position: number;
@@ -44,6 +77,12 @@ export type Item = {
 	extraNames: string[];
 	/** Only used by reviewers items: how many justerare, 1 or 2. */
 	reviewerCount: ReviewerCount;
+	/**
+	 * Only used by toggle (ja/nej) items: what the protocol says for each
+	 * answer, e.g. "Dagordningen godkändes.". Empty means "Ja" / "Nej".
+	 */
+	yesText: string;
+	noText: string;
 };
 
 export type ReviewerCount = 1 | 2;
@@ -122,6 +161,23 @@ export function pointState(v: ProtocolValue): PointState {
 	if (v.tabled) return "tabled";
 	if (v.done) return "done";
 	return "open";
+}
+
+/**
+ * The points still to deal with before the meeting can be closed: neither
+ * done nor tabled. The closing point itself doesn't count.
+ */
+export function unfinishedPoints(
+	items: { title: string; type: ItemType; value: ProtocolValue }[],
+): string[] {
+	return items
+		.filter((i) => i.type !== "close" && pointState(i.value) === "open")
+		.map((i) => i.title);
+}
+
+/** Why the meeting can't be closed yet, naming what is left. */
+export function unfinishedMessage(titles: string[]): string {
+	return `Alla punkter måste vara klara eller bordlagda innan mötet avslutas. Kvar: ${titles.join(", ")}.`;
 }
 
 /** The flags that carry a point over to the next meeting. */

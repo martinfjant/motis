@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "#/components/Button";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Input } from "#/components/Field";
+import { Form } from "./Form";
 
 /** Common posts on a BRF board, offered as suggestions; any title is allowed. */
 const TITLE_SUGGESTIONS = [
@@ -42,7 +43,7 @@ export function TitleForm({
 }) {
 	const [error, setError] = useState<string | null>(null);
 	return (
-		<form
+		<Form
 			onSubmit={async (e) => {
 				e.preventDefault();
 				setError(null);
@@ -63,11 +64,13 @@ export function TitleForm({
 			</Field>
 			<ErrorMessage error={error} />
 			<p>
-				<Button type="submit">Spara</Button>{" "}
-				<Button type="button" onClick={onCancel}>
+				<Button icon="save" type="submit">
+					Spara
+				</Button>{" "}
+				<Button icon="x" type="button" onClick={onCancel}>
 					Avbryt
 				</Button>
 			</p>
-		</form>
+		</Form>
 	);
 }

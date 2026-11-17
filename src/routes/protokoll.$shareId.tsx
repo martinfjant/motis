@@ -1,6 +1,7 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { DownloadSection } from "#/components/DownloadSection";
 import { Main } from "#/components/Main";
+import { PageHeader } from "#/components/PageHeader";
 import { ProtocolDisplay } from "#/components/ProtocolDisplay";
 import { getPublicProtocol } from "#/server/protocols.functions";
 
@@ -30,11 +31,12 @@ export const Route = createFileRoute("/protokoll/$shareId")({
 	}),
 	notFoundComponent: () => (
 		<Main>
-			<h1>Protokollet hittades inte</h1>
-			<p>
-				Länken kan vara felskriven, eller så har styrelsen bytt ut eller tagit
-				bort den.
-			</p>
+			<PageHeader title="Protokollet hittades inte">
+				<p>
+					Länken kan vara felskriven, eller så har styrelsen bytt ut eller tagit
+					bort den.
+				</p>
+			</PageHeader>
 		</Main>
 	),
 	component: PublicProtocol,
@@ -47,22 +49,25 @@ function PublicProtocol() {
 	if (data.status === "open")
 		return (
 			<Main>
-				<p>{data.board.name}</p>
-				<h1>Protokollet är inte klart ännu</h1>
-				<p>
-					Mötet pågår eller protokollet håller på att skrivas. Det går att läsa
-					här när det är stängt.
-				</p>
+				<PageHeader
+					title="Protokollet är inte klart ännu"
+					context={data.board.name}
+				>
+					<p>
+						Mötet pågår eller protokollet håller på att skrivas. Det går att
+						läsa här när det är stängt.
+					</p>
+				</PageHeader>
 			</Main>
 		);
 
 	return (
 		<Main>
 			<article>
-				<header>
-					<p>{data.board.name}</p>
-					<h1>Protokoll: {data.protocol.title}</h1>
-				</header>
+				<PageHeader
+					title={`Protokoll: ${data.protocol.title}`}
+					context={data.board.name}
+				/>
 				<ProtocolDisplay
 					protocol={data.protocol}
 					items={data.items}

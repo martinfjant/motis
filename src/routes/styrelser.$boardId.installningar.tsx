@@ -9,17 +9,15 @@ import { Breadcrumbs } from "#/components/Breadcrumbs";
 import { Button } from "#/components/Button";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Input, Select } from "#/components/Field";
-import {
-	CheckIcon,
-	CloseIcon,
-	IconButton,
-	PenIcon,
-} from "#/components/IconButton";
+import { Form } from "#/components/Form";
+import { IconButton } from "#/components/IconButton";
 import { Main } from "#/components/Main";
 import { Notice } from "#/components/Notice";
+import { PageHeader } from "#/components/PageHeader";
 import { Section } from "#/components/Section";
 import { Cell, RowHeader, Table } from "#/components/Table";
 import { TITLE_LIST_ID, TitleSuggestions } from "#/components/TitleForm";
+import { useFocusMessage } from "#/components/useFocusMessage";
 import { DEFAULT_PATTERN, PATTERNS } from "#/patterns";
 import { createTemplate, getBoardOverview } from "#/server/agendas.functions";
 import {
@@ -49,10 +47,11 @@ export const Route = createFileRoute("/styrelser/$boardId/installningar")({
 	},
 	notFoundComponent: () => (
 		<Main>
-			<h1>Styrelsen hittades inte</h1>
-			<p>
-				<Link to="/">Tillbaka till Mina föreningar</Link>
-			</p>
+			<PageHeader title="Styrelsen hittades inte">
+				<p>
+					<Link to="/">Tillbaka till Mina föreningar</Link>
+				</p>
+			</PageHeader>
 		</Main>
 	),
 	component: Settings,
@@ -122,7 +121,7 @@ function Settings() {
 					{board.name}
 				</Link>
 			</Breadcrumbs>
-			<h1>Inställningar</h1>
+			<PageHeader title="Inställningar" />
 			<ErrorMessage error={error} />
 
 			<BackgroundSection
@@ -136,6 +135,7 @@ function Settings() {
 					<p>
 						Inga mallar.{" "}
 						<Button
+							icon="plus"
 							type="button"
 							onClick={() =>
 								run(() =>
@@ -149,7 +149,7 @@ function Settings() {
 						</Button>
 					</p>
 				) : (
-					<ul>
+					<ul className="list-disc pl-6">
 						{templates.map((t) => (
 							<li key={t.id}>
 								<Link
@@ -164,12 +164,14 @@ function Settings() {
 				)}
 
 				<h3>Ny mall</h3>
-				<form onSubmit={onCreateTemplate}>
+				<Form onSubmit={onCreateTemplate}>
 					<Field id="templateName" label="Mallens namn">
 						<Input name="templateName" required />
 					</Field>
-					<Button type="submit">Skapa tom mall</Button>
-				</form>
+					<Button icon="file-plus" type="submit">
+						Skapa tom mall
+					</Button>
+				</Form>
 			</Section>
 
 			<Section id="members" title="Ledamöter">
@@ -193,7 +195,7 @@ function Settings() {
 
 				{unregistered.length > 0 && (
 					<>
-						<p className="mt-6 text-stone-600">
+						<p className="mt-6 text-muted">
 							Ledamöter utan konto kan väljas i närvaro och val i protokollen,
 							men kan inte logga in.
 						</p>
@@ -227,10 +229,12 @@ function Settings() {
 						Annars läggs den till utan konto, och då behövs namnet. Skapar den
 						ett konto senare kan du koppla ihop dem här.
 					</p>
-					<form onSubmit={onAdd}>
+					<Form onSubmit={onAdd}>
 						<PersonFields idPrefix="new-member" nameRequired={false} />
-						<Button type="submit">Lägg till</Button>
-					</form>
+						<Button icon="plus" type="submit">
+							Lägg till
+						</Button>
+					</Form>
 					{added && <Notice>{added}</Notice>}
 				</Section>
 			)}
@@ -258,6 +262,14 @@ function BackgroundSection({
 	const router = useRouter();
 	const [choice, setChoice] = useState(current);
 	const [status, setStatus] = useState<string | null>(null);
+	// Pressing Spara or Ångra with nothing changed says so (instead of
+	// disabled buttons).
+	const nothing = useFocusMessage();
+	const [nothingText, setNothingText] = useState("");
+	const nothingToDo = (text: string) => {
+		setNothingText(text);
+		nothing.show();
+	};
 	const name = (id: string) =>
 		id === DEFAULT_PATTERN
 			? "Standard"
@@ -271,6 +283,10 @@ function BackgroundSection({
 
 	async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
 		e.preventDefault();
+		if (choice === current) {
+			nothingToDo("Inget att spara. Välj ett annat mönster först.");
+			return;
+		}
 		setStatus(null);
 		try {
 			await setBoardBackground({ data: { boardId, pattern: choice } });
@@ -288,7 +304,7 @@ function BackgroundSection({
 					Styrelsens bakgrund: {name(current)}. Administratörer kan ändra den.
 				</p>
 			) : (
-				<form onSubmit={onSubmit}>
+				<Form onSubmit={onSubmit}>
 					<Field id="pattern" label="Mönster">
 						<Select
 							name="pattern"
@@ -297,6 +313,7 @@ function BackgroundSection({
 								setChoice(e.currentTarget.value);
 								setPreview(e.currentTarget.value);
 								setStatus(null);
+								nothing.hide();
 							}}
 						>
 							<option value={DEFAULT_PATTERN}>Standard</option>
@@ -313,13 +330,14 @@ function BackgroundSection({
 						Afif.
 					</p>
 					<p>
-						<Button type="submit" disabled={choice === current}>
+						<Button icon="save" type="submit">
 							Spara bakgrund
 						</Button>{" "}
 						<Button
+							icon="rotate-ccw"
 							type="button"
-							disabled={choice === current}
 							onClick={() => {
+								if (choice === current) return nothingToDo("Inget att ångra.");
 								setChoice(current);
 								setPreview(current);
 							}}
@@ -327,8 +345,17 @@ function BackgroundSection({
 							Ångra
 						</Button>
 					</p>
+					{nothing.shown && (
+						<p
+							ref={nothing.ref}
+							tabIndex={-1}
+							className="font-medium outline-none"
+						>
+							{nothingText}
+						</p>
+					)}
 					{status && <Notice>{status}</Notice>}
-				</form>
+				</Form>
 			)}
 		</Section>
 	);
@@ -423,16 +450,12 @@ function MemberRow({
 							defaultValue={member.title}
 							// biome-ignore lint/a11y/noAutofocus: opened on purpose with the pen
 							autoFocus
-							className="w-28 rounded-md border border-stone-400 px-1 text-sm"
+							className="w-28 rounded-md border border-line-strong px-1 text-sm bg-field"
 						/>
-						<IconButton
-							type="submit"
-							label="Spara titel"
-							icon={<CheckIcon />}
-						/>
+						<IconButton type="submit" label="Spara titel" icon="check" />
 						<IconButton
 							label="Avbryt"
-							icon={<CloseIcon />}
+							icon="x"
 							onClick={() => setEditing(null)}
 						/>
 					</form>
@@ -442,14 +465,14 @@ function MemberRow({
 						{canEditTitle && (
 							<IconButton
 								label={`${member.title ? "Ändra" : "Lägg till"} titel för ${member.name}`}
-								icon={<PenIcon />}
+								icon="edit-2"
 								onClick={() => setEditing("title")}
 							/>
 						)}
 					</span>
 				)}
 			</Cell>
-			<Cell className="text-sm text-stone-600">
+			<Cell className="text-sm text-muted">
 				<Email address={member.email} />
 			</Cell>
 			<Cell>
@@ -462,7 +485,7 @@ function MemberRow({
 						<select
 							id={`role-${member.userId}`}
 							defaultValue={member.role}
-							className="rounded-md border border-stone-400 px-1 text-sm"
+							className="rounded-md border border-line-strong px-1 text-sm bg-field"
 							onChange={(e) => {
 								const role = e.currentTarget.value;
 								run(
@@ -479,7 +502,7 @@ function MemberRow({
 						</select>
 						<IconButton
 							label="Avbryt"
-							icon={<CloseIcon />}
+							icon="x"
 							onClick={() => setEditing(null)}
 						/>
 					</span>
@@ -488,8 +511,8 @@ function MemberRow({
 						<span
 							className={`rounded-full px-2 py-0.5 text-sm whitespace-nowrap ${
 								member.role === "admin"
-									? "bg-sky-100 text-sky-800"
-									: "bg-stone-100 text-stone-700"
+									? "bg-info text-on-info"
+									: "bg-surface-muted text-ink"
 							}`}
 						>
 							{roleName(member.role)}
@@ -497,7 +520,7 @@ function MemberRow({
 						{isAdmin && (
 							<IconButton
 								label={`Ändra roll för ${member.name}`}
-								icon={<PenIcon />}
+								icon="edit-2"
 								onClick={() => setEditing("role")}
 							/>
 						)}
@@ -507,7 +530,11 @@ function MemberRow({
 			<Cell>
 				{(isAdmin || isSelf) && (
 					<div className={ACTIONS}>
-						<Button type="button" onClick={onLeave}>
+						<Button
+							icon={isSelf ? "log-out" : "trash-2"}
+							type="button"
+							onClick={onLeave}
+						>
 							{isSelf ? "Lämna styrelsen" : "Ta bort"}
 						</Button>
 					</div>
@@ -597,7 +624,7 @@ function UnregisteredRow({
 		return (
 			<tr>
 				<Cell colSpan={4}>
-					<form
+					<Form
 						aria-label={`Ändra ${member.name}`}
 						onSubmit={(e) => {
 							e.preventDefault();
@@ -610,12 +637,14 @@ function UnregisteredRow({
 					>
 						<PersonFields idPrefix={member.id} nameRequired person={member} />
 						<p>
-							<Button type="submit">Spara</Button>
-							<Button type="button" onClick={() => setEditing(false)}>
+							<Button icon="save" type="submit">
+								Spara
+							</Button>
+							<Button icon="x" type="button" onClick={() => setEditing(false)}>
 								Avbryt
 							</Button>
 						</p>
-					</form>
+					</Form>
 				</Cell>
 			</tr>
 		);
@@ -628,14 +657,14 @@ function UnregisteredRow({
 				{member.hasAccount && (
 					<>
 						{" "}
-						<small className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 font-normal whitespace-nowrap text-amber-800">
+						<small className="ml-1 rounded-full bg-warn px-2 py-0.5 font-normal whitespace-nowrap text-on-warn">
 							har nu ett konto
 						</small>
 					</>
 				)}
 			</RowHeader>
 			<Cell>{member.title}</Cell>
-			<Cell className="text-sm text-stone-600">
+			<Cell className="text-sm text-muted">
 				<Email address={member.email} />
 			</Cell>
 			{canEdit && (
@@ -643,6 +672,7 @@ function UnregisteredRow({
 					<div className={ACTIONS}>
 						{member.hasAccount && (
 							<Button
+								icon="user-check"
 								type="button"
 								onClick={() => {
 									if (
@@ -656,10 +686,15 @@ function UnregisteredRow({
 								Gör till registrerad ledamot
 							</Button>
 						)}
-						<Button type="button" onClick={() => setEditing(true)}>
+						<Button
+							icon="edit-2"
+							type="button"
+							onClick={() => setEditing(true)}
+						>
 							Ändra
 						</Button>
 						<Button
+							icon="trash-2"
 							type="button"
 							onClick={() => {
 								if (confirm(`Ta bort ${member.name} från styrelsen?`))

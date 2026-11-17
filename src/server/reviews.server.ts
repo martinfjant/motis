@@ -68,12 +68,18 @@ export async function protocolFingerprint(
 		title: p?.title,
 		meetingAt: p?.meeting_at,
 		location: p?.location,
-		items: items.map(({ title, description, type, value }) => ({
-			title,
-			description,
-			type,
-			value,
-		})),
+		// The ja/nej wording only when set, so fingerprints of protocols sent
+		// before it existed stay the same.
+		items: items.map(
+			({ title, description, type, value, yesText, noText }) => ({
+				title,
+				description,
+				type,
+				value,
+				...(yesText ? { yesText } : {}),
+				...(noText ? { noText } : {}),
+			}),
+		),
 	});
 	return createHash("sha256").update(content).digest("base64url");
 }
@@ -367,13 +373,17 @@ export async function getReviewPage(
 			location: protocol.location,
 			closedAt: protocol.closedAt,
 		},
-		items: items.map(({ id, title, description, type, value }) => ({
-			id,
-			title,
-			description,
-			type,
-			value: publicValue(value),
-		})),
+		items: items.map(
+			({ id, title, description, type, value, yesText, noText }) => ({
+				id,
+				title,
+				description,
+				type,
+				value: publicValue(value),
+				yesText,
+				noText,
+			}),
+		),
 		edits,
 		review: {
 			name: review.name,

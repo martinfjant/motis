@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Field } from "#/components/Field";
+import { Form } from "#/components/Form";
 import { MentionTextarea } from "#/components/MentionTextarea";
 import { DoneView } from "../shared/DoneView";
 import { NotesField } from "../shared/NotesField";
@@ -16,7 +17,7 @@ export function DecisionForm(props: PointProps) {
 
 	const id = fieldId(item, "decision");
 	return (
-		<form
+		<Form
 			onSubmit={(e) => {
 				e.preventDefault();
 				const f = new FormData(e.currentTarget);
@@ -35,6 +36,6 @@ export function DecisionForm(props: PointProps) {
 				onOpen={() => setNotesOpen(true)}
 			/>
 			<PointActions {...props} submit />
-		</form>
+		</Form>
 	);
 }

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Radio } from "#/components/Choice";
+import { Form } from "#/components/Form";
 import { DoneView } from "../shared/DoneView";
 import { NotesField } from "../shared/NotesField";
 import { PointActions } from "../shared/PointActions";
@@ -25,12 +26,11 @@ export function ToggleForm(props: PointProps) {
 	};
 
 	return (
-		<form
+		<Form
 			onSubmit={(e) => {
 				e.preventDefault();
 				save(read(e.currentTarget));
 			}}
-			className="block space-y-5"
 		>
 			<div className="grid grid-cols-3 gap-2 w-full max-w-screen-sm">
 				<Radio
@@ -58,6 +58,6 @@ export function ToggleForm(props: PointProps) {
 				onOpen={() => setNotesOpen(true)}
 			/>
 			<PointActions {...props} submit={notesOpen} />
-		</form>
+		</Form>
 	);
 }

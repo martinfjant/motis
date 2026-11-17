@@ -3,7 +3,9 @@ import { useState } from "react";
 import { Button } from "#/components/Button";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Input } from "#/components/Field";
+import { Form } from "#/components/Form";
 import { Main } from "#/components/Main";
+import { PageHeader } from "#/components/PageHeader";
 import { getSignupPolicy, signUp } from "#/server/auth.functions";
 
 export const Route = createFileRoute("/registrera")({
@@ -22,6 +24,7 @@ function SignUp() {
 
 	async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
 		e.preventDefault();
+		if (pending) return; // already saving: ignore a second press
 		const form = new FormData(e.currentTarget);
 		setPending(true);
 		setError(null);
@@ -45,21 +48,23 @@ function SignUp() {
 	if (policy.kind === "closed")
 		return (
 			<Main>
-				<h1>Skapa konto</h1>
-				<p>Det går inte att skapa konton just nu.</p>
+				<PageHeader title="Skapa konto">
+					<p>Det går inte att skapa konton just nu.</p>
+				</PageHeader>
 			</Main>
 		);
 
 	return (
 		<Main>
-			<h1>Skapa konto</h1>
-			{policy.kind === "password" && (
-				<p>
-					BRF-protokoll är inte öppet för alla ännu. För att skapa ett konto
-					behöver du lösenordet du har fått av oss.
-				</p>
-			)}
-			<form onSubmit={onSubmit}>
+			<PageHeader title="Skapa konto">
+				{policy.kind === "password" && (
+					<p>
+						Mötis är inte öppet för alla ännu. För att skapa ett konto behöver
+						du lösenordet du har fått av oss.
+					</p>
+				)}
+			</PageHeader>
+			<Form onSubmit={onSubmit}>
 				{policy.kind === "password" && (
 					<Field id="signupPassword" label="Lösenord för att skapa konto">
 						<Input
@@ -86,10 +91,10 @@ function SignUp() {
 					/>
 				</Field>
 				<ErrorMessage error={error} />
-				<Button type="submit" disabled={pending}>
+				<Button icon="user-plus" type="submit" aria-busy={pending}>
 					Skapa konto
 				</Button>
-			</form>
+			</Form>
 		</Main>
 	);
 }

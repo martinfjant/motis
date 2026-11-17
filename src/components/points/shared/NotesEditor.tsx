@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "#/components/Button";
 import { Field } from "#/components/Field";
+import { Form } from "#/components/Form";
 import { MentionTextarea } from "#/components/MentionTextarea";
 import { MultilineText } from "#/components/MultilineText";
 
@@ -26,7 +27,7 @@ export function NotesEditor({
 			<>
 				{notes && <MultilineText text={notes} />}
 				<p>
-					<Button onClick={() => setOpen(true)}>
+					<Button icon="edit-2" onClick={() => setOpen(true)}>
 						{notes ? "Ändra anteckning" : "Lägg till anteckning"}
 					</Button>
 				</p>
@@ -34,7 +35,7 @@ export function NotesEditor({
 		);
 
 	return (
-		<form
+		<Form
 			onSubmit={async (e) => {
 				e.preventDefault();
 				const value = String(new FormData(e.currentTarget).get("notes") ?? "");
@@ -45,8 +46,12 @@ export function NotesEditor({
 				{/* Opened by an explicit click, so focus goes straight to it. */}
 				<MentionTextarea name="notes" defaultValue={notes} autoFocus />
 			</Field>
-			<Button type="submit">Klar</Button>{" "}
-			<Button onClick={() => setOpen(false)}>Avbryt</Button>
-		</form>
+			<Button icon="check" type="submit">
+				Klar
+			</Button>{" "}
+			<Button icon="x" onClick={() => setOpen(false)}>
+				Avbryt
+			</Button>
+		</Form>
 	);
 }

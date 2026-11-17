@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Field, Input } from "#/components/Field";
+import { Form } from "#/components/Form";
 import { DoneView } from "../shared/DoneView";
 import { NotesField } from "../shared/NotesField";
 import { PointActions } from "../shared/PointActions";
@@ -13,13 +14,12 @@ export function NextMeetingForm(props: PointProps) {
 
 	const id = fieldId(item, "at");
 	return (
-		<form
+		<Form
 			onSubmit={(e) => {
 				e.preventDefault();
 				const f = new FormData(e.currentTarget);
 				save({ at: String(f.get("at") ?? ""), notes: readNotes(f) });
 			}}
-			className="space-y-5"
 		>
 			<Field id={id} label="Datum och tid">
 				<Input
@@ -35,6 +35,6 @@ export function NextMeetingForm(props: PointProps) {
 				onOpen={() => setNotesOpen(true)}
 			/>
 			<PointActions {...props} submit />
-		</form>
+		</Form>
 	);
 }

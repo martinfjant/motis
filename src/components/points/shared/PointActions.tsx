@@ -28,7 +28,9 @@ export function PointActions({
 	if (done)
 		return (
 			<p>
-				<Button onClick={edit}>{editLabel}</Button>
+				<Button icon="edit-2" onClick={edit}>
+					{editLabel}
+				</Button>
 			</p>
 		);
 
@@ -49,22 +51,28 @@ export function PointActions({
 			<div>
 				{submit && (
 					<>
-						<Button type="submit">Klar</Button>{" "}
+						<Button icon="check" type="submit">
+							Klar
+						</Button>{" "}
 					</>
 				)}
 				{reopened && (
 					<>
-						<Button onClick={cancel}>Avbryt</Button>{" "}
+						<Button icon="x" onClick={cancel}>
+							Avbryt
+						</Button>{" "}
 					</>
 				)}
 				{carriable && !reopened && (
 					<>
-						<Button onClick={() => carryOver({ tabled: true })}>
+						<Button icon="clock" onClick={() => carryOver({ tabled: true })}>
 							Bordlägg
 						</Button>{" "}
 					</>
 				)}
-				<Button onClick={remove}>Ta bort punkten</Button>
+				<Button icon="trash-2" onClick={remove}>
+					Ta bort punkten
+				</Button>
 			</div>
 		</div>
 	);

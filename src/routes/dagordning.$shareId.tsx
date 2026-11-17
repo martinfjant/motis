@@ -1,6 +1,7 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { Main } from "#/components/Main";
 import { MeetingDetails } from "#/components/MeetingDetails";
+import { PageHeader } from "#/components/PageHeader";
 import { AgendaPointList } from "#/components/points/lists/AgendaPointList";
 import { getPublicAgenda } from "#/server/agendas.functions";
 
@@ -28,11 +29,12 @@ export const Route = createFileRoute("/dagordning/$shareId")({
 	}),
 	notFoundComponent: () => (
 		<Main>
-			<h1>Dagordningen hittades inte</h1>
-			<p>
-				Länken kan vara felskriven, eller så har styrelsen bytt ut eller tagit
-				bort den.
-			</p>
+			<PageHeader title="Dagordningen hittades inte">
+				<p>
+					Länken kan vara felskriven, eller så har styrelsen bytt ut eller tagit
+					bort den.
+				</p>
+			</PageHeader>
 		</Main>
 	),
 	component: PublicAgenda,
@@ -43,14 +45,12 @@ function PublicAgenda() {
 	return (
 		<Main>
 			<article>
-				<header>
-					<p>{boardName}</p>
-					<h1>Dagordning: {agenda.title}</h1>
+				<PageHeader title={`Dagordning: ${agenda.title}`} context={boardName}>
 					<MeetingDetails
 						meetingAt={agenda.meetingAt}
 						location={agenda.location}
 					/>
-				</header>
+				</PageHeader>
 				<AgendaPointList items={items} headingLevel={2} />
 			</article>
 		</Main>

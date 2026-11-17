@@ -9,13 +9,13 @@ export function testMail(user: { name: string; email: string }): Mail {
 	const url = appUrl("/");
 	return {
 		to: user.email,
-		subject: "Testmejl från BRF-protokoll",
+		subject: "Testmejl från Mötis",
 		html: renderEmail(
 			<>
 				<h1 style={{ fontSize: "22px", margin: "0 0 12px" }}>
 					Hej {user.name}!
 				</h1>
-				<p>Så här ser mejlen från BRF-protokoll ut.</p>
+				<p>Så här ser mejlen från Mötis ut.</p>
 				<EmailButton href={url}>Till Mina föreningar</EmailButton>
 				<p style={{ color: "#78716c", fontSize: "14px" }}>
 					Fungerar inte knappen? Kopiera adressen: {url}
@@ -25,7 +25,7 @@ export function testMail(user: { name: string; email: string }): Mail {
 		text: [
 			`Hej ${user.name}!`,
 			"",
-			"Så här ser mejlen från BRF-protokoll ut.",
+			"Så här ser mejlen från Mötis ut.",
 			"",
 			`Till Mina föreningar: ${url}`,
 		].join("\n"),

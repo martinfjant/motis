@@ -25,6 +25,7 @@ import {
 	isJusterat,
 	sendForReview,
 } from "./reviews.server";
+import { settleRemainingPoints } from "./test-helpers";
 
 let db: ReturnType<typeof createClient>;
 let anna: string, bo: string, boardId: string, protocolId: string;
@@ -110,6 +111,7 @@ const refused = (p: Promise<unknown>, message?: RegExp) =>
 
 test("only a closed protocol with justerare who have email can be sent", async () => {
 	await refused(sendForReview(db, bo, protocolId), /Stäng protokollet/);
+	await settleRemainingPoints(db, protocolId);
 	await closeProtocol(db, anna, protocolId);
 	await refused(sendForReview(db, bo, protocolId), /Välj justerare/);
 
@@ -135,6 +137,7 @@ test("only a closed protocol with justerare who have email can be sent", async (
 
 test("justering round trip: decline, edit, send again, approve", async () => {
 	await choose(`user:${anna}`, dora);
+	await settleRemainingPoints(db, protocolId);
 	await closeProtocol(db, anna, protocolId);
 	await sendForReview(db, bo, protocolId);
 
@@ -285,6 +288,7 @@ test("justering round trip: decline, edit, send again, approve", async () => {
 
 test("a protocol changed after sending can't be answered until sent again", async () => {
 	await choose(`user:${anna}`, `user:${bo}`);
+	await settleRemainingPoints(db, protocolId);
 	await closeProtocol(db, anna, protocolId);
 	await sendForReview(db, anna, protocolId);
 	const sent = await links();
@@ -311,6 +315,7 @@ test("a protocol changed after sending can't be answered until sent again", asyn
 test("non-members can't send a protocol for justering", async () => {
 	const cia = await mk("cia");
 	await choose(`user:${anna}`, dora);
+	await settleRemainingPoints(db, protocolId);
 	await closeProtocol(db, anna, protocolId);
 	await refused(sendForReview(db, cia, protocolId));
 });

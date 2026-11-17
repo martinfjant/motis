@@ -16,7 +16,7 @@ export type SettingsProps = {
 /** The parts of a protocol point needed to show what was recorded. */
 export type RecordedItem = Pick<
 	ProtocolItem,
-	"id" | "title" | "description" | "type" | "value"
+	"id" | "title" | "description" | "type" | "value" | "yesText" | "noText"
 >;
 
 /** What every type's Form gets from ProtocolPoint, during the meeting. */

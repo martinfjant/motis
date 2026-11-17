@@ -8,7 +8,7 @@ export function AttendanceDisplay({ item }: { item: RecordedItem }) {
 	return (
 		<>
 			<p>{ATTENDANCE_TEXT.present}</p>
-			<ul>
+			<ul className="list-disc pl-6">
 				{present.map((name) => (
 					<li key={name}>{name}</li>
 				))}

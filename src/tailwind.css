@@ -3,3 +3,197 @@
  * the utility classes used in the components, found by scanning the source.
  */
 @import "tailwindcss";
+
+/*
+ * The app's colours, by what they are for. Use these in components
+ * (bg-surface, text-muted, border-line…) rather than Tailwind's palette, so
+ * dark mode follows automatically. The light values are here; the dark
+ * values are below. Dark mode follows the system setting (Tailwind's
+ * `dark` variant).
+ */
+@theme {
+	/* A point's content appearing when it switches between form and summary */
+	--animate-appear: appear 220ms ease-out;
+	@keyframes appear {
+		from {
+			opacity: 0;
+			transform: translateY(-0.25rem);
+		}
+	}
+
+	/* Text */
+	--color-ink: var(--color-stone-950);
+	/* stone-600: stone-500 is too faint on the glass (about 3.4:1) */
+	--color-muted: var(--color-stone-600);
+
+	/* Boxes (sections, menus) and quieter areas inside them (hover, badges) */
+	--color-surface: var(--color-white);
+	--color-surface-muted: var(--color-stone-100);
+	--color-surface-strong: var(--color-stone-200);
+
+	/* Frosted glass with a faint edge: light for the page header, more
+	   opaque for sections, which hold forms and longer text */
+	--color-glass: color-mix(in oklab, var(--color-white) 45%, transparent);
+	--color-glass-strong: color-mix(
+		in oklab,
+		var(--color-white) 75%,
+		transparent
+	);
+	--color-glass-line: color-mix(in oklab, var(--color-white) 60%, transparent);
+
+	/* Inputs, selects and text areas: a little brighter than the glass
+	   they sit on */
+	--color-field: color-mix(in oklab, var(--color-white) 85%, transparent);
+
+	/* Borders: faint and normal dividers, and the stronger one for inputs */
+	--color-line-faint: var(--color-stone-200);
+	--color-line: var(--color-stone-300);
+	--color-line-strong: var(--color-stone-400);
+
+	/* Hover and chosen states */
+	--color-accent: var(--color-teal-600);
+	--color-accent-line: var(--color-teal-500);
+	--color-accent-strong: var(--color-teal-700);
+	--color-accent-pressed: var(--color-teal-800);
+	--color-on-accent: var(--color-white);
+
+	/* Links: the text, and the highlight on hover and while pressed. Picked
+	   for contrast (at least 4.5:1, WCAG AA) on the boxes they sit in. */
+	--color-link: var(--color-teal-800);
+	/* On the lighter glass (page header, breadcrumbs), where more of the
+	   background shows through */
+	--color-link-on-glass: var(--color-teal-950);
+	--color-link-hover: var(--color-teal-700);
+	--color-link-pressed: var(--color-teal-800);
+	--color-on-link-hover: var(--color-white);
+
+	/* Button */
+	--color-button: var(--color-yellow-200);
+	--color-button-line: var(--color-yellow-300);
+	--color-on-button: var(--color-black);
+
+	/* Information (info boxes, admin badge) and warning (no account badge) */
+	--color-info: var(--color-sky-100);
+	--color-on-info: var(--color-sky-800);
+	--color-info-line: var(--color-sky-200);
+	--color-warn: var(--color-amber-100);
+	--color-on-warn: var(--color-amber-800);
+}
+
+:root {
+	/* Native parts (inputs, selects, scrollbars) follow light/dark too. */
+	color-scheme: light dark;
+
+	@variant dark {
+		--color-ink: var(--color-stone-100);
+		--color-muted: var(--color-stone-400);
+
+		--color-surface: var(--color-stone-900);
+		--color-surface-muted: var(--color-stone-800);
+		--color-surface-strong: var(--color-stone-700);
+
+		--color-glass: color-mix(in oklab, var(--color-stone-900) 55%, transparent);
+		--color-glass-strong: color-mix(
+			in oklab,
+			var(--color-stone-900) 80%,
+			transparent
+		);
+		--color-glass-line: color-mix(
+			in oklab,
+			var(--color-white) 12%,
+			transparent
+		);
+
+		--color-field: color-mix(in oklab, var(--color-stone-950) 70%, transparent);
+
+		--color-line-faint: var(--color-stone-800);
+		--color-line: var(--color-stone-700);
+		--color-line-strong: var(--color-stone-600);
+
+		--color-accent: var(--color-teal-600);
+		--color-accent-line: var(--color-teal-500);
+		--color-accent-strong: var(--color-teal-700);
+		--color-accent-pressed: var(--color-teal-800);
+		--color-on-accent: var(--color-white);
+
+		--color-link: var(--color-teal-300);
+		--color-link-on-glass: var(--color-teal-300);
+		--color-link-hover: var(--color-teal-300);
+		--color-link-pressed: var(--color-teal-400);
+		--color-on-link-hover: var(--color-stone-950);
+
+		--color-button: var(--color-yellow-300);
+		--color-button-line: var(--color-yellow-400);
+		--color-on-button: var(--color-black);
+
+		--color-info: var(--color-sky-900);
+		--color-on-info: var(--color-sky-200);
+		--color-info-line: var(--color-sky-800);
+		--color-warn: var(--color-amber-900);
+		--color-on-warn: var(--color-amber-200);
+	}
+}
+
+@layer base {
+	html {
+		color: var(--color-ink);
+	}
+
+	/*
+	 * Links look like links, and light up like buttons on hover and while
+	 * pressed. Links with classes of their own (LinkButton) keep their look:
+	 * Tailwind's classes win over these base styles.
+	 */
+	a {
+		color: var(--color-link);
+		text-decoration-line: underline;
+		text-decoration-thickness: 1px;
+		text-underline-offset: 0.2em;
+		border-radius: 0.25rem;
+		box-decoration-break: clone;
+		transition:
+			background-color 150ms,
+			box-shadow 150ms,
+			color 150ms;
+
+		/* The shadow widens the highlight a little without moving the text. */
+		&:hover {
+			background-color: var(--color-link-hover);
+			box-shadow: 0 0 0 0.15em var(--color-link-hover);
+			color: var(--color-on-link-hover);
+			text-decoration-color: transparent;
+		}
+
+		/* Pressed: darker, nudged down and shaded along the top edge, as if
+		   pushed in. Relative positioning moves it without moving the text
+		   around it (inline links can't be scaled like buttons). */
+		&:active {
+			position: relative;
+			top: 0.08em;
+			background-color: var(--color-link-pressed);
+			box-shadow:
+				0 0 0 0.15em var(--color-link-pressed),
+				inset 0 0.12em 0.2em rgb(0 0 0 / 0.35);
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--color-link);
+			outline-offset: 2px;
+		}
+	}
+
+	/*
+	 * In dark mode, dim whatever background is showing (the picture or a
+	 * board's pattern) with a dark layer between it and the page.
+	 */
+	@variant dark {
+		body::before {
+			content: "";
+			position: fixed;
+			inset: 0;
+			z-index: -1;
+			background: rgb(0 0 0 / 0.6);
+			pointer-events: none;
+		}
+	}
+}

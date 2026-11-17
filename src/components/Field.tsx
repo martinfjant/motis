@@ -5,6 +5,7 @@ import {
 	useContext,
 	useId,
 } from "react";
+import { Icon } from "./Icon";
 
 const FieldContext = createContext<{ id: string; hintId?: string } | null>(
 	null,
@@ -55,8 +56,12 @@ export function useFieldProps(props: {
 	};
 }
 
+/**
+ * How inputs, selects and text areas look (MentionTextarea uses it too).
+ * Focus shows as a teal ring instead of the browser's outline.
+ */
 export const fieldStyle =
-	"w-full border-1 border-stone-400 rounded-lg text-lg w-full";
+	"w-full rounded-lg border border-line-strong bg-field px-3 py-2.5 text-lg shadow-2xs outline-none transition-colors focus:border-accent focus:ring-3 focus:ring-accent/30";
 /** A text-like <input> (text, email, password, date…). */
 export function Input(props: ComponentProps<"input">) {
 	return <input {...props} className={fieldStyle} {...useFieldProps(props)} />;
@@ -68,6 +73,22 @@ export function Textarea(props: ComponentProps<"textarea">) {
 	);
 }
 
+/**
+ * A <select> drawn like the other fields: without the browser's own look
+ * (Safari ignores padding otherwise), so it gets its own arrow.
+ */
 export function Select(props: ComponentProps<"select">) {
-	return <select {...props} className={fieldStyle} {...useFieldProps(props)} />;
+	return (
+		<span className="relative block">
+			<select
+				{...props}
+				className={`${fieldStyle} appearance-none pr-10`}
+				{...useFieldProps(props)}
+			/>
+			<Icon
+				name="chevron-down"
+				className="pointer-events-none absolute top-1/2 right-3 size-5 -translate-y-1/2 text-muted"
+			/>
+		</span>
+	);
 }

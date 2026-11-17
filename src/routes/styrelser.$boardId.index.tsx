@@ -11,9 +11,11 @@ import { Checkbox } from "#/components/Choice";
 import { Dialog } from "#/components/Dialog";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Input, Select } from "#/components/Field";
-import { LockIcon } from "#/components/IconButton";
+import { Form } from "#/components/Form";
+import { Icon } from "#/components/Icon";
 import { Main } from "#/components/Main";
 import { MeetingItem, MeetingList } from "#/components/MeetingList";
+import { PageHeader } from "#/components/PageHeader";
 import { Section } from "#/components/Section";
 import { cannotStart, daysBetween, START_ANY_DAY } from "#/meeting-time";
 import { callMeeting, getBoardOverview } from "#/server/agendas.functions";
@@ -30,10 +32,11 @@ export const Route = createFileRoute("/styrelser/$boardId/")({
 	},
 	notFoundComponent: () => (
 		<Main>
-			<h1>Styrelsen hittades inte</h1>
-			<p>
-				<Link to="/">Tillbaka till Mina föreningar</Link>
-			</p>
+			<PageHeader title="Styrelsen hittades inte">
+				<p>
+					<Link to="/">Tillbaka till Mina föreningar</Link>
+				</p>
+			</PageHeader>
 		</Main>
 	),
 	component: Board,
@@ -73,15 +76,16 @@ function Board() {
 			<Breadcrumbs>
 				<Link to="/">Mina föreningar</Link>
 			</Breadcrumbs>
-			<h1>{board.name}</h1>
-			<p>
-				<Link
-					to="/styrelser/$boardId/installningar"
-					params={{ boardId: board.id }}
-				>
-					Inställningar: mallar och ledamöter
-				</Link>
-			</p>
+			<PageHeader title={board.name}>
+				<p>
+					<Link
+						to="/styrelser/$boardId/installningar"
+						params={{ boardId: board.id }}
+					>
+						Inställningar: mallar och ledamöter
+					</Link>
+				</p>
+			</PageHeader>
 
 			{ongoing.length > 0 && (
 				<Section id="ongoing" title="Pågående möten">
@@ -129,7 +133,11 @@ function Board() {
 							>
 								{/* Startable only on its day; a future date speaks for itself. */}
 								{START_ANY_DAY || !cannotStart(a.meetingAt, today) ? (
-									<Button type="button" onClick={() => onStartMeeting(a.id)}>
+									<Button
+										icon="play"
+										type="button"
+										onClick={() => onStartMeeting(a.id)}
+									>
 										Starta möte
 									</Button>
 								) : !a.meetingAt ? (
@@ -167,22 +175,15 @@ function Board() {
 							<MeetingItem
 								key={p.id}
 								title={
-									<>
-										<Link
-											to="/styrelser/$boardId/protokoll/$protocolId"
-											params={{ boardId: board.id, protocolId: p.id }}
-										>
-											{p.title}
-										</Link>
-										{p.justerat && (
-											<>
-												{" "}
-												<JusteratMark />
-											</>
-										)}
-									</>
+									<Link
+										to="/styrelser/$boardId/protokoll/$protocolId"
+										params={{ boardId: board.id, protocolId: p.id }}
+									>
+										{p.title}
+									</Link>
 								}
 								at={p.meetingAt}
+								marker={p.justerat ? <JusteratMark /> : undefined}
 							/>
 						))}
 					</MeetingList>
@@ -195,8 +196,8 @@ function Board() {
 /** A padlock: the protocol is justerat. Says so to screen readers and on hover. */
 function JusteratMark() {
 	return (
-		<span title="Justerat" className="inline-flex align-middle text-stone-500">
-			<LockIcon />
+		<span title="Justerat" className="inline-flex align-middle text-muted">
+			<Icon name="lock" className="size-4" />
 			<span className="sr-only">Justerat</span>
 		</span>
 	);
@@ -228,6 +229,7 @@ function CallMeetingDialog({
 		close: () => void,
 	) {
 		e.preventDefault();
+		if (pending) return; // already saving: ignore a second press
 		const f = new FormData(e.currentTarget);
 		setError(null);
 		setPending(true);
@@ -258,12 +260,13 @@ function CallMeetingDialog({
 		<Dialog
 			title="Kalla till möte"
 			openLabel="Kalla till möte"
+			openIcon="calendar"
 			onClose={() => setError(null)}
 		>
 			{(close) => (
 				<>
 					<p>Du gör dagordningen nu och kan ändra den fram till mötet.</p>
-					<form onSubmit={(e) => onSubmit(e, close)}>
+					<Form onSubmit={(e) => onSubmit(e, close)}>
 						<Field id="templateId" label="Mall">
 							<Select name="templateId">
 								{templates.map((t) => (
@@ -313,14 +316,14 @@ function CallMeetingDialog({
 						)}
 						<ErrorMessage error={error} />
 						<p>
-							<Button type="submit" disabled={pending}>
+							<Button icon="file-plus" type="submit" aria-busy={pending}>
 								Skapa dagordning
 							</Button>{" "}
-							<Button type="button" onClick={close}>
+							<Button icon="x" type="button" onClick={close}>
 								Avbryt
 							</Button>
 						</p>
-					</form>
+					</Form>
 				</>
 			)}
 		</Dialog>

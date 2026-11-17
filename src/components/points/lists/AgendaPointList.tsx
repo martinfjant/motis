@@ -14,10 +14,10 @@ export function AgendaPointList({
 	const Heading = headingLevel === 2 ? "h2" : "h3";
 	if (items.length === 0) return <p>Dagordningen har inga punkter ännu.</p>;
 	return (
-		<ol className="list-decimal">
+		<ol className="list-decimal p-5 space-y-1.5">
 			{items.map((item) => (
-				<li key={item.id} className="bg-red-400">
-					<Heading>{item.title}</Heading>
+				<li key={item.id} className="pl-2">
+					<Heading className="font-bold text-xl py-2.5">{item.title}</Heading>
 					<MultilineText text={item.description} />
 				</li>
 			))}

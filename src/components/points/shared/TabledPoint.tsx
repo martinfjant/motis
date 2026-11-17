@@ -16,7 +16,7 @@ export function TabledPoint({ item, save, carryOver }: PointProps) {
 				onSave={(notes) => save({ ...v, notes }, false)}
 			/>
 			<p>
-				<Button onClick={() => carryOver({ tabled: false })}>
+				<Button icon="rotate-ccw" onClick={() => carryOver({ tabled: false })}>
 					Ångra bordläggning
 				</Button>
 			</p>

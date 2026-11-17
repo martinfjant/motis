@@ -21,7 +21,9 @@ export function NotesField({
 	if (!open)
 		return (
 			<p>
-				<Button onClick={onOpen}>Lägg till anteckning</Button>
+				<Button icon="edit-2" onClick={onOpen}>
+					Lägg till anteckning
+				</Button>
 			</p>
 		);
 	return (

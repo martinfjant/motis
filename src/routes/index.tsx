@@ -4,9 +4,11 @@ import { Button } from "#/components/Button";
 import { MeetingTime } from "#/components/DateTime";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Input } from "#/components/Field";
+import { Form } from "#/components/Form";
 import { LinkButton } from "#/components/LinkButton";
 import { Main } from "#/components/Main";
 import { MeetingItem, MeetingList } from "#/components/MeetingList";
+import { PageHeader } from "#/components/PageHeader";
 import { Section } from "#/components/Section";
 import { VerifyEmailNotice } from "#/components/VerifyEmailNotice";
 import { daysUntilText } from "#/meeting-time";
@@ -35,8 +37,12 @@ function Home() {
 			<Section id="enklare-motesprotokoll" title="Enklare mötesprotokoll">
 				<p>Skapa dagordningar och protokoll för styrelsemöten.</p>
 
-				<LinkButton to="/registrera">Skapa konto</LinkButton>
-				<LinkButton to="/logga-in">Logga in</LinkButton>
+				<LinkButton icon="user-plus" to="/registrera">
+					Skapa konto
+				</LinkButton>
+				<LinkButton icon="log-in" to="/logga-in">
+					Logga in
+				</LinkButton>
 			</Section>
 		</Main>
 	);
@@ -57,6 +63,7 @@ function MyAssociations({
 
 	async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
 		e.preventDefault();
+		if (pending) return; // already saving: ignore a second press
 		const form = e.currentTarget;
 		const name = String(new FormData(form).get("name"));
 		setPending(true);
@@ -75,14 +82,14 @@ function MyAssociations({
 
 	return (
 		<Main>
-			<h1>Mina föreningar</h1>
+			<PageHeader title="Mina föreningar" />
 			{user && <VerifyEmailNotice user={user} />}
 			{boards.length > 0 && <Upcoming meetings={upcoming} />}
 			<Section id="my-boards" title="Föreningar">
 				{boards.length === 0 ? (
 					<p>Du är inte med i någon förening ännu.</p>
 				) : (
-					<ul>
+					<ul className="list-disc pl-6">
 						{boards.map((b) => (
 							<li key={b.id}>
 								<Link to="/styrelser/$boardId" params={{ boardId: b.id }}>
@@ -95,15 +102,15 @@ function MyAssociations({
 				)}
 			</Section>
 			<Section id="new-board" title="Skapa ny styrelse">
-				<form onSubmit={onSubmit}>
+				<Form onSubmit={onSubmit}>
 					<Field id="name" label="Föreningens namn">
 						<Input name="name" required />
 					</Field>
 					<ErrorMessage error={error} />
-					<Button type="submit" disabled={pending}>
+					<Button icon="plus" type="submit" aria-busy={pending}>
 						Skapa styrelse
 					</Button>
-				</form>
+				</Form>
 			</Section>
 		</Main>
 	);

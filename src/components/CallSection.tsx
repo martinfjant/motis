@@ -28,6 +28,7 @@ export function CallSection({
 	const count = `${recipients.length} ${recipients.length === 1 ? "person" : "personer"}`;
 
 	async function send(question: string) {
+		if (pending) return; // already saving: ignore a second press
 		if (!confirm(question)) return;
 		setError(null);
 		setPending(true);
@@ -58,7 +59,7 @@ export function CallSection({
 			{recipients.length > 0 && (
 				<details>
 					<summary>Mottagare ({count})</summary>
-					<ul>
+					<ul className="list-disc pl-6">
 						{recipients.map((r) => (
 							<li key={r.email}>
 								{r.name} ({r.email})
@@ -89,7 +90,8 @@ export function CallSection({
 			{recipients.length > 0 && (
 				<p>
 					<Button
-						disabled={pending}
+						icon="send"
+						aria-busy={pending}
 						onClick={() =>
 							send(
 								latest

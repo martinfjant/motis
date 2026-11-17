@@ -20,7 +20,7 @@ export const Route = createRootRoute({
 		meta: [
 			{ charSet: "utf-8" },
 			{ name: "viewport", content: "width=device-width, initial-scale=1" },
-			{ title: "BRF-protokoll" },
+			{ title: "Mötis" },
 		],
 		links: [
 			{ rel: "stylesheet", href: tailwindCss },
@@ -46,17 +46,26 @@ function SiteHeader() {
 
 	return (
 		<header className="flex flex-row justify-between">
-			<div className="bg-white rounded-xl content-center px-5 m-5">
-				<Link to="/">BRF-protokoll</Link>
+			<div className="content-center m-5">
+				{/*
+				 * The name, not a link like the others: the button yellow, with a
+				 * soft shadow so it can be read on light parts of the background too.
+				 */}
+				<Link
+					to="/"
+					className="text-4xl font-bold text-button no-underline [text-shadow:0_1px_3px_rgb(0_0_0/0.55)] hover:bg-transparent hover:text-button hover:underline hover:shadow-none active:bg-transparent active:shadow-none"
+				>
+					Mötis
+				</Link>
 			</div>
 			<nav
 				aria-label="Huvudmeny"
-				className="bg-white rounded-xl content-center px-5 m-5"
+				className="m-5 flex rounded-xl border border-glass-line bg-glass shadow-2xs backdrop-blur-md [--color-link:var(--color-link-on-glass)]"
 			>
 				{user ? (
 					<UserMenu name={user.name} onLogOut={handleLogOut} />
 				) : (
-					<ul>
+					<ul className="flex items-center gap-4 px-5">
 						<li>
 							<Link to="/logga-in">Logga in</Link>
 						</li>

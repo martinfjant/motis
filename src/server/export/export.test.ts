@@ -13,6 +13,7 @@ import {
 } from "../protocols.server";
 import { decideReview, sendForReview } from "../reviews.server";
 import { cleanSignature } from "../signature.server";
+import { settleRemainingPoints } from "../test-helpers";
 import {
 	documentForMember,
 	documentForShare,
@@ -89,6 +90,7 @@ test("only a real, small PNG is accepted as a signature", () => {
 });
 
 test("approving needs a signature, which is kept with the approval", async () => {
+	await settleRemainingPoints(db, protocolId);
 	await closeProtocol(db, anna, protocolId);
 	await sendForReview(db, anna, protocolId);
 	const token =
@@ -109,6 +111,7 @@ test("downloads need a closed protocol, and a member or the share link", async (
 	await expect(documentForMember(db, anna, protocolId)).rejects.toThrow(
 		/när det är stängt/,
 	);
+	await settleRemainingPoints(db, protocolId);
 	await closeProtocol(db, anna, protocolId);
 	const cia = (
 		await createUser(db, {
@@ -127,6 +130,7 @@ test("downloads need a closed protocol, and a member or the share link", async (
 });
 
 test("the Markdown has the points in order, as written, and the justering", async () => {
+	await settleRemainingPoints(db, protocolId);
 	await closeProtocol(db, anna, protocolId);
 	await sendForReview(db, anna, protocolId);
 	const token =
@@ -154,6 +158,7 @@ test("the Markdown has the points in order, as written, and the justering", asyn
 });
 
 test("the PDF is a PDF, with the signature in it", async () => {
+	await settleRemainingPoints(db, protocolId);
 	await closeProtocol(db, anna, protocolId);
 	const plain = await protocolPdf(
 		await documentForMember(db, anna, protocolId),

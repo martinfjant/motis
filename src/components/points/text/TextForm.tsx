@@ -1,3 +1,4 @@
+import { Form } from "#/components/Form";
 import { DoneView } from "../shared/DoneView";
 import { NotesField } from "../shared/NotesField";
 import { PointActions } from "../shared/PointActions";
@@ -11,15 +12,14 @@ export function TextForm(props: PointProps) {
 	const { item, done, save } = props;
 	if (done) return <DoneView {...props} />;
 	return (
-		<form
+		<Form
 			onSubmit={(e) => {
 				e.preventDefault();
 				save({ notes: readNotes(new FormData(e.currentTarget)) });
 			}}
-			className="block space-y-5"
 		>
 			<NotesField item={item} open onOpen={() => {}} />
 			<PointActions {...props} submit />
-		</form>
+		</Form>
 	);
 }

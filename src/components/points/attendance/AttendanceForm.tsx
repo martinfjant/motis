@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Checkbox } from "#/components/Choice";
 import { Field, Textarea } from "#/components/Field";
+import { Form } from "#/components/Form";
 import type { ProtocolValue } from "#/server/items";
 import { DoneView } from "../shared/DoneView";
 import { NotesField } from "../shared/NotesField";
@@ -46,7 +47,7 @@ export function AttendanceForm(props: PointProps & { invited: string[] }) {
 	}
 
 	return (
-		<form
+		<Form
 			onSubmit={(e) => {
 				e.preventDefault();
 				const form = e.currentTarget;
@@ -67,7 +68,6 @@ export function AttendanceForm(props: PointProps & { invited: string[] }) {
 					.querySelector<HTMLInputElement>(PRESENT)
 					?.setCustomValidity("");
 			}}
-			className="block space-y-5"
 		>
 			<fieldset>
 				<legend className="text-lg pb-2">Närvarande</legend>
@@ -96,6 +96,6 @@ export function AttendanceForm(props: PointProps & { invited: string[] }) {
 				onOpen={() => setNotesOpen(true)}
 			/>
 			<PointActions {...props} submit />
-		</form>
+		</Form>
 	);
 }

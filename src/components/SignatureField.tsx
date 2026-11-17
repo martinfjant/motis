@@ -69,10 +69,11 @@ export function SignatureField({
 			<canvas
 				ref={canvas}
 				aria-labelledby={labelId}
-				className="block h-40 w-full max-w-md touch-none rounded-lg border border-stone-400 bg-white"
+				className="block h-40 w-full max-w-md touch-none rounded-lg border border-line-strong bg-white"
 			/>
 			<p>
 				<Button
+					icon="rotate-ccw"
 					onClick={() => {
 						pad.current?.clear();
 						report.current(null);

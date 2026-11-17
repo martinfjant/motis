@@ -3,11 +3,13 @@ import type { ItemType } from "#/server/items";
 import { AttendanceSettings } from "./attendance/AttendanceSettings";
 import { ReviewersSettings } from "./reviewers/ReviewersSettings";
 import type { SettingsProps } from "./shared/point";
+import { ToggleSettings } from "./toggle/ToggleSettings";
 
 /** Types with settings of their own, besides title and description. */
 const SETTINGS: Partial<Record<ItemType, ComponentType<SettingsProps>>> = {
 	attendance: AttendanceSettings,
 	reviewers: ReviewersSettings,
+	toggle: ToggleSettings,
 };
 
 /**

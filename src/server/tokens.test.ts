@@ -64,7 +64,7 @@ test("in development, mail goes to the outbox", async () => {
 	const [mail] = await listOutbox(db);
 	expect(mail).toMatchObject({
 		to: "anna@example.se",
-		subject: "Testmejl från BRF-protokoll",
+		subject: "Testmejl från Mötis",
 	});
 	expect(mail.html).toMatch(/^<!doctype html><html lang="sv">/);
 	expect(mail.html).toContain('href="http://localhost:3000/"');

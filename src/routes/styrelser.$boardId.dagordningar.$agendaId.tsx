@@ -12,6 +12,7 @@ import { ErrorMessage } from "#/components/ErrorMessage";
 import { Main } from "#/components/Main";
 import { MeetingDetails } from "#/components/MeetingDetails";
 import { MeetingForm } from "#/components/MeetingForm";
+import { PageHeader } from "#/components/PageHeader";
 import { AgendaPointList } from "#/components/points/lists/AgendaPointList";
 import { EditPointList } from "#/components/points/lists/EditPointList";
 import { Section } from "#/components/Section";
@@ -36,10 +37,11 @@ export const Route = createFileRoute(
 	},
 	notFoundComponent: () => (
 		<Main>
-			<h1>Dagordningen hittades inte</h1>
-			<p>
-				<Link to="/">Tillbaka till Mina föreningar</Link>
-			</p>
+			<PageHeader title="Dagordningen hittades inte">
+				<p>
+					<Link to="/">Tillbaka till Mina föreningar</Link>
+				</p>
+			</PageHeader>
 		</Main>
 	),
 	component: AgendaPage,
@@ -83,12 +85,16 @@ function AgendaPage() {
 					{board.name}
 				</Link>
 			</Breadcrumbs>
-			<h1>Dagordning: {agenda.title}</h1>
+			<PageHeader title={`Dagordning: ${agenda.title}`} />
 
 			{editing ? (
 				<>
 					<p>
-						<Button type="button" onClick={() => setEditing(false)}>
+						<Button
+							icon="check"
+							type="button"
+							onClick={() => setEditing(false)}
+						>
 							Klar med redigeringen
 						</Button>
 					</p>
@@ -101,12 +107,16 @@ function AgendaPage() {
 					/>
 					<EditPointList kind="agenda" parentId={agenda.id} items={items} />
 					<p>
-						<Button type="button" onClick={() => setEditing(false)}>
+						<Button
+							icon="check"
+							type="button"
+							onClick={() => setEditing(false)}
+						>
 							Klar med redigeringen
 						</Button>
 					</p>
 					<Section id="danger" title="Ta bort">
-						<Button type="button" onClick={onDelete}>
+						<Button icon="trash-2" type="button" onClick={onDelete}>
 							Ta bort dagordningen
 						</Button>
 					</Section>
@@ -114,7 +124,7 @@ function AgendaPage() {
 			) : (
 				<>
 					<p>
-						<Button type="button" onClick={() => setEditing(true)}>
+						<Button icon="edit" type="button" onClick={() => setEditing(true)}>
 							Redigera dagordningen
 						</Button>
 					</p>
@@ -162,7 +172,7 @@ function AgendaPage() {
 						{notToday ? (
 							<p>{notToday}</p>
 						) : (
-							<Button type="button" onClick={onStartProtocol}>
+							<Button icon="play" type="button" onClick={onStartProtocol}>
 								Starta möte
 							</Button>
 						)}

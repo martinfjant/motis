@@ -2,6 +2,7 @@ import { useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "#/components/Button";
 import { ErrorMessage } from "#/components/ErrorMessage";
+import { Form } from "#/components/Form";
 import { PointFields } from "#/components/points/PointFields";
 import { Section } from "#/components/Section";
 import {
@@ -10,7 +11,7 @@ import {
 	moveItem,
 	updateItem,
 } from "#/server/agendas.functions";
-import type { Item } from "#/server/items";
+import { canMove, type Item } from "#/server/items";
 
 type Kind = "template" | "agenda";
 
@@ -22,6 +23,8 @@ function readItem(form: HTMLFormElement) {
 		description: String(f.get("description") ?? ""),
 		extraNames: String(f.get("extraNames") ?? "").split("\n"),
 		reviewerCount: String(f.get("reviewerCount") ?? ""),
+		yesText: String(f.get("yesText") ?? ""),
+		noText: String(f.get("noText") ?? ""),
 	};
 }
 
@@ -70,9 +73,9 @@ export function EditPointList({
 			{items.length === 0 ? (
 				<p>Inga punkter ännu.</p>
 			) : (
-				<ol className="p-5">
+				<ol className="list-decimal p-5 space-y-10">
 					{items.map((item, i) => (
-						<li key={item.id}>
+						<li key={item.id} className="pl-2 space-y-2.5">
 							<ItemForm
 								item={item}
 								onSave={(form) =>
@@ -83,34 +86,40 @@ export function EditPointList({
 									)
 								}
 							/>
+							{/* Only the moves that can happen: the opening stays first and the closing last. */}
 							<p>
+								{canMove(items, i, -1) && (
+									<Button
+										icon="arrow-up"
+										type="button"
+										onClick={() =>
+											run(() =>
+												moveItem({
+													data: { kind, itemId: item.id, direction: -1 },
+												}),
+											)
+										}
+									>
+										Flytta upp
+									</Button>
+								)}{" "}
+								{canMove(items, i, 1) && (
+									<Button
+										icon="arrow-down"
+										type="button"
+										onClick={() =>
+											run(() =>
+												moveItem({
+													data: { kind, itemId: item.id, direction: 1 },
+												}),
+											)
+										}
+									>
+										Flytta ner
+									</Button>
+								)}{" "}
 								<Button
-									type="button"
-									disabled={i === 0}
-									onClick={() =>
-										run(() =>
-											moveItem({
-												data: { kind, itemId: item.id, direction: -1 },
-											}),
-										)
-									}
-								>
-									Flytta upp
-								</Button>{" "}
-								<Button
-									type="button"
-									disabled={i === items.length - 1}
-									onClick={() =>
-										run(() =>
-											moveItem({
-												data: { kind, itemId: item.id, direction: 1 },
-											}),
-										)
-									}
-								>
-									Flytta ner
-								</Button>{" "}
-								<Button
+									icon="trash-2"
 									type="button"
 									onClick={() => {
 										if (confirm(`Ta bort punkten ”${item.title}”?`))
@@ -128,10 +137,12 @@ export function EditPointList({
 			)}
 
 			<h3>Lägg till punkt</h3>
-			<form key={addFormKey} onSubmit={onAdd}>
+			<Form key={addFormKey} onSubmit={onAdd}>
 				<PointFields idPrefix="new-item" />
-				<Button type="submit">Lägg till</Button>
-			</form>
+				<Button icon="plus" type="submit">
+					Lägg till
+				</Button>
+			</Form>
 		</Section>
 	);
 }
@@ -144,17 +155,19 @@ function ItemForm({
 	onSave: (form: HTMLFormElement) => Promise<boolean>;
 }) {
 	return (
-		<form
+		<Form
 			onSubmit={(e) => {
 				e.preventDefault();
 				onSave(e.currentTarget);
 			}}
 		>
-			<fieldset>
-				<legend>{item.title}</legend>
+			<fieldset className="block space-y-5">
+				<legend className="text-xl font-bold">{item.title}</legend>
 				<PointFields idPrefix={item.id} item={item} />
-				<Button type="submit">Spara</Button>
+				<Button icon="save" type="submit">
+					Spara
+				</Button>
 			</fieldset>
-		</form>
+		</Form>
 	);
 }

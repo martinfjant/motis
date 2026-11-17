@@ -45,7 +45,7 @@ export function renderEmail(body: ReactNode): string {
 						textAlign: "center",
 					}}
 				>
-					Skickat från BRF-protokoll.
+					Skickat från Mötis.
 				</p>
 			</body>
 		</html>,
