@@ -5,6 +5,7 @@ import type {
 	ReviewRound,
 } from "#/server/items";
 import { Button } from "./Button";
+import { useConfirm } from "./ConfirmDialog";
 import { Instant } from "./DateTime";
 import { MultilineText } from "./MultilineText";
 import { Section } from "./Section";
@@ -26,6 +27,7 @@ export function ReviewSection({
 	review: ReviewRound | null;
 	onSend: () => void;
 }) {
+	const confirm = useConfirm();
 	const chosen = items
 		.filter((i) => i.type === "reviewers" && !i.value.tabled)
 		.flatMap((i) => i.value.reviewers ?? []);
@@ -108,12 +110,16 @@ export function ReviewSection({
 				<p>
 					<Button
 						icon="send"
-						onClick={() => {
+						onClick={async () => {
 							if (
 								review.changed ||
-								confirm(
-									"Skicka igen? Länkarna i det förra mejlet slutar fungera, och de som redan har svarat behöver svara igen.",
-								)
+								(await confirm({
+									title: "Skicka för justering igen?",
+									message:
+										"Länkarna i det förra mejlet slutar fungera, och de som redan har svarat behöver svara igen.",
+									confirmLabel: "Skicka igen",
+									confirmIcon: "send",
+								}))
 							)
 								onSend();
 						}}
