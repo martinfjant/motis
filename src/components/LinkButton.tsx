@@ -4,11 +4,12 @@ import { ButtonIcon, withButtonStyle } from "./Button";
 import type { IconName } from "./Icon";
 
 /**
- * The <a> a LinkButton renders, with the button classes. Classes passed in
- * are added, not swapped in: the router gives the current page's link
- * className="active" (and aria-current="page").
+ * A plain link that looks like a <Button>, for addresses outside the app's
+ * pages: downloads (/api/…), other sites. For the app's own pages use
+ * LinkButton. Classes passed in are added, not swapped in: the router gives
+ * the current page's link className="active" (and aria-current="page").
  */
-function ButtonAnchor({
+export function AnchorButton({
 	className,
 	icon,
 	children,
@@ -28,4 +29,4 @@ function ButtonAnchor({
  * for navigation; use <Button> for actions. The look comes from
  * buttonStyle in Button.tsx, so the two always match.
  */
-export const LinkButton = createLink(ButtonAnchor);
+export const LinkButton = createLink(AnchorButton);
