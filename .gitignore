@@ -15,3 +15,7 @@ todos.json
 local.db*
 .env
 .claude/settings.local.json
+
+# Editor swap files (Vim)
+*.swp
+*.swo
