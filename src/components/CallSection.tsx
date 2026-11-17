@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { CallRecipient, SentCall } from "#/server/calls.server";
 import { Button } from "./Button";
+import { useConfirm } from "./ConfirmDialog";
 import { Instant } from "./DateTime";
 import { ErrorMessage } from "./ErrorMessage";
 import { Section } from "./Section";
@@ -22,6 +23,7 @@ export function CallSection({
 	sent: SentCall[];
 	onSend: () => Promise<void>;
 }) {
+	const confirm = useConfirm();
 	const [error, setError] = useState<string | null>(null);
 	const [pending, setPending] = useState(false);
 	const [latest, ...earlier] = sent;
@@ -29,7 +31,14 @@ export function CallSection({
 
 	async function send(question: string) {
 		if (pending) return; // already saving: ignore a second press
-		if (!confirm(question)) return;
+		if (
+			!(await confirm({
+				title: question,
+				confirmLabel: "Skicka",
+				confirmIcon: "send",
+			}))
+		)
+			return;
 		setError(null);
 		setPending(true);
 		try {

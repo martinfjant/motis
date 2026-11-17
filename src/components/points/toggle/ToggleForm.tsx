@@ -7,7 +7,11 @@ import { PointActions } from "../shared/PointActions";
 import { fieldId, type PointProps, readNotes } from "../shared/point";
 import { answerText } from "./toggleText";
 
-/** Ja/nej ("toggle"). Choosing an answer saves it and makes the point done. */
+/**
+ * Ja/nej ("toggle"). Choosing an answer saves it and makes the point done.
+ * The choices read as the protocol will (the point's own wording, e.g.
+ * "Dagordningen godkändes."), or Ja / Nej.
+ */
 export function ToggleForm(props: PointProps) {
 	const { item, done, save } = props;
 	const v = item.value;
@@ -32,19 +36,20 @@ export function ToggleForm(props: PointProps) {
 				save(read(e.currentTarget));
 			}}
 		>
-			<div className="grid grid-cols-3 gap-2 w-full max-w-screen-sm">
+			{/* Two side by side; one above the other on narrow screens. */}
+			<div className="grid w-full max-w-screen-md gap-2 sm:grid-cols-2">
 				<Radio
 					id={id("answer-yes")}
-					label={answerText(true)}
+					label={answerText(true, item)}
 					name="answer"
 					value="yes"
 					defaultChecked={v.answer === true}
 					required
 					onChange={(e) => e.currentTarget.form?.requestSubmit()}
-				/>{" "}
+				/>
 				<Radio
 					id={id("answer-no")}
-					label={answerText(false)}
+					label={answerText(false, item)}
 					name="answer"
 					value="no"
 					defaultChecked={v.answer === false}

@@ -71,7 +71,8 @@ function ReviewPage() {
 
 	return (
 		<Main>
-			<article>
+			{/* Same spacing as Main, which this article sits in. */}
+			<article className="space-y-2.5">
 				<PageHeader
 					title={`Justera protokollet: ${data.protocol.title}`}
 					context={data.board.name}

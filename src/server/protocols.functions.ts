@@ -92,6 +92,9 @@ export const saveItemValue = createServerFn({ method: "POST" })
 						}))
 					: [],
 				decision: str(v.decision),
+				reservations: Array.isArray(v.reservations)
+					? v.reservations.map(str)
+					: [],
 				notes: str(v.notes),
 			},
 		};

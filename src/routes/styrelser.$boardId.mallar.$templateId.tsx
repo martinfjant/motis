@@ -7,6 +7,7 @@ import {
 import { useState } from "react";
 import { Breadcrumbs } from "#/components/Breadcrumbs";
 import { Button } from "#/components/Button";
+import { useConfirm } from "#/components/ConfirmDialog";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Input } from "#/components/Field";
 import { Form } from "#/components/Form";
@@ -41,6 +42,7 @@ export const Route = createFileRoute("/styrelser/$boardId/mallar/$templateId")({
 });
 
 function TemplatePage() {
+	const confirm = useConfirm();
 	const { board, template, items } = Route.useLoaderData();
 	const router = useRouter();
 	const [error, setError] = useState<string | null>(null);
@@ -58,7 +60,12 @@ function TemplatePage() {
 	}
 
 	async function onDelete() {
-		if (!confirm(`Ta bort mallen ”${template.name}”?`)) return;
+		const ok = await confirm({
+			title: `Ta bort mallen ”${template.name}”?`,
+			confirmLabel: "Ta bort mallen",
+			confirmIcon: "trash-2",
+		});
+		if (!ok) return;
 		await deleteTemplate({ data: { templateId: template.id } });
 		await router.navigate({
 			to: "/styrelser/$boardId/installningar",

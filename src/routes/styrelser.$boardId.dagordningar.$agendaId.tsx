@@ -8,6 +8,7 @@ import { useState } from "react";
 import { Breadcrumbs } from "#/components/Breadcrumbs";
 import { Button } from "#/components/Button";
 import { CallSection } from "#/components/CallSection";
+import { useConfirm } from "#/components/ConfirmDialog";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Main } from "#/components/Main";
 import { MeetingDetails } from "#/components/MeetingDetails";
@@ -48,6 +49,7 @@ export const Route = createFileRoute(
 });
 
 function AgendaPage() {
+	const confirm = useConfirm();
 	const { board, agenda, items, protocolId, today, call } =
 		Route.useLoaderData();
 	const router = useRouter();
@@ -69,7 +71,12 @@ function AgendaPage() {
 	}
 
 	async function onDelete() {
-		if (!confirm(`Ta bort dagordningen ”${agenda.title}”?`)) return;
+		const ok = await confirm({
+			title: `Ta bort dagordningen ”${agenda.title}”?`,
+			confirmLabel: "Ta bort dagordningen",
+			confirmIcon: "trash-2",
+		});
+		if (!ok) return;
 		await deleteAgenda({ data: { agendaId: agenda.id } });
 		await router.navigate({
 			to: "/styrelser/$boardId",

@@ -7,6 +7,7 @@ import {
 import { useState } from "react";
 import { Breadcrumbs } from "#/components/Breadcrumbs";
 import { Button } from "#/components/Button";
+import { useConfirm } from "#/components/ConfirmDialog";
 import { DownloadSection } from "#/components/DownloadSection";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Form } from "#/components/Form";
@@ -65,6 +66,7 @@ export const Route = createFileRoute(
 });
 
 function ProtocolPage() {
+	const confirm = useConfirm();
 	const {
 		board,
 		protocol,
@@ -157,7 +159,12 @@ function ProtocolPage() {
 	}
 
 	async function onDelete() {
-		if (!confirm(`Ta bort protokollet ”${protocol.title}”?`)) return;
+		const ok = await confirm({
+			title: `Ta bort protokollet ”${protocol.title}”?`,
+			confirmLabel: "Ta bort protokollet",
+			confirmIcon: "trash-2",
+		});
+		if (!ok) return;
 		await deleteProtocol({ data: { protocolId: protocol.id } });
 		await router.navigate({
 			to: "/styrelser/$boardId",
@@ -165,11 +172,14 @@ function ProtocolPage() {
 		});
 	}
 
-	function onCloseProtocol() {
-		if (
-			!confirm("Stäng protokollet? Ändringar efter det noteras i protokollet.")
-		)
-			return;
+	async function onCloseProtocol() {
+		const ok = await confirm({
+			title: "Stäng protokollet?",
+			message: "Ändringar efter det noteras i protokollet.",
+			confirmLabel: "Stäng protokollet",
+			confirmIcon: "lock",
+		});
+		if (!ok) return;
 		run(() => closeProtocol({ data: { protocolId: protocol.id } }));
 	}
 
@@ -228,26 +238,30 @@ function ProtocolPage() {
 							<Button
 								icon="edit"
 								type="button"
-								onClick={() => {
+								onClick={async () => {
 									const warning = review && editWarning(review);
-									if (!warning || confirm(warning))
+									if (
+										!warning ||
+										(await confirm({
+											title: "Redigera protokollet?",
+											message: warning,
+											confirmLabel: "Redigera ändå",
+											confirmIcon: "edit",
+										}))
+									)
 										setEditSession(crypto.randomUUID());
 								}}
 							>
 								Redigera protokollet
 							</Button>
 						</p>
-						<ProtocolDisplay
-							protocol={protocol}
-							items={items}
-							edits={edits}
-							justering={justering}
-						/>
+						<ProtocolDisplay protocol={protocol} items={items} edits={edits} />
 						<ErrorMessage error={error} />
 						<ReviewSection
 							items={items}
 							reviewerCandidates={reviewerCandidates}
 							review={review}
+							justering={justering}
 							onSend={() =>
 								run(() => sendForReview({ data: { protocolId: protocol.id } }))
 							}
@@ -322,8 +336,14 @@ function ProtocolPage() {
 								reviewerCandidates={reviewerCandidates}
 								onSave={saveValue}
 								onCarryOver={saveCarryOver}
-								onDelete={(item) => {
-									if (confirm(`Ta bort punkten ”${item.title}”?`))
+								onDelete={async (item) => {
+									if (
+										await confirm({
+											title: `Ta bort punkten ”${item.title}”?`,
+											confirmLabel: "Ta bort",
+											confirmIcon: "trash-2",
+										})
+									)
 										run(() =>
 											deleteItem({
 												data: {
@@ -406,6 +426,6 @@ function unique(names: string[]) {
 function editWarning(review: ReviewRound): string | null {
 	if (review.changed || review.state === "declined") return null;
 	return review.state === "approved"
-		? "Protokollet är justerat. Ändrar du något gäller inte justeringen längre, och protokollet måste justeras igen. Redigera ändå?"
-		: "Protokollet väntar på justering. Ändrar du något måste det skickas för justering igen. Redigera ändå?";
+		? "Protokollet är justerat. Ändrar du något gäller inte justeringen längre, och protokollet måste justeras igen."
+		: "Protokollet väntar på justering. Ändrar du något måste det skickas för justering igen.";
 }

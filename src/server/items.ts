@@ -143,6 +143,11 @@ export type ProtocolValue = {
 	reviewers?: Reviewer[];
 	/** decision: the decision as it should read in the minutes. */
 	decision?: string;
+	/**
+	 * decision: who reserved themselves against it ("reserverade sig mot
+	 * beslutet"), as written in the attendance, all among those present.
+	 */
+	reservations?: string[];
 	/** All types: free-form minutes for the point. */
 	notes?: string;
 	/** Tabled ("bordlagd"): not dealt with, moved to the next meeting. */
@@ -209,6 +214,17 @@ export function secretaryNames(items: ProtocolItem[]): string[] {
 	);
 }
 
+/** Everyone marked present in a protocol's attendance points. */
+export function presentNames(items: ProtocolItem[]): string[] {
+	return [
+		...new Set(
+			items.flatMap((i) =>
+				i.type === "attendance" ? (i.value.present ?? []) : [],
+			),
+		),
+	];
+}
+
 /** The names chosen as justerare in a protocol. */
 export function reviewerNames(items: ProtocolItem[]): string[] {
 	return items.flatMap((i) =>
@@ -232,7 +248,10 @@ export type Review = {
 	comment: string;
 	/** ISO 8601 UTC, or null while pending. */
 	decidedAt: string | null;
-	/** The drawn signature given when approving (PNG data URL), or null. */
+	/**
+	 * The drawn signature given when approving: clean SVG (see signature.ts),
+	 * or a PNG data URL for older approvals; null while pending or declined.
+	 */
 	signature: string | null;
 };
 
@@ -260,7 +279,10 @@ export type Justering = {
 		name: string;
 		/** ISO 8601 UTC. */
 		approvedAt: string;
-		/** PNG data URL, or null for approvals from before signatures. */
+		/**
+		 * Clean SVG, a PNG data URL for older approvals, or null for approvals
+		 * from before signatures.
+		 */
 		signature: string | null;
 	}[];
 };

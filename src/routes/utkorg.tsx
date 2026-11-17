@@ -1,6 +1,7 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "#/components/Button";
+import { useConfirm } from "#/components/ConfirmDialog";
 import { Instant } from "#/components/DateTime";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Main } from "#/components/Main";
@@ -19,6 +20,7 @@ export const Route = createFileRoute("/utkorg")({
 });
 
 function Outbox() {
+	const confirm = useConfirm();
 	const mails = Route.useLoaderData();
 	const { user } = Route.useRouteContext();
 	const router = useRouter();
@@ -52,8 +54,14 @@ function Outbox() {
 				{mails.length > 0 && (
 					<Button
 						icon="trash-2"
-						onClick={() => {
-							if (confirm("Ta bort alla mejl i utkorgen?"))
+						onClick={async () => {
+							if (
+								await confirm({
+									title: "Ta bort alla mejl i utkorgen?",
+									confirmLabel: "Töm utkorgen",
+									confirmIcon: "trash-2",
+								})
+							)
 								run(() => clearOutbox());
 						}}
 					>

@@ -14,6 +14,7 @@ import {
 import { decideReview, sendForReview } from "../reviews.server";
 import { cleanSignature } from "../signature.server";
 import { settleRemainingPoints } from "../test-helpers";
+import { DRAWN_SIGNATURE } from "../test-signature";
 import {
 	documentForMember,
 	documentForShare,
@@ -77,14 +78,29 @@ beforeEach(async () => {
 	});
 });
 
-test("only a real, small PNG is accepted as a signature", () => {
-	expect(cleanSignature(PNG)).toBe(PNG);
+test("only a clean SVG drawing is accepted, and stored as rewritten", () => {
+	const stored = cleanSignature(DRAWN_SIGNATURE);
+	expect(stored).toBe(
+		'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 160" width="448" height="160"><g fill="none" stroke="#1c1917" stroke-linecap="round"><path d="M 10.000,20.000 C 30.000,60.000 60.000,20.000 90.000,80.000" stroke-width="3.15"/><circle cx="120" cy="90" r="1.7" fill="#1c1917" stroke="none"/></g></svg>',
+	);
+	// What we store reads back the same.
+	expect(cleanSignature(stored)).toBe(stored);
+	const svg = (inner: string) =>
+		`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 160">${inner}</svg>`;
 	for (const bad of [
 		"",
-		"data:image/svg+xml;base64,PHN2Zz4=",
-		"data:image/png;base64,bm90IGEgcG5n",
-		"data:image/png;base64,<script>",
-		`data:image/png;base64,${Buffer.alloc(300_000).toString("base64")}`,
+		PNG, // new signatures are SVG
+		svg(""), // nothing drawn
+		svg("<script>alert(1)</script>"),
+		svg('<path d="M 1,2 C 3,4 5,6 7,8" stroke-width="2" onload="alert(1)"/>'),
+		svg('<path d="M 1,2 L 300,400 Z" stroke-width="2"/>'),
+		svg('<image href="https://example.com/x.png"/>'),
+		svg('<circle cx="1" cy="2" r="url(#x)"/>'),
+		svg('<a href="javascript:alert(1)"><circle cx="1" cy="2" r="3"/></a>'),
+		svg("&lt;"),
+		svg("text"),
+		`<!DOCTYPE svg>${svg('<circle cx="1" cy="2" r="3"/>')}`,
+		svg('<circle cx="1" cy="2" r="3"/>'.repeat(30_000)),
 	])
 		expect(() => cleanSignature(bad)).toThrow(BoardError);
 });
@@ -98,11 +114,19 @@ test("approving needs a signature, which is kept with the approval", async () =>
 	await expect(
 		decideReview(db, token, { approve: true, comment: "" }),
 	).rejects.toThrow(/Rita din signatur/);
-	await decideReview(db, token, { approve: true, comment: "", signature: PNG });
+	await decideReview(db, token, {
+		approve: true,
+		comment: "",
+		signature: DRAWN_SIGNATURE,
+	});
 	const doc = await documentForMember(db, anna, protocolId);
 	expect(doc.justering).toEqual({
 		reviewers: [
-			{ name: "bo", approvedAt: "2026-11-20T17:00:00.000Z", signature: PNG },
+			{
+				name: "bo",
+				approvedAt: "2026-11-20T17:00:00.000Z",
+				signature: cleanSignature(DRAWN_SIGNATURE),
+			},
 		],
 	});
 });
@@ -135,7 +159,11 @@ test("the Markdown has the points in order, as written, and the justering", asyn
 	await sendForReview(db, anna, protocolId);
 	const token =
 		/\/justera\/([\w-]+)/.exec((await listOutbox(db))[0].text)?.[1] ?? "";
-	await decideReview(db, token, { approve: true, comment: "", signature: PNG });
+	await decideReview(db, token, {
+		approve: true,
+		comment: "",
+		signature: DRAWN_SIGNATURE,
+	});
 
 	const doc = await documentForMember(db, anna, protocolId);
 	const md = protocolMarkdown(doc);
@@ -168,14 +196,25 @@ test("the PDF is a PDF, with the signature in it", async () => {
 	await sendForReview(db, anna, protocolId);
 	const token =
 		/\/justera\/([\w-]+)/.exec((await listOutbox(db))[0].text)?.[1] ?? "";
-	await decideReview(db, token, { approve: true, comment: "", signature: PNG });
+	await decideReview(db, token, {
+		approve: true,
+		comment: "",
+		signature: DRAWN_SIGNATURE,
+	});
 	const signed = await protocolPdf(
 		await documentForMember(db, anna, protocolId),
 	);
 	expect(signed.subarray(0, 5).toString()).toBe("%PDF-");
-	// The signature is embedded as an image.
-	expect(signed.toString("latin1")).toContain("/Subtype /Image");
-	expect(plain.toString("latin1")).not.toContain("/Subtype /Image");
+	// The signature is drawn in as vector shapes, not an image.
+	expect(signed.length).toBeGreaterThan(plain.length);
+	expect(signed.toString("latin1")).not.toContain("/Subtype /Image");
+
+	// Older approvals hold a PNG: that is still embedded, as an image.
+	const doc = await documentForMember(db, anna, protocolId);
+	if (!doc.justering) throw new Error("expected justering");
+	doc.justering.reviewers[0].signature = PNG;
+	const legacy = await protocolPdf(doc);
+	expect(legacy.toString("latin1")).toContain("/Subtype /Image");
 });
 
 test("escaping keeps text as written", () => {

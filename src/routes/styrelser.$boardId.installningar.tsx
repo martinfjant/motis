@@ -7,6 +7,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { Breadcrumbs } from "#/components/Breadcrumbs";
 import { Button } from "#/components/Button";
+import { useConfirm } from "#/components/ConfirmDialog";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Input, Select } from "#/components/Field";
 import { Form } from "#/components/Form";
@@ -615,6 +616,7 @@ function UnregisteredRow({
 	canEdit: boolean;
 	run: Run;
 }) {
+	const confirm = useConfirm();
 	const [editing, setEditing] = useState(false);
 	const ref = { boardId, id: member.id };
 
@@ -674,11 +676,14 @@ function UnregisteredRow({
 							<Button
 								icon="user-check"
 								type="button"
-								onClick={() => {
+								onClick={async () => {
 									if (
-										confirm(
-											`Gör ${member.name} till registrerad ledamot? Kontot med ${member.email} får då tillgång till styrelsen.`,
-										)
+										await confirm({
+											title: `Gör ${member.name} till registrerad ledamot?`,
+											message: `Kontot med ${member.email} får då tillgång till styrelsen.`,
+											confirmLabel: "Gör till registrerad ledamot",
+											confirmIcon: "user-check",
+										})
 									)
 										run(() => linkUnregistered({ data: ref }));
 								}}
@@ -696,8 +701,14 @@ function UnregisteredRow({
 						<Button
 							icon="trash-2"
 							type="button"
-							onClick={() => {
-								if (confirm(`Ta bort ${member.name} från styrelsen?`))
+							onClick={async () => {
+								if (
+									await confirm({
+										title: `Ta bort ${member.name} från styrelsen?`,
+										confirmLabel: "Ta bort",
+										confirmIcon: "trash-2",
+									})
+								)
 									run(() => removeUnregistered({ data: ref }));
 							}}
 						>

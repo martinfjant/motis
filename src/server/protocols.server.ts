@@ -30,6 +30,7 @@ import {
 	type ProtocolItem,
 	type ProtocolValue,
 	personLabel,
+	presentNames,
 	type Reviewer,
 	type ReviewerCandidate,
 	type ReviewerCount,
@@ -105,7 +106,12 @@ export function cleanValue(
 				: base;
 		case "decision": {
 			const decision = (input.decision ?? "").trim();
-			return decision ? { ...base, decision } : base;
+			const reservations = cleanNames(input.reservations ?? []);
+			return {
+				...base,
+				...(decision ? { decision } : {}),
+				...(reservations.length ? { reservations } : {}),
+			};
 		}
 		default:
 			return base;
@@ -447,6 +453,15 @@ export async function saveItemValue(
 	};
 	const missing = missingValue(item.type, value);
 	if (missing) throw new BoardError(missing);
+	// Only those at the meeting can reserve themselves against a decision.
+	if (value.reservations?.length) {
+		const present = presentNames(await listProtocolItems(db, parentId));
+		const absent = value.reservations.find((n) => !present.includes(n));
+		if (absent)
+			throw new BoardError(
+				`${absent} är inte markerad som närvarande och kan inte reservera sig.`,
+			);
+	}
 	await guardProtocolEdit(db, userId, parentId, editSession);
 	// Recording the closing time closes the meeting: only once everything
 	// else is dealt with. (Correcting it later, once closed, is fine.)

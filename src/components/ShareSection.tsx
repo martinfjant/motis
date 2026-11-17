@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button } from "#/components/Button";
 import { Notice } from "#/components/Notice";
 import { Section } from "#/components/Section";
+import { useConfirm } from "./ConfirmDialog";
 
 /**
  * The "Dela" section for an agenda or a protocol: the public link, copying it,
@@ -20,6 +21,7 @@ export function ShareSection({
 	linkText: string;
 	onRegenerate: () => Promise<unknown>;
 }) {
+	const confirm = useConfirm();
 	const router = useRouter();
 	const [status, setStatus] = useState<string | null>(null);
 
@@ -35,9 +37,12 @@ export function ShareSection({
 
 	async function regenerate() {
 		if (
-			!confirm(
-				"Skapa en ny länk? Den gamla länken slutar fungera för alla som har fått den.",
-			)
+			!(await confirm({
+				title: "Skapa en ny länk?",
+				message: "Den gamla länken slutar fungera för alla som har fått den.",
+				confirmLabel: "Skapa ny länk",
+				confirmIcon: "refresh-cw",
+			}))
 		)
 			return;
 		await onRegenerate();

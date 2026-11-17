@@ -7,6 +7,7 @@ import {
 	useMatches,
 	useRouter,
 } from "@tanstack/react-router";
+import { ConfirmProvider } from "#/components/ConfirmDialog";
 import { NotFound } from "#/components/NotFound";
 import { UserMenu } from "#/components/UserMenu";
 import { DEFAULT_PATTERN } from "#/patterns";
@@ -106,8 +107,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<HeadContent />
 			</head>
 			<body>
-				<SiteHeader />
-				{children}
+				<ConfirmProvider>
+					<SiteHeader />
+					{children}
+				</ConfirmProvider>
 				<Scripts />
 			</body>
 		</html>

@@ -1,6 +1,7 @@
 import { useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "#/components/Button";
+import { useConfirm } from "#/components/ConfirmDialog";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Form } from "#/components/Form";
 import { PointFields } from "#/components/points/PointFields";
@@ -41,6 +42,7 @@ export function EditPointList({
 	parentId: string;
 	items: Item[];
 }) {
+	const confirm = useConfirm();
 	const router = useRouter();
 	const [error, setError] = useState<string | null>(null);
 	// Bumped after each add to remount (and so fully reset) the add form.
@@ -121,8 +123,14 @@ export function EditPointList({
 								<Button
 									icon="trash-2"
 									type="button"
-									onClick={() => {
-										if (confirm(`Ta bort punkten ”${item.title}”?`))
+									onClick={async () => {
+										if (
+											await confirm({
+												title: `Ta bort punkten ”${item.title}”?`,
+												confirmLabel: "Ta bort",
+												confirmIcon: "trash-2",
+											})
+										)
 											run(() =>
 												deleteItem({ data: { kind, itemId: item.id } }),
 											);

@@ -4,8 +4,9 @@ import { Button } from "./Button";
 
 /**
  * A field to draw a signature in, with mouse, finger or pen, using the
- * signature_pad library. Reports the drawing as a PNG data URL, or null
- * while it is empty.
+ * signature_pad library. Reports the drawing as SVG (vector, so it is sharp
+ * in print and its ink can follow dark mode), or null while it is empty.
+ * The server reads it strictly and stores its own clean copy.
  */
 export function SignatureField({
 	label,
@@ -36,7 +37,7 @@ export function SignatureField({
 			});
 			pad.current = signaturePad;
 			signaturePad.addEventListener("endStroke", () =>
-				report.current(signaturePad.toDataURL("image/png")),
+				report.current(signaturePad.toSVG()),
 			);
 
 			// Sharp on high-resolution screens. Resizing clears the canvas,

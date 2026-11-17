@@ -63,7 +63,8 @@ function PublicProtocol() {
 
 	return (
 		<Main>
-			<article>
+			{/* Same spacing as Main, which this article sits in. */}
+			<article className="space-y-2.5">
 				<PageHeader
 					title={`Protokoll: ${data.protocol.title}`}
 					context={data.board.name}
