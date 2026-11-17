@@ -12,10 +12,10 @@ export function ProtocolPointList({ items }: { items: RecordedItem[] }) {
 		<ol className="list-decimal p-5 space-y-1.5 ">
 			{items.map((item) => (
 				<li key={item.id} className="pl-2">
-          <h3 className="font-bold text-xl py-2.5">{item.title}</h3>
+					<h3 className="font-bold text-xl py-2.5">{item.title}</h3>
 					<div className="">
-					{item.description && <MultilineText text={item.description} />}
-            <RecordedValue item={item} />
+						{item.description && <MultilineText text={item.description} />}
+						<RecordedValue item={item} />
 					</div>
 				</li>
 			))}

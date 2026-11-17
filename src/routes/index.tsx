@@ -4,6 +4,7 @@ import { Button } from "#/components/Button";
 import { MeetingTime } from "#/components/DateTime";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Input } from "#/components/Field";
+import { LinkButton } from "#/components/LinkButton";
 import { Main } from "#/components/Main";
 import { MeetingItem, MeetingList } from "#/components/MeetingList";
 import { Section } from "#/components/Section";
@@ -12,7 +13,6 @@ import { daysUntilText } from "#/meeting-time";
 import { getUpcomingMeetings } from "#/server/agendas.functions";
 import { createBoard, getMyBoards } from "#/server/boards.functions";
 import type { UpcomingMeeting } from "#/server/meetings.server";
-import { LinkButton } from "#/components/LinkButton";
 
 // The start page: "Mina föreningar" when logged in, otherwise a welcome.
 export const Route = createFileRoute("/")({
@@ -31,15 +31,13 @@ function Home() {
 	const mine = Route.useLoaderData();
 	if (mine) return <MyAssociations {...mine} />;
 	return (
-    <Main>
-      <Section id="enklare-motesprotokoll" title="Enklare mötesprotokoll">
-
-			<p>Skapa dagordningar och protokoll för styrelsemöten.</p>
+		<Main>
+			<Section id="enklare-motesprotokoll" title="Enklare mötesprotokoll">
+				<p>Skapa dagordningar och protokoll för styrelsemöten.</p>
 
 				<LinkButton to="/registrera">Skapa konto</LinkButton>
 				<LinkButton to="/logga-in">Logga in</LinkButton>
-
-      </Section>
+			</Section>
 		</Main>
 	);
 }

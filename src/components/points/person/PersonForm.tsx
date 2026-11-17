@@ -36,7 +36,7 @@ export function PersonForm(props: PointProps & { choosable: string[] }) {
 			onSubmit={(e) => {
 				e.preventDefault();
 				save(read(e.currentTarget));
-      }}
+			}}
 			className="block space-y-5"
 		>
 			<Field id={id("person")} label={PERSON_LABEL}>

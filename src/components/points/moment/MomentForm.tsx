@@ -31,22 +31,21 @@ export function MomentForm({ item, done, save, edit, cancel }: PointProps) {
 
 	return (
 		<div className="space-y-5">
-      {done && v.at ? (
-        <>
-				<p>
-					{text.done} <MeetingTime at={v.at} />
-				</p>
-          <Button onClick={edit}>Ändra</Button>
-        </>
-
+			{done && v.at ? (
+				<>
+					<p>
+						{text.done} <MeetingTime at={v.at} />
+					</p>
+					<Button onClick={edit}>Ändra</Button>
+				</>
 			) : v.at ? (
 				<form
 					onSubmit={(e) => {
 						e.preventDefault();
 						const at = String(new FormData(e.currentTarget).get("at") ?? "");
 						save({ ...v, at });
-            }}
-            className="block space-y-5"
+					}}
+					className="block space-y-5"
 				>
 					<Field id={inputId} label={text.done}>
 						<Input

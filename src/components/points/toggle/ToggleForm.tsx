@@ -29,11 +29,10 @@ export function ToggleForm(props: PointProps) {
 			onSubmit={(e) => {
 				e.preventDefault();
 				save(read(e.currentTarget));
-      }}
+			}}
 			className="block space-y-5"
 		>
-      <div className="grid grid-cols-3 gap-2 w-full max-w-screen-sm">
-
+			<div className="grid grid-cols-3 gap-2 w-full max-w-screen-sm">
 				<Radio
 					id={id("answer-yes")}
 					label={answerText(true)}

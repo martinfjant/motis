@@ -18,7 +18,7 @@ export function NextMeetingForm(props: PointProps) {
 				e.preventDefault();
 				const f = new FormData(e.currentTarget);
 				save({ at: String(f.get("at") ?? ""), notes: readNotes(f) });
-      }}
+			}}
 			className="space-y-5"
 		>
 			<Field id={id} label="Datum och tid">

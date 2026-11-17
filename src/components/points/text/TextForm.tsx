@@ -15,9 +15,9 @@ export function TextForm(props: PointProps) {
 			onSubmit={(e) => {
 				e.preventDefault();
 				save({ notes: readNotes(new FormData(e.currentTarget)) });
-      }}
+			}}
 			className="block space-y-5"
-    >
+		>
 			<NotesField item={item} open onOpen={() => {}} />
 			<PointActions {...props} submit />
 		</form>

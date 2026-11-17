@@ -1,17 +1,12 @@
-import {
-	createFileRoute,
-	Link,
-	redirect,
-	useRouter,
-} from "@tanstack/react-router";
+import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "#/components/Button";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Input } from "#/components/Field";
-import { Main } from "#/components/Main";
-import { logIn } from "#/server/auth.functions";
-import { Section } from "#/components/Section";
 import { LinkButton } from "#/components/LinkButton";
+import { Main } from "#/components/Main";
+import { Section } from "#/components/Section";
+import { logIn } from "#/server/auth.functions";
 
 export const Route = createFileRoute("/logga-in")({
 	beforeLoad: ({ context }) => {
@@ -46,27 +41,27 @@ function LogIn() {
 	}
 
 	return (
-    <Main>
-      <Section id="logga-in" title="Logga in">
-			<form onSubmit={onSubmit} className="block space-y-5">
-				<Field id="email" label="E-post">
-					<Input name="email" type="email" autoComplete="email" required />
-				</Field>
-				<Field id="password" label="Lösenord">
-					<Input
-						name="password"
-						type="password"
-						autoComplete="current-password"
-						required
-					/>
-				</Field>
-				<ErrorMessage error={error} />
-				<Button type="submit" disabled={pending}>
-					Logga in
-          </Button>
-          <LinkButton to="/glomt-losenord">Glömt lösenordet?</LinkButton>
-			</form>
-      </Section>
+		<Main>
+			<Section id="logga-in" title="Logga in">
+				<form onSubmit={onSubmit} className="block space-y-5">
+					<Field id="email" label="E-post">
+						<Input name="email" type="email" autoComplete="email" required />
+					</Field>
+					<Field id="password" label="Lösenord">
+						<Input
+							name="password"
+							type="password"
+							autoComplete="current-password"
+							required
+						/>
+					</Field>
+					<ErrorMessage error={error} />
+					<Button type="submit" disabled={pending}>
+						Logga in
+					</Button>
+					<LinkButton to="/glomt-losenord">Glömt lösenordet?</LinkButton>
+				</form>
+			</Section>
 		</Main>
 	);
 }

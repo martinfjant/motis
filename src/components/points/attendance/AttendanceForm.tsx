@@ -66,7 +66,7 @@ export function AttendanceForm(props: PointProps & { invited: string[] }) {
 				e.currentTarget
 					.querySelector<HTMLInputElement>(PRESENT)
 					?.setCustomValidity("");
-      }}
+			}}
 			className="block space-y-5"
 		>
 			<fieldset>

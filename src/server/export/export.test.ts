@@ -140,7 +140,7 @@ test("the Markdown has the points in order, as written, and the justering", asyn
 	);
 	expect(md).toContain("### 1. Mötets öppnande");
 	expect(md).toContain("Närvarande:\n\n- anna\n- bo");
-	expect(md).toContain("Vald: **anna**");
+	expect(md).toContain("Mötet väljer: **anna**");
 	expect(md).toContain("Justerare: **bo**");
 	// Someone's note can't turn into formatting.
 	expect(md).toContain("\\# inte en rubrik, \\*inte fet\\*\n\nAndra stycket.");

@@ -23,7 +23,12 @@ export function Radio({ label, id: givenId, ...props }: ChoiceProps) {
 	return (
 		<span>
 			<input {...props} id={id} type="radio" className="hidden peer" />{" "}
-			<label htmlFor={id} className="flex flex-col p-3 rounded-lg border-2 border-stone-300 hover:font-bold transition-all cursor-pointer text-xl text-center peer-checked:bg-teal-700 peer-checked:border-teal-600 peer-checked:text-white">{label}</label>
+			<label
+				htmlFor={id}
+				className="flex flex-col p-3 rounded-lg border-2 border-stone-300 hover:font-bold transition-all cursor-pointer text-xl text-center peer-checked:bg-teal-700 peer-checked:border-teal-600 peer-checked:text-white"
+			>
+				{label}
+			</label>
 		</span>
 	);
 }
