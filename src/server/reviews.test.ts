@@ -26,6 +26,7 @@ import {
 	sendForReview,
 } from "./reviews.server";
 import { settleRemainingPoints } from "./test-helpers";
+import { DRAWN_SIGNATURE } from "./test-signature";
 
 let db: ReturnType<typeof createClient>;
 let anna: string, bo: string, boardId: string, protocolId: string;
@@ -102,9 +103,7 @@ async function links() {
 	);
 }
 
-/** A tiny real PNG, standing in for a drawn signature. */
-const SIGNATURE =
-	"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+const SIGNATURE = DRAWN_SIGNATURE;
 
 const refused = (p: Promise<unknown>, message?: RegExp) =>
 	expect(p).rejects.toThrow(message ?? BoardError);

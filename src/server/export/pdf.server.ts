@@ -1,6 +1,7 @@
 import { createRequire } from "node:module";
 import { dirname } from "node:path";
 import type { Content, TDocumentDefinitions } from "pdfmake/interfaces";
+import { isSvgSignature } from "#/signature";
 import { formatInstant } from "../../meeting-time";
 import {
 	type Block,
@@ -114,7 +115,9 @@ function definition(doc: ProtocolDocument): TDocumentDefinitions {
 						width: 200,
 						stack: [
 							r.signature
-								? { image: r.signature, fit: [180, 60] }
+								? isSvgSignature(r.signature)
+									? { svg: r.signature, fit: [180, 60] }
+									: { image: r.signature, fit: [180, 60] }
 								: { text: " ", margin: [0, 0, 0, 40] },
 							{
 								canvas: [

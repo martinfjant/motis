@@ -248,7 +248,10 @@ export type Review = {
 	comment: string;
 	/** ISO 8601 UTC, or null while pending. */
 	decidedAt: string | null;
-	/** The drawn signature given when approving (PNG data URL), or null. */
+	/**
+	 * The drawn signature given when approving: clean SVG (see signature.ts),
+	 * or a PNG data URL for older approvals; null while pending or declined.
+	 */
 	signature: string | null;
 };
 
@@ -276,7 +279,10 @@ export type Justering = {
 		name: string;
 		/** ISO 8601 UTC. */
 		approvedAt: string;
-		/** PNG data URL, or null for approvals from before signatures. */
+		/**
+		 * Clean SVG, a PNG data URL for older approvals, or null for approvals
+		 * from before signatures.
+		 */
 		signature: string | null;
 	}[];
 };

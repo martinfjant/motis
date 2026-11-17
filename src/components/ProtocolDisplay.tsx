@@ -4,6 +4,7 @@ import type { RecordedItem } from "#/components/points/shared/point";
 import { Section } from "#/components/Section";
 import type { Justering, ProtocolEdit } from "#/server/items";
 import { Instant } from "./DateTime";
+import { Signature } from "./Signature";
 
 // Read-only protocol, shared by the closed protocol in the app and the public
 // protocol page, so both always show the same thing.
@@ -37,7 +38,11 @@ export function ProtocolDisplay({
 	);
 }
 
-/** Who justerade the protocol, with their drawn signatures. */
+/**
+ * Who justerade the protocol, with their drawn signatures, as its own
+ * section (public and justering pages). The members' protocol page shows
+ * the same inside ReviewSection, with the justering's status.
+ */
 export function JusteringSection({
 	justering,
 }: {
@@ -46,18 +51,34 @@ export function JusteringSection({
 	if (!justering) return null;
 	return (
 		<Section id="justering" title="Justering">
-			<p>Protokollet är justerat av:</p>
-			<ul className="list-disc pl-6">
+			<JusteringSignatures justering={justering} />
+		</Section>
+	);
+}
+
+/**
+ * Each justerare's signature and time, after "Protokollet är justerat av:"
+ * (left out where a status line just above already says it is justerat).
+ */
+export function JusteringSignatures({
+	justering,
+	intro = true,
+}: {
+	justering: Justering;
+	intro?: boolean;
+}) {
+	return (
+		<>
+			{intro && <p>Protokollet är justerat av:</p>}
+			{/* No markers: each signature stands on its own. role="list" keeps
+			    Safari announcing it as a list without them. */}
+			{/* biome-ignore lint/a11y/noRedundantRoles: Safari drops the list role without markers */}
+			{/* biome-ignore lint/a11y/useSemanticElements: it is a <ul>; Safari drops its list role without markers */}
+			<ul role="list" className="space-y-4">
 				{justering.reviewers.map((r) => (
 					<li key={r.name}>
 						<figure>
-							{r.signature && (
-								<img
-									src={r.signature}
-									alt={`Signatur: ${r.name}`}
-									className="h-16 w-auto rounded bg-white"
-								/>
-							)}
+							{r.signature && <Signature stored={r.signature} name={r.name} />}
 							<figcaption>
 								{r.name}, {r.signature ? "signerat" : "godkänt"}{" "}
 								<Instant at={r.approvedAt} />
@@ -66,7 +87,7 @@ export function JusteringSection({
 					</li>
 				))}
 			</ul>
-		</Section>
+		</>
 	);
 }
 

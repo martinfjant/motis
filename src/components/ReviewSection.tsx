@@ -1,4 +1,5 @@
 import type {
+	Justering,
 	ProtocolItem,
 	Review,
 	ReviewerCandidate,
@@ -8,23 +9,28 @@ import { Button } from "./Button";
 import { useConfirm } from "./ConfirmDialog";
 import { Instant } from "./DateTime";
 import { MultilineText } from "./MultilineText";
+import { JusteringSignatures } from "./ProtocolDisplay";
 import { Section } from "./Section";
 import { useFocusMessage } from "./useFocusMessage";
 
 /**
- * Justering of a closed protocol: who the justerare are, sending the
- * protocol to them, and how each has answered.
+ * Justering of a closed protocol, all in one section: who the justerare
+ * are, sending the protocol to them, how each has answered, and once it is
+ * justerat their signatures (instead of the plain list of answers).
  */
 export function ReviewSection({
 	items,
 	reviewerCandidates,
 	review,
+	justering = null,
 	onSend,
 }: {
 	items: ProtocolItem[];
 	reviewerCandidates: ReviewerCandidate[];
 	/** The latest sending, or null if never sent. */
 	review: ReviewRound | null;
+	/** Set while the protocol is justerat (and not changed since). */
+	justering?: Justering | null;
 	onSend: () => void;
 }) {
 	const confirm = useConfirm();
@@ -99,13 +105,17 @@ export function ReviewSection({
 					justering igen.
 				</p>
 			)}
-			<ul className="list-disc pl-6">
-				{review.reviews.map((r) => (
-					<li key={r.id}>
-						<ReviewAnswer review={r} />
-					</li>
-				))}
-			</ul>
+			{justering ? (
+				<JusteringSignatures justering={justering} intro={false} />
+			) : (
+				<ul className="list-disc pl-6">
+					{review.reviews.map((r) => (
+						<li key={r.id}>
+							<ReviewAnswer review={r} />
+						</li>
+					))}
+				</ul>
+			)}
 			{canSend && (
 				<p>
 					<Button

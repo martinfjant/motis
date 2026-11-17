@@ -255,17 +255,13 @@ function ProtocolPage() {
 								Redigera protokollet
 							</Button>
 						</p>
-						<ProtocolDisplay
-							protocol={protocol}
-							items={items}
-							edits={edits}
-							justering={justering}
-						/>
+						<ProtocolDisplay protocol={protocol} items={items} edits={edits} />
 						<ErrorMessage error={error} />
 						<ReviewSection
 							items={items}
 							reviewerCandidates={reviewerCandidates}
 							review={review}
+							justering={justering}
 							onSend={() =>
 								run(() => sendForReview({ data: { protocolId: protocol.id } }))
 							}
