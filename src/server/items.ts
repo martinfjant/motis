@@ -143,6 +143,11 @@ export type ProtocolValue = {
 	reviewers?: Reviewer[];
 	/** decision: the decision as it should read in the minutes. */
 	decision?: string;
+	/**
+	 * decision: who reserved themselves against it ("reserverade sig mot
+	 * beslutet"), as written in the attendance, all among those present.
+	 */
+	reservations?: string[];
 	/** All types: free-form minutes for the point. */
 	notes?: string;
 	/** Tabled ("bordlagd"): not dealt with, moved to the next meeting. */
@@ -207,6 +212,17 @@ export function secretaryNames(items: ProtocolItem[]): string[] {
 	return items.flatMap((i) =>
 		isSecretaryPoint(i) && i.value.person ? [i.value.person] : [],
 	);
+}
+
+/** Everyone marked present in a protocol's attendance points. */
+export function presentNames(items: ProtocolItem[]): string[] {
+	return [
+		...new Set(
+			items.flatMap((i) =>
+				i.type === "attendance" ? (i.value.present ?? []) : [],
+			),
+		),
+	];
 }
 
 /** The names chosen as justerare in a protocol. */

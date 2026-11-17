@@ -38,6 +38,7 @@ const NAMES = [
 	"trash-2",
 	"user",
 	"user-check",
+	"user-minus",
 	"user-plus",
 	"x",
 	"x-circle",

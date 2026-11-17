@@ -1,5 +1,6 @@
 import { createClient } from "@libsql/client";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { recordedBlocks } from "#/components/points/blocks";
 import {
 	addItem,
 	createAgenda,
@@ -350,6 +351,58 @@ test("the meeting can only be closed once every point is done or tabled", async 
 		session,
 	);
 	expect(await closedAt()).toBe(closed);
+});
+
+test("only those present can reserve themselves against a decision", async () => {
+	const protocol = await createProtocol(db, anna, agendaId);
+	await addItem(db, anna, "protocol", protocol.id, {
+		title: "Takreparation",
+		type: "decision",
+		description: "",
+		extraNames: [],
+	});
+	const items = (await getProtocol(db, anna, protocol.id)).items;
+	const id = (t: string) => items.find((i) => i.title === t)?.id ?? "";
+	const value = async (t: string) =>
+		(await getProtocol(db, anna, protocol.id)).items.find((i) => i.title === t)
+			?.value;
+	await saveItemValue(db, anna, id("Närvarande ledamöter"), {
+		present: ["anna", "bo"],
+	});
+
+	// Someone not at the meeting can't.
+	await expect(
+		saveItemValue(db, anna, id("Takreparation"), {
+			decision: "Taket läggs om.",
+			reservations: ["cia"],
+		}),
+	).rejects.toThrow(/cia är inte markerad som närvarande/);
+
+	// Someone present can; names are kept once each.
+	await saveItemValue(db, anna, id("Takreparation"), {
+		decision: "Taket läggs om.",
+		reservations: ["bo", " bo "],
+	});
+	expect(await value("Takreparation")).toMatchObject({
+		decision: "Taket läggs om.",
+		reservations: ["bo"],
+	});
+	expect(
+		recordedBlocks({
+			type: "decision",
+			value: { decision: "Taket läggs om.", reservations: ["anna", "bo"] },
+		}),
+	).toEqual([
+		{ kind: "quote", label: "Beslut:", text: "Taket läggs om." },
+		{ kind: "text", text: "anna och bo reserverade sig mot beslutet." },
+	]);
+
+	// Taking it back leaves no reservations.
+	await saveItemValue(db, anna, id("Takreparation"), {
+		decision: "Taket läggs om.",
+		reservations: [],
+	});
+	expect(await value("Takreparation")).not.toHaveProperty("reservations");
 });
 
 test("a protocol without a closing point can be closed by hand", async () => {
