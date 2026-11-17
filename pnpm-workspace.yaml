@@ -1,5 +1,10 @@
 allowBuilds:
   esbuild: true
   lightningcss: true
+  # Not needed, so their install scripts don't run: core-js comes with
+  # feather-icons (we only read its icons.json), node-pty with
+  # code-inspector-plugin (for a terminal feature we don't use).
+  core-js: false
+  node-pty: false
 packages:
   - .
