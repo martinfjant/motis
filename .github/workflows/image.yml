@@ -39,7 +39,8 @@ jobs:
   # The whole app in a real browser (WebKit, as in Safari): sign-up, a
   # meeting, justering, sharing, search. See e2e/ and playwright.config.ts.
   e2e:
-    runs-on: ubuntu-latest
+    # Playwright 1.56 has no WebKit dependencies for newer Ubuntu releases.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
