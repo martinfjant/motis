@@ -15,7 +15,7 @@ export function Section({
 		<section
 			aria-labelledby={id}
 			{...props}
-			className="rounded-2xl border border-glass-line bg-glass-strong p-4 space-y-2.5 shadow-2xs backdrop-blur-md"
+			className="rounded-2xl border border-glass-line bg-glass-strong p-3 sm:p-4 space-y-2.5 shadow-2xs backdrop-blur-md"
 		>
 			<h2 id={id} className="text-2xl">
 				{title}

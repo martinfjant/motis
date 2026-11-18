@@ -35,7 +35,7 @@ export function UserMenu({
 			<button
 				type="button"
 				popoverTarget={MENU_ID}
-				className="flex w-full items-center gap-2 rounded-xl px-5 [anchor-name:--user-menu] hover:bg-surface-muted"
+				className="flex w-full items-center gap-2 rounded-xl px-3 whitespace-nowrap sm:px-5 [anchor-name:--user-menu] hover:bg-surface-muted"
 			>
 				<Icon name="user" className="size-5" />
 				{name}

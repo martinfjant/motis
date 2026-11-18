@@ -418,7 +418,7 @@ function MemberRow({
 	return (
 		<tr>
 			<RowHeader>{member.name}</RowHeader>
-			<Cell>
+			<Cell label="Titel">
 				{editing === "title" ? (
 					<form
 						aria-label={`Titel för ${member.name}`}
@@ -473,10 +473,10 @@ function MemberRow({
 					</span>
 				)}
 			</Cell>
-			<Cell className="text-sm text-muted">
+			<Cell label="E-postadress" className="text-sm text-muted">
 				<Email address={member.email} />
 			</Cell>
-			<Cell>
+			<Cell label="Roll">
 				{editing === "role" ? (
 					<span className="inline-flex items-center gap-1">
 						<label htmlFor={`role-${member.userId}`} className="sr-only">
@@ -528,7 +528,7 @@ function MemberRow({
 					</span>
 				)}
 			</Cell>
-			<Cell>
+			<Cell label="Åtgärder">
 				{(isAdmin || isSelf) && (
 					<div className={ACTIONS}>
 						<Button
@@ -665,12 +665,12 @@ function UnregisteredRow({
 					</>
 				)}
 			</RowHeader>
-			<Cell>{member.title}</Cell>
-			<Cell className="text-sm text-muted">
+			<Cell label="Titel">{member.title}</Cell>
+			<Cell label="E-postadress" className="text-sm text-muted">
 				<Email address={member.email} />
 			</Cell>
 			{canEdit && (
-				<Cell>
+				<Cell label="Åtgärder">
 					<div className={ACTIONS}>
 						{member.hasAccount && (
 							<Button

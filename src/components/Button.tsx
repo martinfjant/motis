@@ -7,7 +7,7 @@ import { Icon, type IconName } from "./Icon";
  * inline-block is what a <button> already is; links need it to match.
  */
 export const buttonStyle =
-	"inline-block rounded-lg px-3 py-1 text-lg mr-3 no-underline text-on-button bg-button border-button-line border shadow hover:bg-accent hover:border-accent-line hover:shadow-lg hover:text-on-accent hover:scale-102 transition-all active:bg-accent-pressed active:scale-99 disabled:pointer-events-none disabled:opacity-50";
+	"inline-block rounded-lg px-3 py-1 text-lg mr-3 my-1 whitespace-nowrap no-underline text-on-button bg-button border-button-line border shadow hover:bg-accent hover:border-accent-line hover:shadow-lg hover:text-on-accent hover:scale-102 transition-all active:bg-accent-pressed active:scale-99 disabled:pointer-events-none disabled:opacity-50";
 
 /** The icon at the start of a button or a link styled as one. */
 export function ButtonIcon({ name }: { name: IconName }) {

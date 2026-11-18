@@ -36,8 +36,12 @@ export function MeetingPointList({
 		// The numbers are drawn here (a list marker can't have a circle), so
 		// role="list" keeps Safari announcing it as a list.
 		// biome-ignore lint/a11y/useSemanticElements: it is an <ol>; Safari drops its list role without markers
-		// biome-ignore lint/a11y/noRedundantRoles: Safari drops the list role without markers
-		<ol ref={list} role="list" className="list-none p-5 space-y-10">
+		<ol
+			ref={list}
+			// biome-ignore lint/a11y/noRedundantRoles: Safari drops the list role without markers
+			role="list"
+			className="list-none py-5 pl-8 space-y-10 sm:p-5"
+		>
 			{items.map((item, i) => (
 				<li
 					key={item.id}
