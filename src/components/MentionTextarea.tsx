@@ -8,9 +8,12 @@ import {
 	useState,
 } from "react";
 import { calculate, formatResult } from "#/calc";
+import { formatInstant } from "#/meeting-time";
 import { matchRefs, refText } from "#/protocol-refs";
+import { Button } from "./Button";
 import { textareaStyle, useFieldProps } from "./Field";
 import { ProtocolRefs } from "./ProtocolRefs";
+import { useDraft } from "./useDraft";
 
 /** Someone who can be mentioned: inserted as `name`, listed as `label`. */
 export type Mentionable = { name: string; label: string };
@@ -56,7 +59,8 @@ export function matchPeople(people: Mentionable[], query: string) {
 /**
  * A textarea where typing @ lists the board's people, and # its other
  * protocols, in a popover narrowed as more is typed; after = it offers the
- * result of the arithmetic typed so far. Arrow keys move, Enter
+ * result of the arithmetic typed so far, alone or followed by the
+ * calculation in parentheses. Arrow keys move, Enter
  * or Tab picks, Escape closes; picking replaces "@query" with the name, or
  * "#query" with the reference ("#Styrelsemöte 12-11-2026"). The popover is
  * placed just below the sign with inline styles.
@@ -73,6 +77,13 @@ export function MentionTextarea(props: ComponentProps<"textarea">) {
 		matches: Suggestion[];
 	} | null>(null);
 	const [active, setActive] = useState(0);
+	const fieldProps = useFieldProps(props);
+	// Notes are kept on this device until saved (see useDraft).
+	const draft = useDraft(
+		textarea,
+		fieldProps.id,
+		String(props.defaultValue ?? ""),
+	);
 	// Escape closes the list until a new @ is typed.
 	const dismissedAt = useRef<number | null>(null);
 	// What was typed last, so a new or changed query starts at the top.
@@ -110,9 +121,13 @@ export function MentionTextarea(props: ComponentProps<"textarea">) {
 		if (sign === "=") {
 			const value = calculate(query);
 			if (value === null) return [];
+			// The result alone, or with the calculation, so the minutes show
+			// how the number came about. Each shows exactly what it inserts.
 			const result = formatResult(value);
+			const shown = `${result} (${query.trim()})`;
 			return [
-				{ key: "=", label: `${query.trim()} = ${result}`, insert: result },
+				{ key: "=", label: result, insert: result },
+				{ key: "=()", label: shown, insert: shown },
 			];
 		}
 		if (sign === "#")
@@ -139,6 +154,7 @@ export function MentionTextarea(props: ComponentProps<"textarea">) {
 		const at = mention.start + insert.length;
 		el.setSelectionRange(at, at);
 		el.focus();
+		draft.save();
 		setMention(null);
 	}
 
@@ -178,13 +194,14 @@ export function MentionTextarea(props: ComponentProps<"textarea">) {
 			<textarea
 				className={textareaStyle} // the same as the regular text areas
 				{...props}
-				{...useFieldProps(props)}
+				{...fieldProps}
 				ref={textarea}
 				aria-autocomplete="list"
 				aria-controls={listId}
 				aria-activedescendant={open ? optionId(active) : undefined}
 				onInput={(e) => {
 					update();
+					draft.save();
 					props.onInput?.(e);
 				}}
 				onClick={update}
@@ -254,6 +271,16 @@ export function MentionTextarea(props: ComponentProps<"textarea">) {
 						</div>
 					))}
 			</div>
+			{draft.restored && (
+				<p className="text-muted">
+					Texten är återställd från ett utkast som inte hann sparas (
+					{formatInstant(draft.restored.toISOString())}
+					).{" "}
+					<Button icon="trash-2" onClick={draft.discard}>
+						Släng utkastet
+					</Button>
+				</p>
+			)}
 			{/* Tells screen readers that the list opened, and how to use it. */}
 			<output className="sr-only">
 				{open

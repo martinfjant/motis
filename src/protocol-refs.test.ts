@@ -1,5 +1,11 @@
 import { expect, test } from "vitest";
-import { matchRefs, refText, splitRefs } from "./protocol-refs";
+import {
+	findLinks,
+	linksFor,
+	matchRefs,
+	refText,
+	splitRefs,
+} from "./protocol-refs";
 
 const refs = [
 	{ id: "a", title: "Styrelsemöte", date: "12-11-2026" },
@@ -30,29 +36,56 @@ test("typing a Swedish month name finds that month's meetings", () => {
 	expect(ids("mars")).toEqual([]);
 });
 
+const links = linksFor(refs);
+
 test("references to known protocols are found in text", () => {
-	expect(splitRefs("Se #Styrelsemöte 12-11-2026, punkt 8.", refs)).toEqual([
+	expect(splitRefs("Se #Styrelsemöte 12-11-2026, punkt 8.", links)).toEqual([
 		"Se ",
-		refs[0],
+		{ text: "#Styrelsemöte 12-11-2026", id: "a" },
 		", punkt 8.",
 	]);
 	expect(
 		splitRefs(
 			"#Extrainsatt möte 03-12-2026 och #Styrelsemöte 10-12-2026",
-			refs,
+			links,
 		),
-	).toEqual([refs[1], " och ", refs[2]]);
+	).toEqual([
+		{ text: "#Extrainsatt möte 03-12-2026", id: "b" },
+		" och ",
+		{ text: "#Styrelsemöte 10-12-2026", id: "c" },
+	]);
 });
 
 test("unknown references and plain text stay text", () => {
-	expect(splitRefs("Inga hänvisningar.", refs)).toEqual(["Inga hänvisningar."]);
+	expect(splitRefs("Inga hänvisningar.", links)).toEqual([
+		"Inga hänvisningar.",
+	]);
 	// No such meeting (renamed, deleted or another board's).
-	expect(splitRefs("#Årsmöte 01-04-2026", refs)).toEqual([
+	expect(splitRefs("#Årsmöte 01-04-2026", links)).toEqual([
 		"#Årsmöte 01-04-2026",
 	]);
 	// Without the date it is not a reference.
-	expect(splitRefs("#Styrelsemöte", refs)).toEqual(["#Styrelsemöte"]);
+	expect(splitRefs("#Styrelsemöte", links)).toEqual(["#Styrelsemöte"]);
 	expect(splitRefs("#Styrelsemöte 12-11-2026", [])).toEqual([
 		"#Styrelsemöte 12-11-2026",
 	]);
+});
+
+test("saving records which protocol each reference means", () => {
+	expect(
+		findLinks(
+			["Se #Styrelsemöte 12-11-2026.", "Och #Årsmöte 01-04-2026."],
+			refs,
+		),
+	).toEqual({ "#Styrelsemöte 12-11-2026": "a" });
+	// A reference recorded before keeps its protocol after a rename, as
+	// long as it is still in the text.
+	const kept = {
+		"#Gammalt namn 01-01-2026": "x",
+		"#Borttaget 02-01-2026": "y",
+	};
+	expect(findLinks(["Se #Gammalt namn 01-01-2026."], refs, kept)).toEqual({
+		"#Gammalt namn 01-01-2026": "x",
+	});
+	expect(findLinks([], refs)).toEqual({});
 });

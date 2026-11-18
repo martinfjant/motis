@@ -33,6 +33,7 @@ const NAMES = [
 	"refresh-cw",
 	"rotate-ccw",
 	"save",
+	"search",
 	"send",
 	"square",
 	"trash-2",

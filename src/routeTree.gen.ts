@@ -14,6 +14,7 @@ import { Route as GlomtLosenordRouteImport } from './routes/glomt-losenord'
 import { Route as KontoRouteImport } from './routes/konto'
 import { Route as LoggaInRouteImport } from './routes/logga-in'
 import { Route as RegistreraRouteImport } from './routes/registrera'
+import { Route as SokRouteImport } from './routes/sok'
 import { Route as UtkorgRouteImport } from './routes/utkorg'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as BekraftaTokenRouteImport } from './routes/bekrafta.$token'
@@ -53,6 +54,11 @@ const LoggaInRoute = LoggaInRouteImport.update({
 const RegistreraRoute = RegistreraRouteImport.update({
   id: '/registrera',
   path: '/registrera',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SokRoute = SokRouteImport.update({
+  id: '/sok',
+  path: '/sok',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UtkorgRoute = UtkorgRouteImport.update({
@@ -143,6 +149,7 @@ export interface FileRoutesByFullPath {
   '/konto': typeof KontoRoute
   '/logga-in': typeof LoggaInRoute
   '/registrera': typeof RegistreraRoute
+  '/sok': typeof SokRoute
   '/utkorg': typeof UtkorgRoute
   '/api/health': typeof ApiHealthRoute
   '/bekrafta/$token': typeof BekraftaTokenRoute
@@ -165,6 +172,7 @@ export interface FileRoutesByTo {
   '/konto': typeof KontoRoute
   '/logga-in': typeof LoggaInRoute
   '/registrera': typeof RegistreraRoute
+  '/sok': typeof SokRoute
   '/utkorg': typeof UtkorgRoute
   '/api/health': typeof ApiHealthRoute
   '/bekrafta/$token': typeof BekraftaTokenRoute
@@ -187,6 +195,7 @@ export interface FileRoutesById {
   '/konto': typeof KontoRoute
   '/logga-in': typeof LoggaInRoute
   '/registrera': typeof RegistreraRoute
+  '/sok': typeof SokRoute
   '/utkorg': typeof UtkorgRoute
   '/api/health': typeof ApiHealthRoute
   '/bekrafta/$token': typeof BekraftaTokenRoute
@@ -211,6 +220,7 @@ export interface FileRouteTypes {
     | '/konto'
     | '/logga-in'
     | '/registrera'
+    | '/sok'
     | '/utkorg'
     | '/api/health'
     | '/bekrafta/$token'
@@ -233,6 +243,7 @@ export interface FileRouteTypes {
     | '/konto'
     | '/logga-in'
     | '/registrera'
+    | '/sok'
     | '/utkorg'
     | '/api/health'
     | '/bekrafta/$token'
@@ -254,6 +265,7 @@ export interface FileRouteTypes {
     | '/konto'
     | '/logga-in'
     | '/registrera'
+    | '/sok'
     | '/utkorg'
     | '/api/health'
     | '/bekrafta/$token'
@@ -277,6 +289,7 @@ export interface RootRouteChildren {
   KontoRoute: typeof KontoRoute
   LoggaInRoute: typeof LoggaInRoute
   RegistreraRoute: typeof RegistreraRoute
+  SokRoute: typeof SokRoute
   UtkorgRoute: typeof UtkorgRoute
   ApiHealthRoute: typeof ApiHealthRoute
   BekraftaTokenRoute: typeof BekraftaTokenRoute
@@ -324,6 +337,13 @@ declare module '@tanstack/react-router' {
       path: '/registrera'
       fullPath: '/registrera'
       preLoaderRoute: typeof RegistreraRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sok': {
+      id: '/sok'
+      path: '/sok'
+      fullPath: '/sok'
+      preLoaderRoute: typeof SokRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/utkorg': {
@@ -461,6 +481,7 @@ const rootRouteChildren: RootRouteChildren = {
   KontoRoute: KontoRoute,
   LoggaInRoute: LoggaInRoute,
   RegistreraRoute: RegistreraRoute,
+  SokRoute: SokRoute,
   UtkorgRoute: UtkorgRoute,
   ApiHealthRoute: ApiHealthRoute,
   BekraftaTokenRoute: BekraftaTokenRoute,

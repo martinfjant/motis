@@ -1,0 +1,311 @@
+import { expect, type Page, test } from "@playwright/test";
+
+// The whole life of a protocol, as a board would go through it, in one
+// browser session: sign up, set up the board, hold a meeting, close it,
+// have it justerat by email, share it. Then a second meeting that refers
+// back to the first, and search. The steps build on each other, so they
+// run in order and stop at the first failure.
+test.describe.configure({ mode: "serial" });
+
+let page: Page;
+let protocolUrl = "";
+let secondUrl = "";
+let shareUrl = "";
+
+test.beforeAll(async ({ browser }) => {
+	page = await browser.newPage();
+});
+test.afterAll(async () => {
+	await page.close();
+});
+
+/** Opens a page and waits until its scripts have taken over. */
+async function open(path: string) {
+	await page.goto(path);
+	// Typing before that would be wiped when the page comes alive.
+	await page.waitForLoadState("networkidle");
+}
+
+/** A point of the meeting: a group named by its title. */
+const point = (name: string) =>
+	page.getByRole("group", { name, exact: true });
+
+/** A point that is dealt with is named "<title> (avklarad)". */
+const done = (name: string) =>
+	expect(
+		page.getByRole("group", { name: `${name} (avklarad)`, exact: true }),
+	).toBeVisible();
+
+/** Calls a meeting from the board page and starts it. */
+async function startMeeting(boardUrl: string, title: string, at: string) {
+	await open(boardUrl);
+	await page.getByRole("button", { name: "Kalla till möte" }).click();
+	const dialog = page.getByRole("dialog", { name: "Kalla till möte" });
+	await dialog.getByLabel("Rubrik").fill(title);
+	await dialog.getByLabel("Datum och tid").fill(at);
+	await dialog.getByLabel("Plats").fill("Föreningslokalen");
+	await dialog.getByRole("button", { name: "Skapa dagordning" }).click();
+	await page.getByRole("button", { name: "Starta möte" }).click();
+	await expect(
+		page.getByRole("heading", { name: `Protokoll: ${title}` }),
+	).toBeVisible();
+	await page.waitForLoadState("networkidle");
+}
+
+let boardUrl = "";
+
+test("signing up and setting up the board", async () => {
+	await open("/registrera");
+	// Asked for when sign-up is closed (SIGNUP_PASSWORD, see the config).
+	const code = page.getByLabel("Lösenord för att skapa konto");
+	if (await code.isVisible()) await code.fill("e2e-kod");
+	await page.getByLabel("Namn").fill("Test Testsson");
+	await page.getByLabel("E-post").fill("test@example.se");
+	await page.getByLabel("Välj ett lösenord för ditt konto").fill("hemligt123");
+	await page.getByRole("button", { name: "Skapa konto" }).click();
+
+	await page.getByLabel("Föreningens namn").fill("BRF Provhuset");
+	await page.getByRole("button", { name: "Skapa styrelse" }).click();
+	await expect(
+		page.getByRole("heading", { name: "BRF Provhuset", level: 1 }),
+	).toBeVisible();
+	boardUrl = page.url();
+
+	// Two members without accounts, who will justera by email.
+	await page
+		.getByRole("link", { name: "Inställningar: mallar och ledamöter" })
+		.click();
+	for (const [name, email] of [
+		["Anna Andersson", "anna@example.se"],
+		["Bo Berg", "bo@example.se"],
+	]) {
+		const add = page.getByRole("region", { name: "Lägg till ledamot" });
+		await add.getByLabel(/^Namn/).fill(name);
+		await add.getByLabel("E-postadress").fill(email);
+		await add.getByRole("button", { name: "Lägg till" }).click();
+		await expect(page.getByRole("rowheader", { name })).toBeVisible();
+	}
+});
+
+test("holding the meeting, point by point", async () => {
+	await startMeeting(boardUrl, "Styrelsemöte", "2026-11-12T18:00");
+	protocolUrl = page.url();
+
+	await point("Mötets öppnande")
+		.getByRole("button", { name: /^Öppna mötet/ })
+		.click();
+	await done("Mötets öppnande");
+
+	const attendance = point("Närvarande ledamöter");
+	for (const name of ["Anna Andersson", "Bo Berg", "Test Testsson"])
+		await attendance.getByRole("checkbox", { name }).check();
+	await attendance.getByRole("button", { name: "Klar" }).click();
+	await done("Närvarande ledamöter");
+
+	for (const title of ["Val av ordförande", "Val av sekreterare"]) {
+		await point(title).getByLabel("Mötet väljer").selectOption("Test Testsson");
+		await done(title);
+	}
+
+	// The secretary can't justera; the two others do.
+	const reviewers = point("Val av justerare");
+	await expect(
+		reviewers.getByRole("option", { name: "Test Testsson – sekreterare" }),
+	).toHaveCount(2);
+	await reviewers.getByLabel("Justerare 1").selectOption("Anna Andersson");
+	await reviewers
+		.getByLabel("Justerare 2 (om ni har två)")
+		.selectOption("Bo Berg");
+	await reviewers.getByRole("button", { name: "Klar" }).click();
+	await done("Val av justerare");
+
+	// Ja/nej: the round marker is drawn over the radio button, so click the
+	// text, as people do.
+	await point("Godkännande av dagordning")
+		.getByText("Dagordningen godkändes.", { exact: true })
+		.click();
+	await done("Godkännande av dagordning");
+	await point("Föregående protokoll")
+		.getByText("Föregående protokoll lades till handlingarna.", {
+			exact: true,
+		})
+		.click();
+	await done("Föregående protokoll");
+
+	// Notes, with a calculation: "=12*1500" offers the result.
+	const economy = point("Ekonomi");
+	const notes = economy.getByLabel("Anteckningar");
+	await notes.pressSequentially("Avgifterna ger =12*1500");
+	await expect(
+		page.getByRole("option", { name: "18000", exact: true }),
+	).toBeVisible();
+	await notes.press("Enter");
+	await notes.pressSequentially("kr per år.");
+	await expect(notes).toHaveValue("Avgifterna ger 18000 kr per år.");
+	await economy.getByRole("button", { name: "Klar" }).click();
+	await done("Ekonomi");
+
+	await point("Driftsfrågor")
+		.getByLabel("Anteckningar")
+		.fill("Hissen ska besiktigas i mars.");
+	await point("Driftsfrågor").getByRole("button", { name: "Klar" }).click();
+	await done("Driftsfrågor");
+
+	await point("Övriga frågor").getByRole("button", { name: "Klar" }).click();
+	await done("Övriga frågor");
+
+	await point("Nästa möte").getByLabel("Datum och tid").fill("2027-02-10T18:00");
+	await point("Nästa möte").getByRole("button", { name: "Klar" }).click();
+	await done("Nästa möte");
+
+	// Closing the meeting closes the protocol, which is then read-only.
+	await point("Mötets avslutande")
+		.getByRole("button", { name: /^Avsluta mötet/ })
+		.click();
+	await expect(
+		page.getByRole("button", { name: "Redigera protokollet" }),
+	).toBeVisible();
+	const agenda = page.getByRole("region", { name: "Dagordning" });
+	await expect(agenda).toContainText("Avgifterna ger 18000 kr per år.");
+	await expect(agenda).toContainText("Mötet avslutades");
+});
+
+test("justering by email, with drawn signatures", async () => {
+	await page.getByRole("button", { name: "Skicka för justering" }).click();
+	await expect(page.getByRole("region", { name: "Justering" })).toContainText(
+		"Väntar på justering.",
+	);
+
+	// In development, mail goes to the outbox; each justerare has a link.
+	await open("/utkorg");
+	const linkFor = async (address: string) => {
+		const mail = page
+			.getByRole("region", { name: /^Justera protokollet/ })
+			.filter({ hasText: address });
+		const text = (await mail.textContent()) ?? "";
+		const link = text.match(/http:\/\/localhost:\d+\/justera\/[\w-]+/)?.[0];
+		expect(link, `the email to ${address} has a link`).toBeTruthy();
+		return link as string;
+	};
+	const links = [
+		await linkFor("anna@example.se"),
+		await linkFor("bo@example.se"),
+	];
+
+	for (const link of links) {
+		await open(link);
+		await expect(page.getByRole("region", { name: "Dagordning" })).toContainText(
+			"Hissen ska besiktigas i mars.",
+		);
+		await page.getByRole("button", { name: "Godkänn och signera…" }).click();
+		await sign();
+		await page
+			.getByRole("button", { name: "Godkänn och signera", exact: true })
+			.click();
+		await expect(
+			page.getByText(/^Du godkände protokollet .* Tack!$/),
+		).toBeVisible();
+	}
+
+	await open(protocolUrl);
+	const justering = page.getByRole("region", { name: "Justering" });
+	await expect(justering).toContainText("Protokollet är justerat.");
+	await expect(
+		justering.getByRole("img", { name: "Signatur: Anna Andersson" }),
+	).toBeVisible();
+	await expect(
+		justering.getByRole("img", { name: "Signatur: Bo Berg" }),
+	).toBeVisible();
+	shareUrl =
+		(await page
+			.getByRole("link", { name: "Visa det delade protokollet" })
+			.getAttribute("href")) ?? "";
+});
+
+/** Draws a zigzag in the signature field. */
+async function sign() {
+	const box = await page.locator("canvas").boundingBox();
+	if (!box) throw new Error("No signature field.");
+	const y = box.y + box.height / 2;
+	await page.mouse.move(box.x + 20, y);
+	await page.mouse.down();
+	for (let x = 40; x < Math.min(box.width - 20, 300); x += 20)
+		await page.mouse.move(box.x + x, y + (x % 40 === 0 ? -15 : 15));
+	await page.mouse.up();
+}
+
+test("the shared protocol and the PDF, without logging in", async ({
+	browser,
+}) => {
+	expect(shareUrl).toMatch(/^\/protokoll\//);
+	const visitor = await browser.newPage();
+	await visitor.goto(shareUrl);
+	await expect(
+		visitor.getByRole("heading", { name: /Styrelsemöte/, level: 1 }),
+	).toBeVisible();
+	await expect(visitor.getByText("Avgifterna ger 18000 kr per år.")).toBeVisible();
+	await expect(
+		visitor.getByRole("img", { name: "Signatur: Bo Berg" }),
+	).toBeVisible();
+	await visitor.close();
+
+	const id = protocolUrl.split("/").pop();
+	const pdf = await page.request.get(`/api/protokoll/${id}/pdf`);
+	expect(pdf.status()).toBe(200);
+	expect(pdf.headers()["content-type"]).toContain("application/pdf");
+});
+
+test("a second meeting refers back to the first with #", async () => {
+	await startMeeting(boardUrl, "Extramöte", "2026-11-26T18:00");
+	secondUrl = page.url();
+	const notes = point("Ekonomi").getByLabel("Anteckningar");
+	await notes.pressSequentially("Se #Styrelse");
+	const option = page.getByRole("option", { name: "Styrelsemöte, 12-11-2026" });
+	await expect(option).toBeVisible();
+	await notes.press("Enter");
+	await expect(notes).toHaveValue("Se #Styrelsemöte 12-11-2026 ");
+	await point("Ekonomi").getByRole("button", { name: "Klar" }).click();
+	await done("Ekonomi");
+
+	// Shown as a link to the first meeting, which lists the reference.
+	await point("Ekonomi (avklarad)")
+		.getByRole("link", { name: "#Styrelsemöte 12-11-2026" })
+		.click();
+	await expect(
+		page.getByRole("heading", { name: "Protokoll: Styrelsemöte" }),
+	).toBeVisible();
+	await expect(
+		page
+			.getByRole("region", { name: "Hänvisningar" })
+			.getByRole("link", { name: "Extramöte" }),
+	).toBeVisible();
+});
+
+test("unsaved notes come back after a reload", async () => {
+	const text = "Tvättstugan behöver nya maskiner.";
+	await open(secondUrl);
+	await point("Driftsfrågor").getByLabel("Anteckningar").fill(text);
+	// Loading the page anew, as after a crash or a lost connection.
+	await open(secondUrl);
+	await expect(point("Driftsfrågor").getByLabel("Anteckningar")).toHaveValue(
+		text,
+	);
+	await expect(point("Driftsfrågor")).toContainText(
+		"Texten är återställd från ett utkast som inte hann sparas",
+	);
+	await point("Driftsfrågor")
+		.getByRole("button", { name: "Släng utkastet" })
+		.click();
+	await expect(point("Driftsfrågor").getByLabel("Anteckningar")).toHaveValue("");
+});
+
+test("searching the protocols", async () => {
+	const search = page.getByRole("search").getByLabel("Sök i protokollen");
+	await search.fill("hissen mars");
+	await search.press("Enter");
+	await expect(page).toHaveURL(/\/sok\?q=hissen/);
+	const result = page.getByRole("region", { name: /^Styrelsemöte/ });
+	await expect(result).toContainText("Driftsfrågor");
+	await expect(result.locator("mark").first()).toHaveText("Hissen");
+	await expect(page.getByRole("region", { name: /^Extramöte/ })).toHaveCount(0);
+});

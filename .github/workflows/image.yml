@@ -1,7 +1,8 @@
 # On every push to main (including merged pull requests): check and test
-# the code, build the Docker image (linux/amd64, which Bunny Magic
-# Containers requires), publish it to GitHub's container registry as
-# ghcr.io/<owner>/<repo> tagged "latest" and "sha-<commit>", then deploy
+# the code (unit tests, and end-to-end tests in a browser), build the
+# Docker image (linux/amd64, which Bunny Magic Containers requires),
+# publish it to GitHub's container registry as ghcr.io/<owner>/<repo>
+# tagged "latest" and "sha-<commit>", then deploy
 # that commit's image to the Magic Containers app. Pull requests are only
 # checked and tested.
 #
@@ -35,8 +36,30 @@ jobs:
       - run: pnpm exec tsc --noEmit
       - run: pnpm test
 
+  # The whole app in a real browser (WebKit, as in Safari): sign-up, a
+  # meeting, justering, sharing, search. See e2e/ and playwright.config.ts.
+  e2e:
+    runs-on: ubuntu-latest
+    # Playwright's own image has WebKit and everything it needs installed;
+    # keep its version the same as @playwright/test in package.json.
+    container: mcr.microsoft.com/playwright:v1.56.1-noble
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm e2e
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results
+          path: test-results/
+          retention-days: 7
+
   image:
-    needs: test
+    needs: [test, e2e]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:

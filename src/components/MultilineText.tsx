@@ -9,10 +9,10 @@ import { ProtocolRefs } from "./ProtocolRefs";
  * page allows it (see ProtocolRefs), and stay text elsewhere.
  */
 export function MultilineText({ text }: { text: string }) {
-	const { refs, boardId } = useContext(ProtocolRefs);
+	const { links = [], boardId } = useContext(ProtocolRefs);
 	const linked = (line: string) =>
 		boardId
-			? splitRefs(line, refs).map((part, k) =>
+			? splitRefs(line, links).map((part, k) =>
 					typeof part === "string" ? (
 						part
 					) : (
@@ -22,7 +22,7 @@ export function MultilineText({ text }: { text: string }) {
 							to="/styrelser/$boardId/protokoll/$protocolId"
 							params={{ boardId, protocolId: part.id }}
 						>
-							#{part.title} {part.date}
+							{part.text}
 						</Link>
 					),
 				)

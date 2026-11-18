@@ -26,11 +26,13 @@ import {
 	getProtocol,
 	getPublicProtocol,
 	listProtocols,
+	publicValue,
 	regenerateProtocolShareId,
 	saveItemValue,
 	setCarryOver,
 	updateProtocol,
 } from "./protocols.server";
+import { searchProtocols } from "./search.server";
 import { settleRemainingPoints } from "./test-helpers";
 
 let db: ReturnType<typeof createClient>;
@@ -423,6 +425,101 @@ test("a protocol offers the board's other protocols to refer to with #", async (
 	expect((await getProtocol(db, anna, first.id)).refs).toEqual([
 		{ id: second.id, title: "Extrainsatt möte", date: "20-11-2026" },
 	]);
+});
+
+test("# references keep their link after a rename, and are listed on the protocol they point to", async () => {
+	const first = await createProtocol(db, anna, agendaId);
+	const [tpl] = await listTemplates(db, anna, boardId);
+	const extra = await createAgenda(db, anna, boardId, {
+		title: "Extrainsatt möte",
+		meetingAt: "2026-11-20T20:00",
+		location: "",
+		templateId: tpl.id,
+	});
+	const second = await createProtocol(db, anna, extra.id);
+	await addItem(db, anna, "protocol", second.id, {
+		title: "Uppföljning",
+		type: "text",
+		description: "",
+		extraNames: [],
+	});
+	const point = (await getProtocol(db, anna, second.id)).items.find(
+		(i) => i.title === "Uppföljning",
+	)?.id as string;
+	const ref = { text: "#Höstmöte 20-11-2026", id: first.id };
+
+	await saveItemValue(db, anna, point, { notes: "Se #Höstmöte 20-11-2026." });
+	expect((await getProtocol(db, anna, second.id)).links).toContainEqual(ref);
+	expect((await getProtocol(db, anna, first.id)).referredFrom).toEqual([
+		{ id: second.id, title: "Extrainsatt möte", date: "20-11-2026" },
+	]);
+
+	// Renamed and moved: the text keeps the old name, the link still works,
+	// also when the text is saved again.
+	await updateProtocol(db, anna, first.id, {
+		title: "Vårmöte",
+		meetingAt: "2026-11-21T18:00",
+		location: "",
+	});
+	await saveItemValue(db, anna, point, {
+		notes: "Se #Höstmöte 20-11-2026. Klart.",
+	});
+	const after = await getProtocol(db, anna, second.id);
+	expect(after.links).toContainEqual(ref);
+	expect(after.links).toContainEqual({
+		text: "#Vårmöte 21-11-2026",
+		id: first.id,
+	});
+	expect((await getProtocol(db, anna, first.id)).referredFrom).toHaveLength(1);
+
+	// Links are left out of what the public page gets.
+	const saved = after.items.find((i) => i.id === point)?.value ?? {};
+	expect(saved.links).toEqual({ "#Höstmöte 20-11-2026": first.id });
+	expect(publicValue(saved)).not.toHaveProperty("links");
+
+	// Once the protocol is deleted, nothing links to it.
+	await deleteProtocol(db, anna, first.id);
+	expect((await getProtocol(db, anna, second.id)).links).toEqual([]);
+});
+
+test("search finds protocols of one's own boards by title, point and text", async () => {
+	const protocol = await createProtocol(db, anna, agendaId);
+	await addItem(db, anna, "protocol", protocol.id, {
+		title: "Hissen",
+		type: "text",
+		description: "",
+		extraNames: [],
+	});
+	const point = (await getProtocol(db, anna, protocol.id)).items.find(
+		(i) => i.title === "Hissen",
+	)?.id as string;
+	await saveItemValue(db, anna, point, {
+		notes: "Besiktning av hissen i mars. Årsmötet informeras.",
+	});
+
+	const found = await searchProtocols(db, anna, "ÅRSMÖTET hiss");
+	expect(found).toHaveLength(1);
+	expect(found[0]).toMatchObject({
+		protocolId: protocol.id,
+		boardName: "BRF Björken",
+		title: "Höstmöte",
+		date: "20-11-2026",
+		hits: [
+			{
+				itemId: point,
+				itemTitle: "Hissen",
+				excerpt: "Besiktning av hissen i mars. Årsmötet informeras.",
+			},
+		],
+	});
+	// The protocol's own title is found too, without any point.
+	expect((await searchProtocols(db, anna, "höstmöte"))[0]?.hits).toEqual([]);
+	expect(await searchProtocols(db, anna, "hiss tvättstuga")).toEqual([]);
+	expect(await searchProtocols(db, anna, "   ")).toEqual([]);
+
+	// Not for those outside the board.
+	expect(await searchProtocols(db, cia, "hiss")).toEqual([]);
+	expect(await searchProtocols(db, bo, "hiss")).toHaveLength(1);
 });
 
 test("a protocol without a closing point can be closed by hand", async () => {
