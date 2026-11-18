@@ -39,8 +39,10 @@ jobs:
   # The whole app in a real browser (WebKit, as in Safari): sign-up, a
   # meeting, justering, sharing, search. See e2e/ and playwright.config.ts.
   e2e:
-    # Playwright 1.56 has no WebKit dependencies for newer Ubuntu releases.
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
+    # Playwright's own image has WebKit and everything it needs installed;
+    # keep its version the same as @playwright/test in package.json.
+    container: mcr.microsoft.com/playwright:v1.56.1-noble
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -48,7 +50,6 @@ jobs:
           node-version: 22
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps webkit
       - run: pnpm e2e
       - if: failure()
         uses: actions/upload-artifact@v4
