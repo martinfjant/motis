@@ -1,6 +1,12 @@
 import { randomUUID } from "node:crypto";
 import type { Client, Row } from "@libsql/client";
-import { cannotStart, START_ANY_DAY, stockholmStamp } from "../meeting-time";
+import {
+	cannotStart,
+	formatMeetingAt,
+	START_ANY_DAY,
+	stockholmStamp,
+} from "../meeting-time";
+import type { ProtocolRef } from "../protocol-refs";
 import {
 	type AgendaDetails,
 	cleanMeetingAt,
@@ -235,9 +241,23 @@ export async function getProtocol(
 		listUnregistered(db, userId, board.id),
 	]);
 	const edits = await listEdits(db, protocolId);
+	const others = await listProtocols(db, userId, board.id);
 	return {
 		board,
 		protocol: toProtocol(row),
+		/**
+		 * The board's other protocols with a meeting date, newest first, to
+		 * refer to with # in notes and decisions (see protocol-refs.ts).
+		 */
+		refs: others
+			.filter((p) => p.id !== protocolId && p.meetingAt)
+			.map(
+				(p): ProtocolRef => ({
+					id: p.id,
+					title: p.title,
+					date: formatMeetingAt(p.meetingAt).slice(0, 10),
+				}),
+			),
 		items: await listProtocolItems(db, protocolId),
 		/** Changes made after the protocol was closed, oldest first. */
 		edits,

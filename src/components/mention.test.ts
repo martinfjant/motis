@@ -29,3 +29,14 @@ test("matching is by the start of the name, ignoring case", () => {
 	expect(names("anna a")).toEqual(["Anna Andersson"]);
 	expect(names("Berg")).toEqual([]);
 });
+
+test("# starts a protocol reference the same way", () => {
+	expect(findMention("Se #Sty", 7, "#")).toEqual({ start: 3, query: "Sty" });
+	expect(findMention("#Styrelsemöte 12", 16, "#")).toEqual({
+		start: 0,
+		query: "Styrelsemöte 12",
+	});
+	// Not inside words (e.g. "punkt#3"), and not an @ either.
+	expect(findMention("punkt#3", 7, "#")).toBeNull();
+	expect(findMention("@Anna", 5, "#")).toBeNull();
+});

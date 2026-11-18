@@ -62,6 +62,13 @@ export function useFieldProps(props: {
  */
 export const fieldStyle =
 	"w-full rounded-lg border border-line-strong bg-field px-3 py-2.5 text-lg shadow-2xs outline-none transition-colors focus:border-accent focus:ring-3 focus:ring-accent/30";
+/**
+ * Text areas grow with what is written: about three lines when empty, up
+ * to about ten (at most half a phone screen), then they scroll. Browsers
+ * without field-sizing keep the fixed height. They can still be resized.
+ */
+export const textareaStyle = `${fieldStyle} field-sizing-content min-h-28 max-h-[min(20rem,50dvh)] resize-y`;
+
 /** A text-like <input> (text, email, password, date…). */
 export function Input(props: ComponentProps<"input">) {
 	return <input {...props} className={fieldStyle} {...useFieldProps(props)} />;
@@ -69,7 +76,7 @@ export function Input(props: ComponentProps<"input">) {
 
 export function Textarea(props: ComponentProps<"textarea">) {
 	return (
-		<textarea {...props} className={fieldStyle} {...useFieldProps(props)} />
+		<textarea {...props} className={textareaStyle} {...useFieldProps(props)} />
 	);
 }
 
