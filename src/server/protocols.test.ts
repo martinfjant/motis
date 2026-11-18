@@ -405,6 +405,26 @@ test("only those present can reserve themselves against a decision", async () =>
 	expect(await value("Takreparation")).not.toHaveProperty("reservations");
 });
 
+test("a protocol offers the board's other protocols to refer to with #", async () => {
+	const first = await createProtocol(db, anna, agendaId);
+	const [tpl] = await listTemplates(db, anna, boardId);
+	const extra = await createAgenda(db, anna, boardId, {
+		title: "Extrainsatt möte",
+		meetingAt: "2026-11-20T20:00",
+		location: "",
+		templateId: tpl.id,
+	});
+	const second = await createProtocol(db, anna, extra.id);
+
+	// Not itself; the others with their title and meeting date.
+	expect((await getProtocol(db, anna, second.id)).refs).toEqual([
+		{ id: first.id, title: "Höstmöte", date: "20-11-2026" },
+	]);
+	expect((await getProtocol(db, anna, first.id)).refs).toEqual([
+		{ id: second.id, title: "Extrainsatt möte", date: "20-11-2026" },
+	]);
+});
+
 test("a protocol without a closing point can be closed by hand", async () => {
 	const protocol = await createProtocol(db, anna, agendaId);
 	await expect(closeProtocol(db, cia, protocol.id)).rejects.toThrow(BoardError);
