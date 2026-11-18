@@ -40,7 +40,16 @@ export const getProtocol = createServerFn({ method: "GET" })
 			const review = await getReviewRound(db, data.protocolId);
 			/** Who justerade it, with signatures, once justerat. */
 			const justering = await getJustering(db, data.protocolId);
-			return { ...protocol, review, justering };
+			return {
+				...protocol,
+				review,
+				justering,
+				/** Compared with watchProtocol's, to tell when it has changed. */
+				version: await protocols.protocolVersion(db, data.protocolId),
+				/** Who is writing it, while the meeting is going on. */
+				editor: await protocols.protocolEditor(db, data.protocolId),
+				userId: user.id,
+			};
 		} catch (err) {
 			if (err instanceof BoardError) return null;
 			throw err;
@@ -132,10 +141,45 @@ export const setCarryOver = createServerFn({ method: "POST" })
 	});
 
 export const closeProtocol = createServerFn({ method: "POST" })
-	.validator((d: unknown) => ({ protocolId: str(obj(d).protocolId) }))
+	.validator((d: unknown) => ({
+		protocolId: str(obj(d).protocolId),
+		editSession: str(obj(d).editSession) || undefined,
+	}))
 	.handler(async ({ data }) => {
 		const { db, user, protocols } = await ctx();
-		await protocols.closeProtocol(db, user.id, data.protocolId);
+		await protocols.closeProtocol(
+			db,
+			user.id,
+			data.protocolId,
+			data.editSession,
+		);
+	});
+
+/**
+ * Asked every few seconds by a page showing a protocol: has it changed, and
+ * who writes it? See watchProtocol.
+ */
+export const watchProtocol = createServerFn({ method: "POST" })
+	.validator((d: unknown) => ({
+		protocolId: str(obj(d).protocolId),
+		session: str(obj(d).session),
+		takeOver: obj(d).takeOver === true,
+	}))
+	.handler(async ({ data }) => {
+		const { db, user, protocols } = await ctx();
+		return protocols.watchProtocol(db, user.id, data.protocolId, data.session, {
+			takeOver: data.takeOver,
+		});
+	});
+
+export const leaveProtocol = createServerFn({ method: "POST" })
+	.validator((d: unknown) => ({
+		protocolId: str(obj(d).protocolId),
+		session: str(obj(d).session),
+	}))
+	.handler(async ({ data }) => {
+		const { db, user, protocols } = await ctx();
+		await protocols.leaveProtocol(db, user.id, data.protocolId, data.session);
 	});
 
 /** No login required: the share id itself is the access token. */

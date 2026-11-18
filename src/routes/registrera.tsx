@@ -6,6 +6,7 @@ import { Field, Input } from "#/components/Field";
 import { Form } from "#/components/Form";
 import { Main } from "#/components/Main";
 import { PageHeader } from "#/components/PageHeader";
+import { NewPasswordFields, PasswordInput } from "#/components/PasswordInput";
 import { getSignupPolicy, signUp } from "#/server/auth.functions";
 
 export const Route = createFileRoute("/registrera")({
@@ -67,12 +68,7 @@ function SignUp() {
 			<Form onSubmit={onSubmit}>
 				{policy.kind === "password" && (
 					<Field id="signupPassword" label="Lösenord för att skapa konto">
-						<Input
-							name="signupPassword"
-							type="password"
-							autoComplete="off"
-							required
-						/>
+						<PasswordInput name="signupPassword" autoComplete="off" required />
 					</Field>
 				)}
 				<Field id="name" label="Namn">
@@ -81,15 +77,7 @@ function SignUp() {
 				<Field id="email" label="E-post">
 					<Input name="email" type="email" autoComplete="email" required />
 				</Field>
-				<Field id="password" label="Välj ett lösenord för ditt konto">
-					<Input
-						name="password"
-						type="password"
-						autoComplete="new-password"
-						minLength={8}
-						required
-					/>
-				</Field>
+				<NewPasswordFields label="Välj ett lösenord för ditt konto" />
 				<ErrorMessage error={error} />
 				<Button icon="user-plus" type="submit" aria-busy={pending}>
 					Skapa konto

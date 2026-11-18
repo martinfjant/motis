@@ -51,6 +51,7 @@ export function MeetingForm({
 						name="meetingAt"
 						type="datetime-local"
 						defaultValue={initial.meetingAt}
+						required
 					/>
 				</Field>
 				<Field id="location" label="Plats">

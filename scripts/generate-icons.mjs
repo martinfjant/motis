@@ -19,6 +19,8 @@ const NAMES = [
 	"download",
 	"edit",
 	"edit-2",
+	"eye",
+	"eye-off",
 	"file-plus",
 	"help-circle",
 	"home",

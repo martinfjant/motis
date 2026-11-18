@@ -2,10 +2,10 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "#/components/Button";
 import { ErrorMessage } from "#/components/ErrorMessage";
-import { Field, Input } from "#/components/Field";
 import { Form } from "#/components/Form";
 import { Main } from "#/components/Main";
 import { PageHeader } from "#/components/PageHeader";
+import { NewPasswordFields } from "#/components/PasswordInput";
 import { checkPasswordReset, resetPassword } from "#/server/auth.functions";
 
 // The link in the "Välj ett nytt lösenord" email.
@@ -65,15 +65,7 @@ function NewPassword() {
 				<p>Du loggas in med det nya lösenordet, och ut överallt annars.</p>
 			</PageHeader>
 			<Form onSubmit={onSubmit}>
-				<Field id="password" label="Nytt lösenord" hint="Minst 8 tecken.">
-					<Input
-						name="password"
-						type="password"
-						autoComplete="new-password"
-						minLength={8}
-						required
-					/>
-				</Field>
+				<NewPasswordFields label="Nytt lösenord" />
 				<ErrorMessage error={error} />
 				<Button icon="save" type="submit" aria-busy={pending}>
 					Spara lösenordet

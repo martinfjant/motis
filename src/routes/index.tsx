@@ -2,6 +2,7 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "#/components/Button";
 import { MeetingTime } from "#/components/DateTime";
+import { Dialog } from "#/components/Dialog";
 import { ErrorMessage } from "#/components/ErrorMessage";
 import { Field, Input } from "#/components/Field";
 import { Form } from "#/components/Form";
@@ -61,7 +62,10 @@ function MyAssociations({
 	const [error, setError] = useState<string | null>(null);
 	const [pending, setPending] = useState(false);
 
-	async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+	async function onSubmit(
+		e: React.FormEvent<HTMLFormElement>,
+		close: () => void,
+	) {
 		e.preventDefault();
 		if (pending) return; // already saving: ignore a second press
 		const form = e.currentTarget;
@@ -70,6 +74,8 @@ function MyAssociations({
 		setError(null);
 		try {
 			const board = await createBoard({ data: { name } });
+			close();
+			setPending(false);
 			await router.navigate({
 				to: "/styrelser/$boardId",
 				params: { boardId: board.id },
@@ -100,17 +106,30 @@ function MyAssociations({
 						))}
 					</ul>
 				)}
-			</Section>
-			<Section id="new-board" title="Skapa ny styrelse">
-				<Form onSubmit={onSubmit}>
-					<Field id="name" label="Föreningens namn">
-						<Input name="name" required />
-					</Field>
-					<ErrorMessage error={error} />
-					<Button icon="plus" type="submit" aria-busy={pending}>
-						Skapa styrelse
-					</Button>
-				</Form>
+				{/* Not often needed, so out of the way in a dialog. */}
+				<Dialog
+					title="Ny styrelse"
+					openLabel="Ny styrelse"
+					openIcon="plus"
+					onClose={() => setError(null)}
+				>
+					{(close) => (
+						<Form onSubmit={(e) => onSubmit(e, close)}>
+							<Field id="name" label="Föreningens namn">
+								<Input name="name" required />
+							</Field>
+							<ErrorMessage error={error} />
+							<p>
+								<Button icon="plus" type="submit" aria-busy={pending}>
+									Skapa styrelse
+								</Button>{" "}
+								<Button icon="x" type="button" onClick={close}>
+									Avbryt
+								</Button>
+							</p>
+						</Form>
+					)}
+				</Dialog>
 			</Section>
 		</Main>
 	);

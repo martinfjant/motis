@@ -26,6 +26,7 @@ import { ReviewSection } from "#/components/ReviewSection";
 import { Section } from "#/components/Section";
 import { ShareSection } from "#/components/ShareSection";
 import { useFocusMessage } from "#/components/useFocusMessage";
+import { useProtocolWatch } from "#/components/useProtocolWatch";
 import { addItem, deleteItem } from "#/server/agendas.functions";
 import type {
 	CarryOverFlags,
@@ -81,6 +82,9 @@ function ProtocolPage() {
 		refs,
 		links,
 		referredFrom,
+		version,
+		editor: loadedEditor,
+		userId,
 	} = Route.useLoaderData();
 	const router = useRouter();
 	const [error, setError] = useState<string | null>(null);
@@ -91,8 +95,19 @@ function ProtocolPage() {
 	// editing session; the server records it at the end of the protocol.
 	const closed = protocol.closedAt !== null;
 	const [editSession, setEditSession] = useState<string | null>(null);
-	const editable = !closed || editSession !== null;
-	const session = editSession ?? undefined;
+	// While the meeting goes on one tab writes the protocol; the others
+	// follow along, read-only, and can take over.
+	const watch = useProtocolWatch({
+		protocolId: protocol.id,
+		open: !closed,
+		version,
+		initial: loadedEditor && {
+			name: loadedEditor.name,
+			me: loadedEditor.userId === userId,
+		},
+	});
+	const editable = closed ? editSession !== null : watch.writing;
+	const session = closed ? (editSession ?? undefined) : watch.session;
 	const hasClosePoint = items.some((i) => i.type === "close");
 	const unfinished = unfinishedPoints(items);
 	const closeBlocked = useFocusMessage();
@@ -184,7 +199,11 @@ function ProtocolPage() {
 			confirmIcon: "lock",
 		});
 		if (!ok) return;
-		run(() => closeProtocol({ data: { protocolId: protocol.id } }));
+		run(() =>
+			closeProtocol({
+				data: { protocolId: protocol.id, editSession: session },
+			}),
+		);
 	}
 
 	const share = (
@@ -258,7 +277,49 @@ function ProtocolPage() {
 						)}
 					</PageHeader>
 
-					{!editable ? (
+					{!closed && !editable ? (
+						<>
+							<InfoBox aria-label="Pågående möte">
+								<p>
+									{watch.lostTo ? (
+										<strong>{watch.lostTo} tog över protokollet.</strong>
+									) : (
+										<strong>
+											{watch.editor?.name ?? "Någon annan"} skriver protokollet.
+										</strong>
+									)}{" "}
+									Du ser mötet medan det pågår, och sidan uppdateras av sig
+									själv.
+								</p>
+								<p>
+									<Button
+										icon="edit"
+										type="button"
+										onClick={async () => {
+											if (
+												await confirm({
+													title: "Ta över protokollet?",
+													message: `${watch.editor?.name ?? "Den som skriver nu"} kan då inte längre ändra i det, men kan ta tillbaka det.`,
+													confirmLabel: "Ta över",
+													confirmIcon: "edit",
+												})
+											)
+												await watch.takeOver();
+										}}
+									>
+										Ta över protokollet
+									</Button>
+								</p>
+							</InfoBox>
+							<ProtocolDisplay
+								protocol={protocol}
+								items={items}
+								edits={edits}
+							/>
+							{referred}
+							{share}
+						</>
+					) : !editable ? (
 						<>
 							<p>
 								<Button

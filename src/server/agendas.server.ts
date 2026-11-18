@@ -122,10 +122,15 @@ export function requireTitle(input: string, message: string) {
 	return title;
 }
 
-const MEETING_AT = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/;
-export function cleanMeetingAt(input: string) {
+/**
+ * A meeting's date and time ("2026-11-20T18:00"), which every agenda and
+ * protocol needs: without it a meeting can never be started.
+ */
+const MEETING_AT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+export function requireMeetingAt(input: string) {
 	const v = input.trim();
-	if (v && !MEETING_AT.test(v)) throw new BoardError("Ogiltigt datum.");
+	if (!v) throw new BoardError("Ange datum och tid för mötet.");
+	if (!MEETING_AT.test(v)) throw new BoardError("Ogiltigt datum.");
 	return v;
 }
 
@@ -363,7 +368,7 @@ export async function createAgenda(
 		boardId,
 		shareId: newShareId(),
 		title: requireTitle(input.title, "Ange en rubrik för mötet."),
-		meetingAt: cleanMeetingAt(input.meetingAt),
+		meetingAt: requireMeetingAt(input.meetingAt),
 		location: input.location.trim(),
 	};
 
@@ -445,7 +450,7 @@ export async function updateAgenda(
 		sql: "UPDATE agendas SET title = ?, meeting_at = ?, location = ? WHERE id = ?",
 		args: [
 			requireTitle(input.title, "Ange en rubrik för mötet."),
-			cleanMeetingAt(input.meetingAt),
+			requireMeetingAt(input.meetingAt),
 			input.location.trim(),
 			agendaId,
 		],

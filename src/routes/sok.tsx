@@ -99,7 +99,7 @@ function Marked({ text, words }: { text: string; words: string[] }) {
 	return highlight(text, words).map((part, i) =>
 		part.hit ? (
 			// biome-ignore lint/suspicious/noArrayIndexKey: fixed parts of a text
-			<mark key={i} className="rounded-sm bg-button text-ink">
+			<mark key={i} className="rounded-sm bg-button text-on-button">
 				{part.text}
 			</mark>
 		) : (
