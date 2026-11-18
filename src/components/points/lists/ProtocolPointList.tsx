@@ -9,7 +9,7 @@ import type { RecordedItem } from "../shared/point";
 export function ProtocolPointList({ items }: { items: RecordedItem[] }) {
 	if (items.length === 0) return <p>Inga punkter på dagordningen.</p>;
 	return (
-		<ol className="list-decimal p-5 space-y-1.5 ">
+		<ol className="list-decimal py-5 pl-7 space-y-1.5 sm:p-5">
 			{items.map((item) => (
 				<li key={item.id} className="pl-2">
 					<h3 className="font-bold text-xl py-2.5">{item.title}</h3>

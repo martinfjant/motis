@@ -16,9 +16,9 @@ export function PageHeader({
 	children?: ReactNode;
 }) {
 	return (
-		<header className="space-y-2.5 [--color-link:var(--color-link-on-glass)] rounded-2xl border border-glass-line bg-glass p-4 shadow-2xs backdrop-blur-md">
+		<header className="space-y-2.5 [--color-link:var(--color-link-on-glass)] rounded-2xl border border-glass-line bg-glass p-3 shadow-2xs sm:p-4 backdrop-blur-md">
 			{context && <p>{context}</p>}
-			<h1 className="text-4xl font-semibold">{title}</h1>
+			<h1 className="text-3xl font-semibold sm:text-4xl">{title}</h1>
 			{children}
 		</header>
 	);

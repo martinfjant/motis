@@ -47,21 +47,21 @@ function SiteHeader() {
 
 	return (
 		<header className="flex flex-row justify-between">
-			<div className="content-center m-5">
+			<div className="content-center m-3 sm:m-5">
 				{/*
 				 * The name, not a link like the others: the button yellow, with a
 				 * soft shadow so it can be read on light parts of the background too.
 				 */}
 				<Link
 					to="/"
-					className="text-4xl font-bold text-button no-underline [text-shadow:0_1px_3px_rgb(0_0_0/0.55)] hover:bg-transparent hover:text-button hover:underline hover:shadow-none active:bg-transparent active:shadow-none"
+					className="text-3xl font-bold text-button sm:text-4xl no-underline [text-shadow:0_1px_3px_rgb(0_0_0/0.55)] hover:bg-transparent hover:text-button hover:underline hover:shadow-none active:bg-transparent active:shadow-none"
 				>
 					Mötis
 				</Link>
 			</div>
 			<nav
 				aria-label="Huvudmeny"
-				className="m-5 flex rounded-xl border border-glass-line bg-glass shadow-2xs backdrop-blur-md [--color-link:var(--color-link-on-glass)]"
+				className="m-3 flex rounded-xl border sm:m-5 border-glass-line bg-glass shadow-2xs backdrop-blur-md [--color-link:var(--color-link-on-glass)]"
 			>
 				{user ? (
 					<UserMenu name={user.name} onLogOut={handleLogOut} />

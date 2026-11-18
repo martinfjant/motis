@@ -75,7 +75,7 @@ export function EditPointList({
 			{items.length === 0 ? (
 				<p>Inga punkter ännu.</p>
 			) : (
-				<ol className="list-decimal p-5 space-y-10">
+				<ol className="list-decimal py-5 pl-7 space-y-10 sm:p-5">
 					{items.map((item, i) => (
 						<li key={item.id} className="pl-2 space-y-2.5">
 							<ItemForm

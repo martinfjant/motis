@@ -14,7 +14,9 @@ export function MeetingTime({
 }) {
 	return (
 		<>
-			<time dateTime={at}>{formatMeetingAt(at)}</time>
+			<time dateTime={at} className="whitespace-nowrap">
+				{formatMeetingAt(at)}
+			</time>
 			{daysUntil !== undefined && daysUntil >= 0 && (
 				<> ({daysUntilText(daysUntil)})</>
 			)}
@@ -24,5 +26,10 @@ export function MeetingTime({
 
 /** When something happened, e.g. a protocol was closed, in Swedish time. */
 export function Instant({ at }: { /** ISO 8601 UTC. */ at: string }) {
-	return <time dateTime={at}>{formatInstant(at)}</time>;
+	return (
+		// A date and time are never split over two lines.
+		<time dateTime={at} className="whitespace-nowrap">
+			{formatInstant(at)}
+		</time>
+	);
 }
