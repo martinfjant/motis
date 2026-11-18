@@ -75,6 +75,7 @@ there first (preferably a subdomain such as `mail.example.se`): Resend shows
 the DNS records (SPF and DKIM) to add. Until a domain is verified, Resend
 only delivers to the Resend account's own address.
 
-Still to check on the first deploy: which header carries the visitor's IP
-address (for `TRUST_PROXY`), backups of the database, and response times
-with the app and the database in different regions.
+Still to check on the first deploy: backups of the database, and response
+times with the app and the database in different regions. For limiting
+login attempts per IP address, set up the Bunny edge rule and
+`CLIENT_IP_HEADER` described in `.env.example`.

@@ -6,7 +6,12 @@ import {
 } from "node:crypto";
 import type { Client } from "@libsql/client";
 import type { SignupPolicy } from "./config.server";
-import { hashPassword, verifyPassword } from "./password.server";
+import {
+	hashPassword,
+	NO_ACCOUNT_HASH,
+	needsRehash,
+	verifyPassword,
+} from "./password.server";
 
 export const SESSION_DAYS = 30;
 
@@ -93,9 +98,15 @@ export async function authenticate(
 	});
 	const row = res.rows[0];
 	// Always run a verification so timing doesn't reveal whether the email exists.
-	const hash = row ? String(row.password_hash) : "scrypt$AAAA$AAAA";
+	const hash = row ? String(row.password_hash) : NO_ACCOUNT_HASH;
 	const ok = await verifyPassword(password, hash);
 	if (!row || !ok) throw new AuthError("Fel e-postadress eller lösenord.");
+	// Made with older, cheaper settings: remake it now the password is known.
+	if (needsRehash(hash))
+		await db.execute({
+			sql: "UPDATE users SET password_hash = ? WHERE id = ?",
+			args: [await hashPassword(password), row.id],
+		});
 	return toUser(row);
 }
 

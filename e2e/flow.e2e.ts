@@ -12,8 +12,32 @@ let protocolUrl = "";
 let secondUrl = "";
 let shareUrl = "";
 
+/** Anything the Content-Security-Policy blocked, on any page. */
+const blocked: string[] = [];
+
+/** Reports what the policy blocks, as console errors the tests collect. */
+async function watchPolicy(target: Page) {
+	await target.addInitScript(() =>
+		document.addEventListener("securitypolicyviolation", (e) =>
+			console.error(
+				`CSP: ${e.violatedDirective} blocked ${e.blockedURI || "inline"} ${e.sample}`,
+			),
+		),
+	);
+	target.on("console", (m) => {
+		if (/^CSP: |Content Security Policy/.test(m.text()))
+			blocked.push(`${target.url()}: ${m.text()}`);
+	});
+}
+
 test.beforeAll(async ({ browser }) => {
 	page = await browser.newPage();
+	await watchPolicy(page);
+});
+
+// Every step: nothing the app needs was blocked by its own policy.
+test.afterEach(() => {
+	expect(blocked).toEqual([]);
 });
 test.afterAll(async () => {
 	await page.close();
@@ -323,6 +347,7 @@ test("one tab writes the ongoing meeting, another follows and takes over", async
 		storageState: await page.context().storageState(),
 	});
 	const other = await otherDevice.newPage();
+	await watchPolicy(other);
 	await other.goto(secondUrl);
 	const following = other.getByRole("complementary", {
 		name: "Pågående möte",

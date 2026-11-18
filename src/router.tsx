@@ -1,4 +1,5 @@
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
+import { getGlobalStartContext } from "@tanstack/react-start";
 import { routeTree } from "./routeTree.gen";
 
 export function getRouter() {
@@ -7,6 +8,9 @@ export function getRouter() {
 		scrollRestoration: true,
 		defaultPreload: "intent",
 		defaultPreloadStaleTime: 0,
+		// On the server: this response's nonce for the inline scripts the router
+		// writes, allowed by the Content-Security-Policy (see start.ts).
+		ssr: { nonce: getGlobalStartContext()?.nonce },
 	});
 
 	return router;

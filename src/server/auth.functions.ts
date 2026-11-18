@@ -3,11 +3,12 @@ import { createServerFn } from "@tanstack/react-start";
 import {
 	deleteCookie,
 	getCookie,
+	getRequestHeader,
 	getRequestIP,
 	setCookie,
 } from "@tanstack/react-start/server";
 import type { User } from "./auth.server";
-import { secureCookies, trustProxy } from "./config.server";
+import { clientIpHeader, isProduction, secureCookies } from "./config.server";
 
 const COOKIE = "session";
 
@@ -66,6 +67,21 @@ export const signUp = createServerFn({ method: "POST" })
 		return user;
 	});
 
+/**
+ * The visitor's IP address, for limiting login attempts, or undefined when
+ * it can't be known. Behind a proxy it is in the header the proxy sets
+ * (CLIENT_IP_HEADER); if that holds a list, the proxy's own entry is the
+ * last one. In production without the setting, the address the app sees is
+ * probably the proxy's, shared by every visitor, so none is used.
+ */
+function clientIp(): string | undefined {
+	if (clientIpHeader) {
+		const value = getRequestHeader(clientIpHeader);
+		return value?.split(",").at(-1)?.trim() || undefined;
+	}
+	return isProduction ? undefined : getRequestIP();
+}
+
 export const logIn = createServerFn({ method: "POST" })
 	.validator((d: unknown) => {
 		const o = (d ?? {}) as Record<string, unknown>;
@@ -74,10 +90,7 @@ export const logIn = createServerFn({ method: "POST" })
 	.handler(async ({ data }) => {
 		const { logInWithLimit } = await import("./login-limit.server");
 		const { getDb } = await import("./db");
-		// Behind a proxy (e.g. in production) the client's address is only in
-		// X-Forwarded-For. Trust that header only when told to, since clients
-		// can set it themselves when nothing in front of the app overwrites it.
-		const ip = getRequestIP({ xForwardedFor: trustProxy });
+		const ip = clientIp();
 		const user = await logInWithLimit(await getDb(), { ...data, ip });
 		await startSession(user.id);
 		return user;
