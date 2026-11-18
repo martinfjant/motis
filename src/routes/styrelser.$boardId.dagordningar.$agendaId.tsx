@@ -5,6 +5,7 @@ import {
 	useRouter,
 } from "@tanstack/react-router";
 import { useState } from "react";
+import { AttachmentsProvider } from "#/components/Attachments";
 import { Breadcrumbs } from "#/components/Breadcrumbs";
 import { Button } from "#/components/Button";
 import { CallSection } from "#/components/CallSection";
@@ -50,7 +51,7 @@ export const Route = createFileRoute(
 
 function AgendaPage() {
 	const confirm = useConfirm();
-	const { board, agenda, items, protocolId, today, call } =
+	const { board, agenda, items, attachments, protocolId, today, call } =
 		Route.useLoaderData();
 	const router = useRouter();
 	const [editing, setEditing] = useState(false);
@@ -85,119 +86,132 @@ function AgendaPage() {
 	}
 
 	return (
-		<Main>
-			<Breadcrumbs>
-				<Link to="/">Mina föreningar</Link>
-				<Link to="/styrelser/$boardId" params={{ boardId: board.id }}>
-					{board.name}
-				</Link>
-			</Breadcrumbs>
-			<PageHeader title={`Dagordning: ${agenda.title}`} />
+		// Attachments can be added while editing; otherwise they open to read.
+		<AttachmentsProvider
+			attachments={attachments}
+			base="/api/bilagor"
+			edit={editing ? { kind: "agenda" } : undefined}
+		>
+			<Main>
+				<Breadcrumbs>
+					<Link to="/">Mina föreningar</Link>
+					<Link to="/styrelser/$boardId" params={{ boardId: board.id }}>
+						{board.name}
+					</Link>
+				</Breadcrumbs>
+				<PageHeader title={`Dagordning: ${agenda.title}`} />
 
-			{editing ? (
-				<>
-					<p>
-						<Button
-							icon="check"
-							type="button"
-							onClick={() => setEditing(false)}
-						>
-							Klar med redigeringen
-						</Button>
-					</p>
-					<MeetingForm
-						initial={agenda}
-						onSave={async (details) => {
-							await updateAgenda({ data: { agendaId: agenda.id, ...details } });
-							await router.invalidate();
-						}}
-					/>
-					<EditPointList kind="agenda" parentId={agenda.id} items={items} />
-					<p>
-						<Button
-							icon="check"
-							type="button"
-							onClick={() => setEditing(false)}
-						>
-							Klar med redigeringen
-						</Button>
-					</p>
-					<Section id="danger" title="Ta bort">
-						<Button icon="trash-2" type="button" onClick={onDelete}>
-							Ta bort dagordningen
-						</Button>
-					</Section>
-				</>
-			) : (
-				<>
-					<p>
-						<Button icon="edit" type="button" onClick={() => setEditing(true)}>
-							Redigera dagordningen
-						</Button>
-					</p>
-					<Section id="meeting" title="Mötet">
-						<MeetingDetails
-							meetingAt={agenda.meetingAt}
-							location={agenda.location}
+				{editing ? (
+					<>
+						<p>
+							<Button
+								icon="check"
+								type="button"
+								onClick={() => setEditing(false)}
+							>
+								Klar med redigeringen
+							</Button>
+						</p>
+						<MeetingForm
+							initial={agenda}
+							onSave={async (details) => {
+								await updateAgenda({
+									data: { agendaId: agenda.id, ...details },
+								});
+								await router.invalidate();
+							}}
 						/>
-						{!agenda.meetingAt && !agenda.location && (
-							<p>Tid och plats är inte angivna.</p>
-						)}
-					</Section>
-					<Section id="points" title="Punkter">
-						<AgendaPointList items={items} headingLevel={3} />
-					</Section>
-				</>
-			)}
-
-			{!protocolId && (
-				<CallSection
-					{...call}
-					onSend={async () => {
-						await sendCall({ data: { agendaId: agenda.id } });
-						await router.invalidate();
-					}}
-				/>
-			)}
-
-			<Section id="protocol" title="Protokoll">
-				{protocolId ? (
-					<p>
-						<Link
-							to="/styrelser/$boardId/protokoll/$protocolId"
-							params={{ boardId: board.id, protocolId }}
-						>
-							Se protokoll
-						</Link>
-					</p>
+						<EditPointList kind="agenda" parentId={agenda.id} items={items} />
+						<p>
+							<Button
+								icon="check"
+								type="button"
+								onClick={() => setEditing(false)}
+							>
+								Klar med redigeringen
+							</Button>
+						</p>
+						<Section id="danger" title="Ta bort">
+							<Button icon="trash-2" type="button" onClick={onDelete}>
+								Ta bort dagordningen
+							</Button>
+						</Section>
+					</>
 				) : (
 					<>
 						<p>
-							Protokollet skapas som en kopia av dagordningen när mötet startar.
-							Dagordningen finns kvar som den är.
-						</p>
-						{notToday ? (
-							<p>{notToday}</p>
-						) : (
-							<Button icon="play" type="button" onClick={onStartProtocol}>
-								Starta möte
+							<Button
+								icon="edit"
+								type="button"
+								onClick={() => setEditing(true)}
+							>
+								Redigera dagordningen
 							</Button>
-						)}
-						<ErrorMessage error={startError} />
+						</p>
+						<Section id="meeting" title="Mötet">
+							<MeetingDetails
+								meetingAt={agenda.meetingAt}
+								location={agenda.location}
+							/>
+							{!agenda.meetingAt && !agenda.location && (
+								<p>Tid och plats är inte angivna.</p>
+							)}
+						</Section>
+						<Section id="points" title="Punkter">
+							<AgendaPointList items={items} headingLevel={3} />
+						</Section>
 					</>
 				)}
-			</Section>
 
-			<ShareSection
-				path={`/dagordning/${agenda.shareId}`}
-				intro={
-					<p>Alla som har länken kan läsa dagordningen, utan att logga in.</p>
-				}
-				linkText="Visa den delade dagordningen"
-				onRegenerate={() =>
-					regenerateAgendaShareId({ data: { agendaId: agenda.id } })
-				}
-			/>
-		</Main>
+				{!protocolId && (
+					<CallSection
+						{...call}
+						onSend={async () => {
+							await sendCall({ data: { agendaId: agenda.id } });
+							await router.invalidate();
+						}}
+					/>
+				)}
+
+				<Section id="protocol" title="Protokoll">
+					{protocolId ? (
+						<p>
+							<Link
+								to="/styrelser/$boardId/protokoll/$protocolId"
+								params={{ boardId: board.id, protocolId }}
+							>
+								Se protokoll
+							</Link>
+						</p>
+					) : (
+						<>
+							<p>
+								Protokollet skapas som en kopia av dagordningen när mötet
+								startar. Dagordningen finns kvar som den är.
+							</p>
+							{notToday ? (
+								<p>{notToday}</p>
+							) : (
+								<Button icon="play" type="button" onClick={onStartProtocol}>
+									Starta möte
+								</Button>
+							)}
+							<ErrorMessage error={startError} />
+						</>
+					)}
+				</Section>
+
+				<ShareSection
+					path={`/dagordning/${agenda.shareId}`}
+					intro={
+						<p>Alla som har länken kan läsa dagordningen, utan att logga in.</p>
+					}
+					linkText="Visa den delade dagordningen"
+					onRegenerate={() =>
+						regenerateAgendaShareId({ data: { agendaId: agenda.id } })
+					}
+				/>
+			</Main>
+		</AttachmentsProvider>
 	);
 }

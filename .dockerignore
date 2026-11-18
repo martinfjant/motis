@@ -19,3 +19,5 @@ local.db*
 e2e/.data
 test-results
 playwright-report
+
+local-files

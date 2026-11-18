@@ -222,3 +222,64 @@ test("escaping keeps text as written", () => {
 		"1\\. inte en lista  \n\\- inte heller  \n\\_ord\\_ \\[länk\\]",
 	);
 });
+
+test("downloads carry the attachments: appended to the PDF, zipped with Markdown", async () => {
+	const { PDFDocument } = await import("pdf-lib");
+	const { unzipSync, strFromU8 } = await import("fflate");
+	const sharp = (await import("sharp")).default;
+	const { addAttachment } = await import("../files/attachments.server");
+	const { downloadResponse } = await import("./download.server");
+
+	const { items } = await getProtocol(db, anna, protocolId);
+	const ekonomi = items.find((i) => i.title === "Ekonomi")?.id ?? "";
+	const budget = await PDFDocument.create();
+	budget.addPage();
+	budget.addPage();
+	await addAttachment(db, anna, "protocol", ekonomi, {
+		name: "Budget 2027.pdf",
+		data: await budget.save(),
+	});
+	await addAttachment(db, anna, "protocol", ekonomi, {
+		name: "Taket.png",
+		data: new Uint8Array(
+			await sharp({
+				create: { width: 80, height: 60, channels: 3, background: "#a33" },
+			})
+				.png()
+				.toBuffer(),
+		),
+	});
+	await settleRemainingPoints(db, protocolId);
+	await closeProtocol(db, anna, protocolId);
+	const doc = await documentForMember(db, anna, protocolId);
+	expect(doc.points.find((p) => p.title === "Ekonomi")?.attachments).toEqual([
+		expect.objectContaining({ number: 1, name: "Budget 2027.pdf" }),
+		expect.objectContaining({ number: 2, name: "Taket.png" }),
+	]);
+
+	const pages = async (r: Response) =>
+		(
+			await PDFDocument.load(new Uint8Array(await r.arrayBuffer()))
+		).getPageCount();
+	const without = await pages(await downloadResponse(db, doc, "pdf", false));
+	// The budget's two pages and a page for the picture.
+	expect(await pages(await downloadResponse(db, doc, "pdf", true))).toBe(
+		without + 3,
+	);
+
+	const zipped = await downloadResponse(db, doc, "md", true);
+	expect(zipped.headers.get("Content-Type")).toBe("application/zip");
+	expect(zipped.headers.get("Content-Disposition")).toContain(".zip");
+	const files = unzipSync(new Uint8Array(await zipped.arrayBuffer()));
+	expect(Object.keys(files).sort()).toEqual([
+		"Protokoll Höstmöte 2026-11-20.md",
+		"bilagor/Bilaga 1 - Budget 2027.pdf",
+		"bilagor/Bilaga 2 - Taket.png",
+	]);
+	expect(strFromU8(files["Protokoll Höstmöte 2026-11-20.md"])).toContain(
+		"[Bilaga 1: Budget 2027.pdf](<bilagor/Bilaga 1 - Budget 2027.pdf>)",
+	);
+	const plain = await downloadResponse(db, doc, "md", false);
+	expect(plain.headers.get("Content-Type")).toContain("text/markdown");
+	expect(await plain.text()).toContain("Bilagorna ingår inte i den här filen.");
+});

@@ -1,7 +1,8 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { Client, Row } from "@libsql/client";
 import { requireParent } from "./agendas.server";
-import { BoardError } from "./boards.server";
+import { BoardError, boardLook } from "./boards.server";
+import { listAttachments } from "./files/attachments.server";
 import type {
 	Justering,
 	MemberRef,
@@ -56,12 +57,13 @@ export async function protocolFingerprint(
 	db: Client,
 	protocolId: string,
 ): Promise<string> {
-	const [protocol, items] = await Promise.all([
+	const [protocol, items, attachments] = await Promise.all([
 		db.execute({
 			sql: "SELECT title, meeting_at, location FROM protocols WHERE id = ?",
 			args: [protocolId],
 		}),
 		listProtocolItems(db, protocolId),
+		listAttachments(db, "protocol", protocolId),
 	]);
 	const p = protocol.rows[0];
 	const content = JSON.stringify({
@@ -88,6 +90,17 @@ export async function protocolFingerprint(
 				...(noText ? { noText } : {}),
 			}),
 		),
+		// The attachments, by their content, only when there are any, so
+		// fingerprints of protocols sent before they existed stay the same.
+		...(attachments.length > 0
+			? {
+					attachments: attachments.map((a) => ({
+						number: a.number,
+						name: a.name,
+						sha256: a.sha256,
+					})),
+				}
+			: {}),
 	});
 	return createHash("sha256").update(content).digest("base64url");
 }
@@ -323,11 +336,23 @@ export async function sendForReview(
 }
 
 /** The review a link is for, with its protocol and round. */
+/**
+ * The protocol a justerare's link is for, while the link works (its
+ * attachments can be read through it).
+ */
+export async function protocolForReviewToken(
+	db: Client,
+	token: string,
+	now = new Date(),
+): Promise<string | null> {
+	return (await reviewForToken(db, token, now))?.protocolId ?? null;
+}
+
 async function reviewForToken(db: Client, token: string, now: Date) {
 	const info = await checkToken(db, "review", token, now);
 	if (!info) return null;
 	const res = await db.execute({
-		sql: `SELECT r.*, p.board_id, b.name AS board_name, b.background AS board_background
+		sql: `SELECT r.*, p.board_id, b.name AS board_name, b.background AS board_background, b.logo_key AS board_logo_key, b.banner_key AS board_banner_key
           FROM protocol_reviews r
           JOIN protocols p ON p.id = r.protocol_id
           JOIN boards b ON b.id = p.board_id
@@ -344,7 +369,7 @@ async function reviewForToken(db: Client, token: string, now: Date) {
 		protocolId,
 		board: {
 			name: String(row.board_name),
-			background: String(row.board_background),
+			...boardLook(row, "board_"),
 		},
 		round,
 		/** A later sending has replaced this one. */
@@ -399,6 +424,8 @@ export async function getReviewPage(
 			comment: review.comment,
 			decidedAt: review.decidedAt,
 		},
+		/** Files attached to the points, readable through this link. */
+		attachments: await listAttachments(db, "protocol", protocolId),
 		sentByName: String(found.row.sent_by_name),
 		/** Once everyone has approved: who, with signatures. */
 		justering: replaced ? null : await getJustering(db, protocolId),

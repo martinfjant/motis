@@ -5,13 +5,13 @@ import {
 	Outlet,
 	Scripts,
 	useLocation,
-	useMatches,
 	useRouter,
 } from "@tanstack/react-router";
 import { ConfirmProvider } from "#/components/ConfirmDialog";
 import { NotFound } from "#/components/NotFound";
 import { SearchField } from "#/components/SearchField";
 import { UserMenu } from "#/components/UserMenu";
+import { useBoardLook } from "#/components/useBoardLook";
 import { DEFAULT_PATTERN } from "#/patterns";
 import { getCurrentUser, logOut } from "#/server/auth.functions";
 import patternsCss from "../patterns.css?url";
@@ -97,22 +97,9 @@ function SiteHeader() {
 	);
 }
 
-/**
- * The background pattern of the board being viewed, if any. Board pages (and
- * the public agenda) return the board in their loader data.
- */
+/** The background pattern of the board being viewed, if not the default. */
 function useBoardPattern(): string | undefined {
-	const backgrounds = useMatches({
-		select: (matches) =>
-			matches.map(
-				(m) =>
-					(m.loaderData as { board?: { background?: unknown } } | undefined)
-						?.board?.background,
-			),
-	});
-	const pattern = [...backgrounds]
-		.reverse()
-		.find((b): b is string => typeof b === "string");
+	const { pattern } = useBoardLook();
 	return pattern && pattern !== DEFAULT_PATTERN ? pattern : undefined;
 }
 

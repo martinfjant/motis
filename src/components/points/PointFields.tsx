@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Field, Input, Select, Textarea } from "#/components/Field";
+import { Field, Input, Select } from "#/components/Field";
+import { MentionTextarea } from "#/components/MentionTextarea";
 import {
 	ITEM_TYPE_LABELS,
 	ITEM_TYPES,
@@ -40,7 +41,12 @@ export function PointFields({
 				</Select>
 			</Field>
 			<Field id={id("description")} label="Beskrivning">
-				<Textarea name="description" defaultValue={item?.description} />
+				{/* # refers to the meeting's attachments ("Bilaga 1"), where it has any. */}
+				<MentionTextarea
+					name="description"
+					defaultValue={item?.description}
+					drafts={false}
+				/>
 			</Field>
 			<PointSettings type={type} idPrefix={idPrefix} item={item} />
 		</>

@@ -1,4 +1,5 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
+import { AttachmentsProvider } from "#/components/Attachments";
 import { DownloadSection } from "#/components/DownloadSection";
 import { Main } from "#/components/Main";
 import { PageHeader } from "#/components/PageHeader";
@@ -62,21 +63,29 @@ function PublicProtocol() {
 		);
 
 	return (
-		<Main>
-			{/* Same spacing as Main, which this article sits in. */}
-			<article className="space-y-2.5">
-				<PageHeader
-					title={`Protokoll: ${data.protocol.title}`}
-					context={data.board.name}
+		<AttachmentsProvider
+			attachments={data.attachments}
+			base={`/api/delat-protokoll/${shareId}/bilagor`}
+		>
+			<Main>
+				{/* Same spacing as Main, which this article sits in. */}
+				<article className="space-y-2.5">
+					<PageHeader
+						title={`Protokoll: ${data.protocol.title}`}
+						context={data.board.name}
+					/>
+					<ProtocolDisplay
+						protocol={data.protocol}
+						items={data.items}
+						edits={data.edits}
+						justering={data.justering}
+					/>
+				</article>
+				<DownloadSection
+					base={`/api/delat-protokoll/${shareId}`}
+					attachments={data.attachments.length}
 				/>
-				<ProtocolDisplay
-					protocol={data.protocol}
-					items={data.items}
-					edits={data.edits}
-					justering={data.justering}
-				/>
-			</article>
-			<DownloadSection base={`/api/delat-protokoll/${shareId}`} />
-		</Main>
+			</Main>
+		</AttachmentsProvider>
 	);
 }

@@ -25,12 +25,18 @@ import {
 } from "./agendas.server";
 import {
 	BoardError,
+	boardLook,
 	listMembers,
 	listUnregistered,
 	type Member,
 	requireMember,
 	type UnregisteredMember,
 } from "./boards.server";
+import {
+	copyAttachmentStatements,
+	listAttachments,
+	pruneAttachments,
+} from "./files/attachments.server";
 import {
 	type CarryOverFlags,
 	canCarryOver,
@@ -246,6 +252,8 @@ export async function createProtocol(
 		closedAt: null,
 	};
 	const items = await listItems(db, "agenda", agendaId);
+	// The protocol's points are new copies; their attachments come along.
+	const itemIds = new Map(items.map((item) => [item.id, randomUUID()]));
 	await db.batch(
 		[
 			{
@@ -266,7 +274,7 @@ export async function createProtocol(
 				sql: `INSERT INTO protocol_items (id, protocol_id, position, title, type, description, config)
               VALUES (?, ?, ?, ?, ?, ?, ?)`,
 				args: [
-					randomUUID(),
+					itemIds.get(item.id) ?? randomUUID(),
 					protocol.id,
 					i + 1,
 					item.title,
@@ -275,6 +283,7 @@ export async function createProtocol(
 					configJson(item),
 				],
 			})),
+			...(await copyAttachmentStatements(db, itemIds)),
 		],
 		"write",
 	);
@@ -321,6 +330,8 @@ export async function getProtocol(
 		].filter((l): l is RefLink => exists.has(l.id)),
 		/** Protocols that refer to this one, newest first. */
 		referredFrom: await referringProtocols(db, protocolId, refs),
+		/** Files attached to the points, as "Bilaga 1", "Bilaga 2"… */
+		attachments: await listAttachments(db, "protocol", protocolId),
 		items,
 		/** Changes made after the protocol was closed, oldest first. */
 		edits,
@@ -450,6 +461,7 @@ export async function deleteProtocol(
 		sql: "DELETE FROM protocols WHERE id = ?",
 		args: [protocolId],
 	});
+	await pruneAttachments(db);
 }
 
 /**
@@ -663,6 +675,12 @@ export async function protocolVersion(db: Client, protocolId: string) {
 				sql: "SELECT id, edited_at FROM protocol_edits WHERE protocol_id = ? ORDER BY id",
 				args: [protocolId],
 			},
+			{
+				sql: `SELECT a.id, a.item_id, a.position, a.name, a.sha256 FROM attachments a
+              JOIN protocol_items i ON i.id = a.item_id
+              WHERE a.item_kind = 'protocol' AND i.protocol_id = ? ORDER BY a.id`,
+				args: [protocolId],
+			},
 		],
 		"read",
 	);
@@ -725,7 +743,7 @@ export async function leaveProtocol(
 export async function getPublicProtocol(db: Client, shareId: string) {
 	if (!shareId) return null;
 	const res = await db.execute({
-		sql: `SELECT p.*, b.name AS board_name, b.background AS board_background
+		sql: `SELECT p.*, b.name AS board_name, b.background AS board_background, b.logo_key AS board_logo_key, b.banner_key AS board_banner_key
           FROM protocols p JOIN boards b ON b.id = p.board_id
           WHERE p.share_id = ?`,
 		args: [shareId],
@@ -735,7 +753,7 @@ export async function getPublicProtocol(db: Client, shareId: string) {
 	const protocol = toProtocol(row);
 	const board = {
 		name: String(row.board_name),
-		background: String(row.board_background),
+		...boardLook(row, "board_"),
 	};
 	if (!protocol.closedAt) return { status: "open" as const, board };
 
@@ -764,6 +782,7 @@ export async function getPublicProtocol(db: Client, shareId: string) {
 			}),
 		),
 		edits,
+		attachments: await listAttachments(db, "protocol", protocol.id),
 	};
 }
 

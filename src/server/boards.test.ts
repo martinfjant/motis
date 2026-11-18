@@ -45,6 +45,8 @@ test("creator becomes admin and board is trimmed", async () => {
 			name: "BRF Björken",
 			role: "admin",
 			background: "standard",
+			logo: null,
+			banner: null,
 			title: "",
 		},
 	]);

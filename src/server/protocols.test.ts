@@ -562,7 +562,12 @@ test("public protocol: only readable once closed, with just what the page needs"
 	const open = await getPublicProtocol(db, protocol.shareId);
 	expect(open).toEqual({
 		status: "open",
-		board: { name: "BRF Björken", background: "standard" },
+		board: {
+			name: "BRF Björken",
+			background: "standard",
+			logo: null,
+			banner: null,
+		},
 	});
 
 	const items = (await getProtocol(db, anna, protocol.id)).items;

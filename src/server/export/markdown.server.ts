@@ -1,6 +1,8 @@
 import { formatInstant } from "../../meeting-time";
 import {
+	attachmentLabel,
 	type Block,
+	type DocumentAttachment,
 	historyLines,
 	meetingLines,
 	type ProtocolDocument,
@@ -55,7 +57,28 @@ function block(b: Block): string {
 	}
 }
 
-export function protocolMarkdown(doc: ProtocolDocument): string {
+/**
+ * Where an attachment lies in the zip: "bilagor/Bilaga 2 - Budget.pdf".
+ */
+export function attachmentPath(a: DocumentAttachment): string {
+	const name = a.name.replace(/[\\/:*?"<>|]+/g, "").trim();
+	return `bilagor/Bilaga ${a.number} - ${name}`;
+}
+
+/** "Bilaga 2: Budget.pdf", linked to its file when the files come along. */
+function attachmentLine(a: DocumentAttachment, linked: boolean) {
+	const label = escapeMarkdown(attachmentLabel(a));
+	return linked ? `[${label}](<${attachmentPath(a)}>)` : label;
+}
+
+/**
+ * The protocol as Markdown. With withAttachments the attachments are linked
+ * to their files, which come in the same zip (see attachmentPath).
+ */
+export function protocolMarkdown(
+	doc: ProtocolDocument,
+	withAttachments = false,
+): string {
 	const parts: string[] = [
 		`# Protokoll: ${escapeMarkdown(doc.title)}`,
 		escapeMarkdown(doc.boardName),
@@ -73,7 +96,22 @@ export function protocolMarkdown(doc: ProtocolDocument): string {
 		parts.push(`### ${i + 1}. ${escapeMarkdown(point.title)}`);
 		if (point.description.trim()) parts.push(paragraphs(point.description));
 		for (const b of point.blocks) parts.push(block(b));
+		if (point.attachments.length > 0)
+			parts.push(
+				`Bilagor: ${point.attachments.map((a) => attachmentLine(a, withAttachments)).join(", ")}`,
+			);
 	});
+
+	if (doc.attachments.length > 0)
+		parts.push(
+			"## Bilagor",
+			withAttachments
+				? "Bilagorna finns i mappen bilagor."
+				: "Bilagorna ingår inte i den här filen.",
+			doc.attachments
+				.map((a) => `- ${attachmentLine(a, withAttachments)}`)
+				.join("\n"),
+		);
 
 	parts.push(
 		"## Historik",

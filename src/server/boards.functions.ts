@@ -139,3 +139,55 @@ export const setMemberTitle = createServerFn({ method: "POST" })
 			data.title,
 		);
 	});
+
+/** An uploaded file sent as form data, read at the server. */
+function uploaded(form: FormData, name: string): File {
+	const file = form.get(name);
+	if (!(file instanceof File) || file.size === 0)
+		throw new Error("Välj en fil.");
+	return file;
+}
+
+/**
+ * Admins upload the board's logo or banner picture (form data: boardId,
+ * which = "logo" | "banner", file). It is made anew at a sensible size.
+ */
+export const uploadBoardImage = createServerFn({ method: "POST" })
+	.validator((d: unknown) => {
+		if (!(d instanceof FormData)) throw new Error("Ogiltig uppladdning.");
+		const which = d.get("which");
+		if (which !== "logo" && which !== "banner")
+			throw new Error("Ogiltig bild.");
+		return {
+			boardId: str(d.get("boardId")),
+			which: which as "logo" | "banner",
+			file: uploaded(d, "file"),
+		};
+	})
+	.handler(async ({ data }) => {
+		const { db, user } = await ctx();
+		const images = await import("./files/board-images.server");
+		const { BoardError } = await import("./boards.server");
+		if (data.file.size > images.MAX_IMAGE_BYTES)
+			throw new BoardError("Bilden är för stor (högst 15 MB).");
+		await images.setBoardImage(
+			db,
+			user.id,
+			data.boardId,
+			data.which,
+			new Uint8Array(await data.file.arrayBuffer()),
+		);
+	});
+
+export const removeBoardImage = createServerFn({ method: "POST" })
+	.validator((d: unknown) => {
+		const which = obj(d).which;
+		if (which !== "logo" && which !== "banner")
+			throw new Error("Ogiltig bild.");
+		return { boardId: str(obj(d).boardId), which: which as "logo" | "banner" };
+	})
+	.handler(async ({ data }) => {
+		const { db, user } = await ctx();
+		const images = await import("./files/board-images.server");
+		await images.removeBoardImage(db, user.id, data.boardId, data.which);
+	});

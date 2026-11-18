@@ -5,10 +5,13 @@ import { createFileRoute } from "@tanstack/react-router";
 export const Route = createFileRoute("/api/protokoll/$protocolId/$format")({
 	server: {
 		handlers: {
-			GET: async ({ params }) => {
-				const { downloadResponse, isDownloadFormat, notFound } = await import(
-					"#/server/export/download.server"
-				);
+			GET: async ({ params, request }) => {
+				const {
+					downloadResponse,
+					isDownloadFormat,
+					notFound,
+					wantsAttachments,
+				} = await import("#/server/export/download.server");
 				if (!isDownloadFormat(params.format)) return notFound();
 				const { getSessionUser } = await import("#/server/auth.server");
 				const { getCookie } = await import("@tanstack/react-start/server");
@@ -26,7 +29,12 @@ export const Route = createFileRoute("/api/protokoll/$protocolId/$format")({
 				const { BoardError } = await import("#/server/boards.server");
 				try {
 					const doc = await documentForMember(db, user.id, params.protocolId);
-					return downloadResponse(doc, params.format);
+					return downloadResponse(
+						db,
+						doc,
+						params.format,
+						wantsAttachments(request),
+					);
 				} catch (err) {
 					if (err instanceof BoardError)
 						return new Response(err.message, { status: 404 });

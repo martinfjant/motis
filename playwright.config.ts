@@ -33,6 +33,10 @@ export default defineConfig({
 		timeout: 120_000,
 		env: {
 			DATABASE_URL: `file:${DB}`,
+			// Uploaded files (attachments, logos) next to the database.
+			FILES_DIR: "e2e/.data/files",
+			BUNNY_STORAGE_ZONE: "",
+			BUNNY_STORAGE_KEY: "",
 			APP_URL: `http://localhost:${PORT}`,
 			SIGNUP_PASSWORD: "e2e-kod",
 			// Never real email from the tests, whatever .env says: everything

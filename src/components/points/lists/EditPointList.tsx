@@ -1,5 +1,6 @@
 import { useRouter } from "@tanstack/react-router";
 import { useState } from "react";
+import { PointAttachments } from "#/components/Attachments";
 import { Button } from "#/components/Button";
 import { useConfirm } from "#/components/ConfirmDialog";
 import { ErrorMessage } from "#/components/ErrorMessage";
@@ -12,7 +13,7 @@ import {
 	moveItem,
 	updateItem,
 } from "#/server/agendas.functions";
-import { canMove, type Item } from "#/server/items";
+import { canMove, type Item, takesAttachments } from "#/server/items";
 
 type Kind = "template" | "agenda";
 
@@ -88,6 +89,9 @@ export function EditPointList({
 									)
 								}
 							/>
+							{kind === "agenda" && takesAttachments(item.type) && (
+								<PointAttachments itemId={item.id} />
+							)}
 							{/* Only the moves that can happen: the opening stays first and the closing last. */}
 							<p>
 								{canMove(items, i, -1) && (

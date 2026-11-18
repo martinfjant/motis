@@ -1,3 +1,4 @@
+import { PointAttachments } from "#/components/Attachments";
 import { MultilineText } from "#/components/MultilineText";
 
 /**
@@ -19,6 +20,7 @@ export function AgendaPointList({
 				<li key={item.id} className="pl-2">
 					<Heading className="font-bold text-xl py-2.5">{item.title}</Heading>
 					<MultilineText text={item.description} />
+					<PointAttachments itemId={item.id} />
 				</li>
 			))}
 		</ol>

@@ -40,3 +40,18 @@ test("# starts a protocol reference the same way", () => {
 	expect(findMention("punkt#3", 7, "#")).toBeNull();
 	expect(findMention("@Anna", 5, "#")).toBeNull();
 });
+
+test("# finds attachments by number, name or the word bilaga", async () => {
+	const { matchAttachments } = await import("./MentionTextarea");
+	const list = [
+		{ number: 1, name: "Budget 2027.pdf" },
+		{ number: 2, name: "Offert tak.pdf" },
+	];
+	expect(matchAttachments(list, "")).toEqual(list);
+	expect(matchAttachments(list, "bil")).toEqual(list);
+	expect(matchAttachments(list, "2")).toEqual([list[1], list[0]]);
+	expect(matchAttachments(list, "bilaga 2")).toEqual([list[1], list[0]]);
+	expect(matchAttachments(list, "offert")).toEqual([list[1]]);
+	expect(matchAttachments(list, "BUDGET")).toEqual([list[0]]);
+	expect(matchAttachments(list, "protokoll")).toEqual([]);
+});

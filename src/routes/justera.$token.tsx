@@ -1,5 +1,6 @@
 import { createFileRoute, notFound, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
+import { AttachmentsProvider } from "#/components/Attachments";
 import { Button } from "#/components/Button";
 import { Instant } from "#/components/DateTime";
 import { ErrorMessage } from "#/components/ErrorMessage";
@@ -52,6 +53,7 @@ export const Route = createFileRoute("/justera/$token")({
 
 function ReviewPage() {
 	const data = Route.useLoaderData();
+	const { token } = Route.useParams();
 	const { review } = data;
 
 	if (data.replaced)
@@ -70,54 +72,59 @@ function ReviewPage() {
 		);
 
 	return (
-		<Main>
-			{/* Same spacing as Main, which this article sits in. */}
-			<article className="space-y-2.5">
-				<PageHeader
-					title={`Justera protokollet: ${data.protocol.title}`}
-					context={data.board.name}
-				>
-					<p>
-						{data.sentByName} har skickat protokollet till dig, {review.name},
-						för justering.
-					</p>
-				</PageHeader>
-				<ProtocolDisplay
-					protocol={data.protocol}
-					items={data.items}
-					edits={data.edits}
-					justering={data.justering}
-				/>
-			</article>
-			<Section id="answer" title="Ditt svar">
-				{data.changed && review.status === "pending" ? (
-					<p>
-						Protokollet har ändrats efter att det skickades till dig. Du får ett
-						nytt mejl när det är klart att justera.
-					</p>
-				) : review.status === "pending" ? (
-					<AnswerForm />
-				) : (
-					<YourAnswer review={review} />
-				)}
-				{data.others.length > 0 && (
-					<>
-						<h3>
-							{data.others.length === 1
-								? "Den andra justeraren"
-								: "De andra justerarna"}
-						</h3>
-						<ul className="list-disc pl-6">
-							{data.others.map((o) => (
-								<li key={o.name}>
-									{o.name}: {OTHER_STATUS[o.status]}
-								</li>
-							))}
-						</ul>
-					</>
-				)}
-			</Section>
-		</Main>
+		<AttachmentsProvider
+			attachments={data.attachments}
+			base={`/api/justera/${token}/bilagor`}
+		>
+			<Main>
+				{/* Same spacing as Main, which this article sits in. */}
+				<article className="space-y-2.5">
+					<PageHeader
+						title={`Justera protokollet: ${data.protocol.title}`}
+						context={data.board.name}
+					>
+						<p>
+							{data.sentByName} har skickat protokollet till dig, {review.name},
+							för justering.
+						</p>
+					</PageHeader>
+					<ProtocolDisplay
+						protocol={data.protocol}
+						items={data.items}
+						edits={data.edits}
+						justering={data.justering}
+					/>
+				</article>
+				<Section id="answer" title="Ditt svar">
+					{data.changed && review.status === "pending" ? (
+						<p>
+							Protokollet har ändrats efter att det skickades till dig. Du får
+							ett nytt mejl när det är klart att justera.
+						</p>
+					) : review.status === "pending" ? (
+						<AnswerForm />
+					) : (
+						<YourAnswer review={review} />
+					)}
+					{data.others.length > 0 && (
+						<>
+							<h3>
+								{data.others.length === 1
+									? "Den andra justeraren"
+									: "De andra justerarna"}
+							</h3>
+							<ul className="list-disc pl-6">
+								{data.others.map((o) => (
+									<li key={o.name}>
+										{o.name}: {OTHER_STATUS[o.status]}
+									</li>
+								))}
+							</ul>
+						</>
+					)}
+				</Section>
+			</Main>
+		</AttachmentsProvider>
 	);
 }
 

@@ -4,6 +4,7 @@ import type { Content, TDocumentDefinitions } from "pdfmake/interfaces";
 import { isSvgSignature } from "#/signature";
 import { formatInstant } from "../../meeting-time";
 import {
+	attachmentLabel,
 	type Block,
 	historyLines,
 	meetingLines,
@@ -57,7 +58,8 @@ function block(b: Block): Content[] {
 		case "list":
 			return [
 				{ text: b.label, margin: [0, 0, 0, 2] },
-				{ ul: b.items, margin: [8, 0, 0, 4] },
+				// A copy: pdfmake fills in the list it is given.
+				{ ul: [...b.items], margin: [8, 0, 0, 4] },
 			];
 		case "quote":
 			return [
@@ -71,9 +73,30 @@ function block(b: Block): Content[] {
 	}
 }
 
-function definition(doc: ProtocolDocument): TDocumentDefinitions {
+function definition(
+	doc: ProtocolDocument,
+	withAttachments: boolean,
+): TDocumentDefinitions {
+	const boardLine: Content = {
+		text: doc.boardName,
+		color: GREY,
+		margin: [0, 0, 0, 4],
+	};
 	const content: Content[] = [
-		{ text: doc.boardName, color: GREY, margin: [0, 0, 0, 4] },
+		// The board's logo, if it has one, beside its name.
+		doc.logo
+			? {
+					columns: [
+						{
+							image: `data:image/png;base64,${Buffer.from(doc.logo).toString("base64")}`,
+							fit: [56, 56],
+							width: 64,
+						},
+						{ ...boardLine, margin: [0, 20, 0, 0] },
+					],
+					margin: [0, 0, 0, 8],
+				}
+			: boardLine,
 		{ text: `Protokoll: ${doc.title}`, style: "h1" },
 	];
 	const details = meetingLines(doc);
@@ -95,10 +118,31 @@ function definition(doc: ProtocolDocument): TDocumentDefinitions {
 					? [{ stack: paragraphs(point.description), color: GREY }]
 					: []),
 				...point.blocks.flatMap(block),
+				...(point.attachments.length > 0
+					? [
+							{
+								text: `Bilagor: ${point.attachments.map(attachmentLabel).join(", ")}`,
+								color: GREY,
+								margin: [0, 0, 0, 4] as [number, number, number, number],
+							},
+						]
+					: []),
 			],
 			unbreakable: point.blocks.length < 6,
 		});
 	});
+
+	if (doc.attachments.length > 0)
+		content.push(
+			{ text: "Bilagor", style: "h2" },
+			{
+				text: withAttachments
+					? "Bilagorna följer efter protokollet, i den här ordningen."
+					: "Bilagorna finns som egna filer och ingår inte i den här PDF:en.",
+				margin: [0, 0, 0, 4],
+			},
+			{ ul: doc.attachments.map(attachmentLabel) },
+		);
 
 	content.push(
 		{ text: "Historik", style: "h2" },
@@ -166,6 +210,13 @@ function definition(doc: ProtocolDocument): TDocumentDefinitions {
 	};
 }
 
-export async function protocolPdf(doc: ProtocolDocument): Promise<Buffer> {
-	return loadPdfmake().createPdf(definition(doc)).getBuffer();
+/**
+ * The protocol as a PDF. With withAttachments the list of attachments says
+ * they follow (see appendAttachments, which adds them).
+ */
+export async function protocolPdf(
+	doc: ProtocolDocument,
+	withAttachments = false,
+): Promise<Buffer> {
+	return loadPdfmake().createPdf(definition(doc, withAttachments)).getBuffer();
 }

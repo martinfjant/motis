@@ -1,6 +1,11 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import type { Client, InStatement, Row } from "@libsql/client";
-import { type Board, BoardError, requireMember } from "./boards.server";
+import {
+	type Board,
+	BoardError,
+	boardLook,
+	requireMember,
+} from "./boards.server";
 import { defaultTemplateStatements } from "./default-template";
 import {
 	canMove,
@@ -431,10 +436,12 @@ export async function getAgenda(db: Client, userId: string, agendaId: string) {
 		sql: "SELECT id FROM protocols WHERE agenda_id = ?",
 		args: [agendaId],
 	});
+	const { listAttachments } = await import("./files/attachments.server");
 	return {
 		board,
 		agenda: toAgenda(row),
 		items: await listItems(db, "agenda", agendaId),
+		attachments: await listAttachments(db, "agenda", agendaId),
 		protocolId: protocol.rows[0] ? String(protocol.rows[0].id) : null,
 	};
 }
@@ -467,6 +474,8 @@ export async function deleteAgenda(
 		sql: "DELETE FROM agendas WHERE id = ?",
 		args: [agendaId],
 	});
+	const { pruneAttachments } = await import("./files/attachments.server");
+	await pruneAttachments(db);
 }
 
 // ---------- Items (shared by templates and agendas) ----------
@@ -608,13 +617,33 @@ export async function moveItem(
 	if (!canMove(items, i, direction)) throw new BoardError(ORDER_MESSAGE);
 	const reordered = [...items];
 	[reordered[i], reordered[j]] = [reordered[j], reordered[i]];
-	await db.batch(
-		reordered.map((it, k) => ({
-			sql: `UPDATE ${TABLES[kind].items} SET position = ? WHERE id = ?`,
-			args: [k + 1, it.id],
-		})),
-		"write",
+	await withAttachments(db, kind, parentId, () =>
+		db.batch(
+			reordered.map((it, k) => ({
+				sql: `UPDATE ${TABLES[kind].items} SET position = ? WHERE id = ?`,
+				args: [k + 1, it.id],
+			})),
+			"write",
+		),
 	);
+}
+
+/**
+ * Runs a change to an agenda's or protocol's points, keeping "Bilaga N" in
+ * its texts in step with the attachments' numbers, then removes the
+ * attachments of points that are gone. Templates have no attachments.
+ */
+async function withAttachments(
+	db: Client,
+	kind: ItemKind,
+	parentId: string,
+	change: () => Promise<unknown>,
+) {
+	if (kind === "template") return change();
+	// Loaded when needed: it builds on this module.
+	const attachments = await import("./files/attachments.server");
+	await attachments.renumbering(db, kind, parentId, change);
+	await attachments.pruneAttachments(db);
 }
 
 export async function deleteItem(
@@ -627,10 +656,12 @@ export async function deleteItem(
 	const { parentId } = await requireItem(db, userId, kind, itemId);
 	if (kind === "protocol")
 		await guardProtocolEdit(db, userId, parentId, editSession);
-	await db.execute({
-		sql: `DELETE FROM ${TABLES[kind].items} WHERE id = ?`,
-		args: [itemId],
-	});
+	await withAttachments(db, kind, parentId, () =>
+		db.execute({
+			sql: `DELETE FROM ${TABLES[kind].items} WHERE id = ?`,
+			args: [itemId],
+		}),
+	);
 }
 
 // ---------- Public sharing ----------
@@ -639,7 +670,7 @@ export async function deleteItem(
 export async function getPublicAgenda(db: Client, shareId: string) {
 	if (!shareId) return null;
 	const res = await db.execute({
-		sql: `SELECT a.*, b.name AS board_name, b.background AS board_background FROM agendas a
+		sql: `SELECT a.*, b.name AS board_name, b.background AS board_background, b.logo_key AS board_logo_key, b.banner_key AS board_banner_key FROM agendas a
           JOIN boards b ON b.id = a.board_id WHERE a.share_id = ?`,
 		args: [shareId],
 	});
@@ -649,13 +680,16 @@ export async function getPublicAgenda(db: Client, shareId: string) {
 	const items = await listItems(db, "agenda", String(row.id));
 	return {
 		boardName: String(row.board_name),
-		board: { background: String(row.board_background) },
+		board: boardLook(row, "board_"),
 		agenda: { title, meetingAt, location },
 		items: items.map(({ id, title, description }) => ({
 			id,
 			title,
 			description,
 		})),
+		attachments: await (
+			await import("./files/attachments.server")
+		).listAttachments(db, "agenda", String(row.id)),
 	};
 }
 

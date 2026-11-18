@@ -121,13 +121,48 @@ export function signupPolicy(): SignupPolicy {
 	return isProduction ? { kind: "closed" } : { kind: "open" };
 }
 
+/**
+ * Where uploaded files (logos, banners, attachments) are kept: a Bunny
+ * storage zone in production, a local folder in development and tests.
+ */
+export type FileStorageConfig =
+	| { kind: "bunny"; zone: string; accessKey: string; region: string }
+	| { kind: "folder"; dir: string };
+
+/**
+ * Production requires BUNNY_STORAGE_ZONE and BUNNY_STORAGE_KEY (the zone's
+ * password). Development uses FILES_DIR (default local-files/), unless the
+ * zone is set: then it is used there too.
+ */
+export function fileStorageConfig(): FileStorageConfig {
+	const zone = env.BUNNY_STORAGE_ZONE?.trim();
+	const accessKey = env.BUNNY_STORAGE_KEY?.trim();
+	if (zone && accessKey)
+		return {
+			kind: "bunny",
+			zone,
+			accessKey,
+			region: env.BUNNY_STORAGE_REGION?.trim() || "se",
+		};
+	if (isProduction)
+		throw new ConfigError(
+			`Inställningen ${zone ? "BUNNY_STORAGE_KEY" : "BUNNY_STORAGE_ZONE"} saknas.`,
+		);
+	return { kind: "folder", dir: env.FILES_DIR?.trim() || "local-files" };
+}
+
 /** Session cookies only over https in production. */
 export const secureCookies = isProduction;
 
 /** Every problem with the settings, for the health check. Empty when fine. */
 export function configProblems(): string[] {
 	const problems: string[] = [];
-	for (const check of [databaseConfig, appBaseUrl, mailConfig])
+	for (const check of [
+		databaseConfig,
+		appBaseUrl,
+		mailConfig,
+		fileStorageConfig,
+	])
 		try {
 			check();
 		} catch (err) {

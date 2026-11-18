@@ -5,6 +5,7 @@ import {
 	useRouter,
 } from "@tanstack/react-router";
 import { useState } from "react";
+import { AttachmentsProvider } from "#/components/Attachments";
 import { Breadcrumbs } from "#/components/Breadcrumbs";
 import { Button } from "#/components/Button";
 import { useConfirm } from "#/components/ConfirmDialog";
@@ -85,6 +86,7 @@ function ProtocolPage() {
 		version,
 		editor: loadedEditor,
 		userId,
+		attachments,
 	} = Route.useLoaderData();
 	const router = useRouter();
 	const [error, setError] = useState<string | null>(null);
@@ -253,260 +255,275 @@ function ProtocolPage() {
 	);
 
 	return (
-		<MentionNames.Provider value={mentionable}>
-			{/* # in notes offers the board's other protocols; shown as links here. */}
-			<ProtocolRefs.Provider value={{ refs, links, boardId: board.id }}>
-				<Main>
-					<Breadcrumbs>
-						<Link to="/">Mina föreningar</Link>
-						<Link to="/styrelser/$boardId" params={{ boardId: board.id }}>
-							{board.name}
-						</Link>
-					</Breadcrumbs>
-					<PageHeader title={`Protokoll: ${protocol.title}`}>
-						{/* The protocol sits next to its agenda, not under it. */}
-						{protocol.agendaId && (
-							<p>
-								<Link
-									to="/styrelser/$boardId/dagordningar/$agendaId"
-									params={{ boardId: board.id, agendaId: protocol.agendaId }}
-								>
-									Se dagordningen
-								</Link>
-							</p>
-						)}
-					</PageHeader>
-
-					{!closed && !editable ? (
-						<>
-							<InfoBox aria-label="Pågående möte">
+		// Attachments change with the rest: during the meeting by the one
+		// writing it, after it only while editing the protocol.
+		<AttachmentsProvider
+			attachments={attachments}
+			base="/api/bilagor"
+			edit={editable ? { kind: "protocol", editSession: session } : undefined}
+		>
+			<MentionNames.Provider value={mentionable}>
+				{/* # in notes offers the board's other protocols; shown as links here. */}
+				<ProtocolRefs.Provider value={{ refs, links, boardId: board.id }}>
+					<Main>
+						<Breadcrumbs>
+							<Link to="/">Mina föreningar</Link>
+							<Link to="/styrelser/$boardId" params={{ boardId: board.id }}>
+								{board.name}
+							</Link>
+						</Breadcrumbs>
+						<PageHeader title={`Protokoll: ${protocol.title}`}>
+							{/* The protocol sits next to its agenda, not under it. */}
+							{protocol.agendaId && (
 								<p>
-									{watch.lostTo ? (
-										<strong>{watch.lostTo} tog över protokollet.</strong>
-									) : (
-										<strong>
-											{watch.editor?.name ?? "Någon annan"} skriver protokollet.
-										</strong>
-									)}{" "}
-									Du ser mötet medan det pågår, och sidan uppdateras av sig
-									själv.
+									<Link
+										to="/styrelser/$boardId/dagordningar/$agendaId"
+										params={{ boardId: board.id, agendaId: protocol.agendaId }}
+									>
+										Se dagordningen
+									</Link>
 								</p>
+							)}
+						</PageHeader>
+
+						{!closed && !editable ? (
+							<>
+								<InfoBox aria-label="Pågående möte">
+									<p>
+										{watch.lostTo ? (
+											<strong>{watch.lostTo} tog över protokollet.</strong>
+										) : (
+											<strong>
+												{watch.editor?.name ?? "Någon annan"} skriver
+												protokollet.
+											</strong>
+										)}{" "}
+										Du ser mötet medan det pågår, och sidan uppdateras av sig
+										själv.
+									</p>
+									<p>
+										<Button
+											icon="edit"
+											type="button"
+											onClick={async () => {
+												if (
+													await confirm({
+														title: "Ta över protokollet?",
+														message: `${watch.editor?.name ?? "Den som skriver nu"} kan då inte längre ändra i det, men kan ta tillbaka det.`,
+														confirmLabel: "Ta över",
+														confirmIcon: "edit",
+													})
+												)
+													await watch.takeOver();
+											}}
+										>
+											Ta över protokollet
+										</Button>
+									</p>
+								</InfoBox>
+								<ProtocolDisplay
+									protocol={protocol}
+									items={items}
+									edits={edits}
+								/>
+								{referred}
+								{share}
+							</>
+						) : !editable ? (
+							<>
 								<p>
 									<Button
 										icon="edit"
 										type="button"
 										onClick={async () => {
+											const warning = review && editWarning(review);
 											if (
-												await confirm({
-													title: "Ta över protokollet?",
-													message: `${watch.editor?.name ?? "Den som skriver nu"} kan då inte längre ändra i det, men kan ta tillbaka det.`,
-													confirmLabel: "Ta över",
+												!warning ||
+												(await confirm({
+													title: "Redigera protokollet?",
+													message: warning,
+													confirmLabel: "Redigera ändå",
 													confirmIcon: "edit",
-												})
+												}))
 											)
-												await watch.takeOver();
+												setEditSession(crypto.randomUUID());
 										}}
 									>
-										Ta över protokollet
+										Redigera protokollet
 									</Button>
 								</p>
-							</InfoBox>
-							<ProtocolDisplay
-								protocol={protocol}
-								items={items}
-								edits={edits}
-							/>
-							{referred}
-							{share}
-						</>
-					) : !editable ? (
-						<>
-							<p>
-								<Button
-									icon="edit"
-									type="button"
-									onClick={async () => {
-										const warning = review && editWarning(review);
-										if (
-											!warning ||
-											(await confirm({
-												title: "Redigera protokollet?",
-												message: warning,
-												confirmLabel: "Redigera ändå",
-												confirmIcon: "edit",
-											}))
+								<ProtocolDisplay
+									protocol={protocol}
+									items={items}
+									edits={edits}
+								/>
+								{referred}
+								<ErrorMessage error={error} />
+								<ReviewSection
+									items={items}
+									reviewerCandidates={reviewerCandidates}
+									review={review}
+									justering={justering}
+									onSend={() =>
+										run(() =>
+											sendForReview({ data: { protocolId: protocol.id } }),
 										)
-											setEditSession(crypto.randomUUID());
-									}}
-								>
-									Redigera protokollet
-								</Button>
-							</p>
-							<ProtocolDisplay
-								protocol={protocol}
-								items={items}
-								edits={edits}
-							/>
-							{referred}
-							<ErrorMessage error={error} />
-							<ReviewSection
-								items={items}
-								reviewerCandidates={reviewerCandidates}
-								review={review}
-								justering={justering}
-								onSend={() =>
-									run(() =>
-										sendForReview({ data: { protocolId: protocol.id } }),
-									)
-								}
-							/>
-							<DownloadSection base={`/api/protokoll/${protocol.id}`} />
-							{share}
-						</>
-					) : (
-						<>
-							{closed && (
-								<InfoBox aria-label="Stängt protokoll">
-									<p>
-										<strong>Du redigerar ett stängt protokoll.</strong> Att det
-										har redigerats, av vem och när, noteras i slutet av
-										protokollet.
-									</p>
-									{doneEditing}
-								</InfoBox>
-							)}
+									}
+								/>
+								<DownloadSection
+									base={`/api/protokoll/${protocol.id}`}
+									attachments={attachments.length}
+								/>
+								{share}
+							</>
+						) : (
+							<>
+								{closed && (
+									<InfoBox aria-label="Stängt protokoll">
+										<p>
+											<strong>Du redigerar ett stängt protokoll.</strong> Att
+											det har redigerats, av vem och när, noteras i slutet av
+											protokollet.
+										</p>
+										{doneEditing}
+									</InfoBox>
+								)}
 
-							{editingDetails ? (
-								<>
-									<MeetingForm
-										initial={protocol}
-										onSave={async (details) => {
-											await updateProtocol({
-												data: {
-													protocolId: protocol.id,
-													editSession: session,
-													...details,
-												},
-											});
-											await router.invalidate();
-											setEditingDetails(false);
+								{editingDetails ? (
+									<>
+										<MeetingForm
+											initial={protocol}
+											onSave={async (details) => {
+												await updateProtocol({
+													data: {
+														protocolId: protocol.id,
+														editSession: session,
+														...details,
+													},
+												});
+												await router.invalidate();
+												setEditingDetails(false);
+											}}
+										/>
+										<p>
+											<Button
+												icon="x"
+												type="button"
+												onClick={() => setEditingDetails(false)}
+											>
+												Avbryt
+											</Button>
+										</p>
+									</>
+								) : (
+									<Section id="meeting" title="Mötet">
+										<MeetingDetails
+											meetingAt={protocol.meetingAt}
+											location={protocol.location}
+										/>
+										<p>
+											<Button
+												icon="edit-2"
+												type="button"
+												onClick={() => setEditingDetails(true)}
+											>
+												Ändra mötesuppgifter
+											</Button>
+										</p>
+									</Section>
+								)}
+
+								<Section id="points" title="Dagordning">
+									<ErrorMessage error={error} />
+									<MeetingPointList
+										items={items}
+										invited={invited}
+										choosable={choosable}
+										present={present}
+										reviewerCandidates={reviewerCandidates}
+										onSave={saveValue}
+										onCarryOver={saveCarryOver}
+										onDelete={async (item) => {
+											if (
+												await confirm({
+													title: `Ta bort punkten ”${item.title}”?`,
+													confirmLabel: "Ta bort",
+													confirmIcon: "trash-2",
+												})
+											)
+												run(() =>
+													deleteItem({
+														data: {
+															kind: "protocol",
+															itemId: item.id,
+															editSession: session,
+														},
+													}),
+												);
 										}}
 									/>
-									<p>
-										<Button
-											icon="x"
-											type="button"
-											onClick={() => setEditingDetails(false)}
-										>
-											Avbryt
+
+									<h3 className="text-2xl">Lägg till mötespunkt</h3>
+									<Form key={addFormKey} onSubmit={onAdd}>
+										<PointFields idPrefix="new-item" />
+										<Button icon="plus" type="submit">
+											Lägg till
 										</Button>
-									</p>
-								</>
-							) : (
-								<Section id="meeting" title="Mötet">
-									<MeetingDetails
-										meetingAt={protocol.meetingAt}
-										location={protocol.location}
-									/>
-									<p>
-										<Button
-											icon="edit-2"
-											type="button"
-											onClick={() => setEditingDetails(true)}
-										>
-											Ändra mötesuppgifter
-										</Button>
-									</p>
+									</Form>
 								</Section>
-							)}
 
-							<Section id="points" title="Dagordning">
-								<ErrorMessage error={error} />
-								<MeetingPointList
-									items={items}
-									invited={invited}
-									choosable={choosable}
-									present={present}
-									reviewerCandidates={reviewerCandidates}
-									onSave={saveValue}
-									onCarryOver={saveCarryOver}
-									onDelete={async (item) => {
-										if (
-											await confirm({
-												title: `Ta bort punkten ”${item.title}”?`,
-												confirmLabel: "Ta bort",
-												confirmIcon: "trash-2",
-											})
-										)
-											run(() =>
-												deleteItem({
-													data: {
-														kind: "protocol",
-														itemId: item.id,
-														editSession: session,
-													},
-												}),
-											);
-									}}
-								/>
-
-								<h3 className="text-2xl">Lägg till mötespunkt</h3>
-								<Form key={addFormKey} onSubmit={onAdd}>
-									<PointFields idPrefix="new-item" />
-									<Button icon="plus" type="submit">
-										Lägg till
-									</Button>
-								</Form>
-							</Section>
-
-							{!closed && !hasClosePoint && (
-								<>
-									<p>
-										<Button
-											icon="lock"
-											type="button"
-											onClick={() =>
-												unfinished.length > 0
-													? closeBlocked.show()
-													: onCloseProtocol()
-											}
-										>
-											Stäng protokollet
-										</Button>
-									</p>
-									{closeBlocked.shown && unfinished.length > 0 && (
-										<p
-											ref={closeBlocked.ref}
-											tabIndex={-1}
-											className="font-medium outline-none"
-										>
-											{unfinishedHint(unfinished)}
+								{!closed && !hasClosePoint && (
+									<>
+										<p>
+											<Button
+												icon="lock"
+												type="button"
+												onClick={() =>
+													unfinished.length > 0
+														? closeBlocked.show()
+														: onCloseProtocol()
+												}
+											>
+												Stäng protokollet
+											</Button>
 										</p>
-									)}
-								</>
-							)}
+										{closeBlocked.shown && unfinished.length > 0 && (
+											<p
+												ref={closeBlocked.ref}
+												tabIndex={-1}
+												className="font-medium outline-none"
+											>
+												{unfinishedHint(unfinished)}
+											</p>
+										)}
+									</>
+								)}
 
-							{referred}
-							{closed && (
-								<>
-									<ProtocolHistory closedAt={protocol.closedAt} edits={edits} />
-									{doneEditing}
-								</>
-							)}
+								{referred}
+								{closed && (
+									<>
+										<ProtocolHistory
+											closedAt={protocol.closedAt}
+											edits={edits}
+										/>
+										{doneEditing}
+									</>
+								)}
 
-							{share}
+								{share}
 
-							<Section id="danger" title="Ta bort">
-								<p>Dagordningen påverkas inte.</p>
-								<Button icon="trash-2" type="button" onClick={onDelete}>
-									Ta bort protokollet
-								</Button>
-							</Section>
-						</>
-					)}
-				</Main>
-			</ProtocolRefs.Provider>
-		</MentionNames.Provider>
+								<Section id="danger" title="Ta bort">
+									<p>Dagordningen påverkas inte.</p>
+									<Button icon="trash-2" type="button" onClick={onDelete}>
+										Ta bort protokollet
+									</Button>
+								</Section>
+							</>
+						)}
+					</Main>
+				</ProtocolRefs.Provider>
+			</MentionNames.Provider>
+		</AttachmentsProvider>
 	);
 }
 

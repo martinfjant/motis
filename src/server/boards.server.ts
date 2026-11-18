@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { Client } from "@libsql/client";
+import type { Client, Row } from "@libsql/client";
 import { DEFAULT_PATTERN, isPattern } from "../patterns";
 import { defaultTemplateStatements } from "./default-template";
 
@@ -10,6 +10,9 @@ export type Board = {
 	role: Role;
 	/** Background pattern id, see src/patterns.ts. */
 	background: string;
+	/** The board's own logo and banner picture, as addresses, if chosen. */
+	logo: string | null;
+	banner: string | null;
 	/** The current user's title on this board, e.g. "Kassör" ("" if none). */
 	title: string;
 };
@@ -55,12 +58,43 @@ export async function createBoard(
 		],
 		"write",
 	);
-	return { id, name, role: "admin", background: DEFAULT_PATTERN, title: "" };
+	return {
+		id,
+		name,
+		role: "admin",
+		background: DEFAULT_PATTERN,
+		logo: null,
+		banner: null,
+		title: "",
+	};
+}
+
+/**
+ * How a board looks: its pattern, logo and banner, from a row with
+ * background, logo_key and banner_key (or board_-prefixed ones).
+ */
+export function boardLook(r: Row, prefix = "") {
+	const key = (name: string) => r[`${prefix}${name}`];
+	return {
+		background: String(key("background")),
+		logo: imageUrl(key("logo_key")),
+		banner: imageUrl(key("banner_key")),
+	};
+}
+
+/**
+ * Where a stored picture ("bilder/<sha256>.<format>") is served:
+ * /api/bilder/<format>/<sha256>, see that route.
+ */
+export function imageUrl(key: unknown): string | null {
+	const m =
+		typeof key === "string" && /^bilder\/([0-9a-f]{64})\.(webp|png)$/.exec(key);
+	return m ? `/api/bilder/${m[2]}/${m[1]}` : null;
 }
 
 export async function listBoards(db: Client, userId: string): Promise<Board[]> {
 	const res = await db.execute({
-		sql: `SELECT b.id, b.name, b.background, m.role, m.title FROM boards b
+		sql: `SELECT b.id, b.name, b.background, b.logo_key, b.banner_key, m.role, m.title FROM boards b
           JOIN board_memberships m ON m.board_id = b.id
           WHERE m.user_id = ? ORDER BY b.name`,
 		args: [userId],
@@ -69,7 +103,7 @@ export async function listBoards(db: Client, userId: string): Promise<Board[]> {
 		id: String(r.id),
 		name: String(r.name),
 		role: r.role as Role,
-		background: String(r.background),
+		...boardLook(r),
 		title: String(r.title),
 	}));
 }
@@ -81,7 +115,7 @@ export async function getBoard(
 	boardId: string,
 ): Promise<Board | null> {
 	const res = await db.execute({
-		sql: `SELECT b.id, b.name, b.background, m.role, m.title FROM boards b
+		sql: `SELECT b.id, b.name, b.background, b.logo_key, b.banner_key, m.role, m.title FROM boards b
           JOIN board_memberships m ON m.board_id = b.id
           WHERE b.id = ? AND m.user_id = ?`,
 		args: [boardId, userId],
@@ -92,7 +126,7 @@ export async function getBoard(
 				id: String(r.id),
 				name: String(r.name),
 				role: r.role as Role,
-				background: String(r.background),
+				...boardLook(r),
 				title: String(r.title),
 			}
 		: null;
