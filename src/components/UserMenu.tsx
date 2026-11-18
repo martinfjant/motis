@@ -53,6 +53,17 @@ export function UserMenu({
 							Mina föreningar
 						</LinkButton>
 					</li>
+					{/* The header's search field is hidden on small screens. */}
+					<li className="md:hidden">
+						<LinkButton
+							icon="search"
+							to="/sok"
+							search={{ q: "" }}
+							className={MENU_BUTTON}
+						>
+							Sök
+						</LinkButton>
+					</li>
 					<li>
 						<LinkButton icon="user" to="/konto" className={MENU_BUTTON}>
 							Mitt konto

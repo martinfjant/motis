@@ -70,8 +70,16 @@ export async function protocolFingerprint(
 		location: p?.location,
 		// The ja/nej wording only when set, so fingerprints of protocols sent
 		// before it existed stay the same.
+		// Links (what a # reference points to) aren't what anyone reads.
 		items: items.map(
-			({ title, description, type, value, yesText, noText }) => ({
+			({
+				title,
+				description,
+				type,
+				value: { links: _, ...value },
+				yesText,
+				noText,
+			}) => ({
 				title,
 				description,
 				type,

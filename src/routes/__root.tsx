@@ -4,11 +4,13 @@ import {
 	Link,
 	Outlet,
 	Scripts,
+	useLocation,
 	useMatches,
 	useRouter,
 } from "@tanstack/react-router";
 import { ConfirmProvider } from "#/components/ConfirmDialog";
 import { NotFound } from "#/components/NotFound";
+import { SearchField } from "#/components/SearchField";
 import { UserMenu } from "#/components/UserMenu";
 import { DEFAULT_PATTERN } from "#/patterns";
 import { getCurrentUser, logOut } from "#/server/auth.functions";
@@ -37,6 +39,13 @@ export const Route = createRootRoute({
 function SiteHeader() {
 	const { user } = Route.useRouteContext();
 	const router = useRouter();
+	// On the results page the field shows what was searched for.
+	const searched = useLocation({
+		select: (l) =>
+			l.pathname === "/sok"
+				? String((l.search as { q?: unknown }).q ?? "")
+				: "",
+	});
 
 	async function handleLogOut(e: React.FormEvent) {
 		e.preventDefault();
@@ -59,6 +68,14 @@ function SiteHeader() {
 					Mötis
 				</Link>
 			</div>
+			{/* In the middle on wider screens; on phones it's under "Sök" in the menu. */}
+			{user && (
+				<SearchField
+					key={searched}
+					defaultValue={searched}
+					className="mx-3 hidden w-full max-w-md content-center sm:my-5 md:block"
+				/>
+			)}
 			<nav
 				aria-label="Huvudmeny"
 				className="m-3 flex rounded-xl border sm:m-5 border-glass-line bg-glass shadow-2xs backdrop-blur-md [--color-link:var(--color-link-on-glass)]"

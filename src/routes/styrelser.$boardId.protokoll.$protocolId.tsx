@@ -79,6 +79,8 @@ function ProtocolPage() {
 		review,
 		justering,
 		refs,
+		links,
+		referredFrom,
 	} = Route.useLoaderData();
 	const router = useRouter();
 	const [error, setError] = useState<string | null>(null);
@@ -211,10 +213,30 @@ function ProtocolPage() {
 		</p>
 	);
 
+	// Other protocols that refer to this one with #.
+	const referred = referredFrom.length > 0 && (
+		<Section id="referred" title="Hänvisningar">
+			<p>Protokoll som hänvisar till det här mötet:</p>
+			<ul className="list-disc pl-6">
+				{referredFrom.map((p) => (
+					<li key={p.id}>
+						<Link
+							to="/styrelser/$boardId/protokoll/$protocolId"
+							params={{ boardId: board.id, protocolId: p.id }}
+						>
+							{p.title}
+						</Link>{" "}
+						<span className="whitespace-nowrap">{p.date}</span>
+					</li>
+				))}
+			</ul>
+		</Section>
+	);
+
 	return (
 		<MentionNames.Provider value={mentionable}>
 			{/* # in notes offers the board's other protocols; shown as links here. */}
-			<ProtocolRefs.Provider value={{ refs, boardId: board.id }}>
+			<ProtocolRefs.Provider value={{ refs, links, boardId: board.id }}>
 				<Main>
 					<Breadcrumbs>
 						<Link to="/">Mina föreningar</Link>
@@ -264,6 +286,7 @@ function ProtocolPage() {
 								items={items}
 								edits={edits}
 							/>
+							{referred}
 							<ErrorMessage error={error} />
 							<ReviewSection
 								items={items}
@@ -402,6 +425,7 @@ function ProtocolPage() {
 								</>
 							)}
 
+							{referred}
 							{closed && (
 								<>
 									<ProtocolHistory closedAt={protocol.closedAt} edits={edits} />

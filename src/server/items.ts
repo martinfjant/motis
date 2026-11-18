@@ -16,7 +16,7 @@ export type ItemType = (typeof ITEM_TYPES)[number];
 export const ITEM_TYPE_LABELS: Record<ItemType, string> = {
 	open: "Mötets öppnande (med tidpunkt)",
 	close: "Mötets avslutande (med tidpunkt)",
-	toggle: "Ja/nej (t.ex. mötet öppnat)",
+	toggle: "Ja/nej (t.ex. godkännande av dagordningen)",
 	attendance: "Närvaro",
 	person: "Val av person",
 	decision: "Beslut",
@@ -154,6 +154,12 @@ export type ProtocolValue = {
 	tabled?: boolean;
 	/** Dealt with, but to be followed up at the next meeting. */
 	followUp?: boolean;
+	/**
+	 * The other protocols the notes and decision refer to with #, as
+	 * { "#Styrelsemöte 12-11-2026": protocol id }; set by the server when
+	 * the point is saved (see protocol-refs.ts).
+	 */
+	links?: Record<string, string>;
 };
 
 /**

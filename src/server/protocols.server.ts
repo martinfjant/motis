@@ -6,7 +6,12 @@ import {
 	START_ANY_DAY,
 	stockholmStamp,
 } from "../meeting-time";
-import type { ProtocolRef } from "../protocol-refs";
+import {
+	findLinks,
+	linksFor,
+	type ProtocolRef,
+	type RefLink,
+} from "../protocol-refs";
 import {
 	type AgendaDetails,
 	cleanMeetingAt,
@@ -142,6 +147,52 @@ export async function listProtocolItems(
 	}));
 }
 
+/**
+ * The board's other protocols that have a meeting date, newest first, as
+ * they can be referred to with #. The caller has checked membership.
+ */
+async function otherProtocols(
+	db: Client,
+	protocolId: string,
+): Promise<ProtocolRef[]> {
+	const res = await db.execute({
+		sql: `SELECT id, title, meeting_at FROM protocols
+          WHERE board_id = (SELECT board_id FROM protocols WHERE id = ?)
+            AND id != ? AND meeting_at != ''
+          ORDER BY meeting_at DESC, created_at DESC`,
+		args: [protocolId, protocolId],
+	});
+	return res.rows.map((r) => ({
+		id: String(r.id),
+		title: String(r.title),
+		date: formatMeetingAt(String(r.meeting_at)).slice(0, 10),
+	}));
+}
+
+/** Which of the board's other protocols link to this one. */
+async function referringProtocols(
+	db: Client,
+	protocolId: string,
+	others: ProtocolRef[],
+): Promise<ProtocolRef[]> {
+	if (others.length === 0) return [];
+	// Narrowed by text first; the links themselves decide.
+	const res = await db.execute({
+		sql: `SELECT protocol_id, value FROM protocol_items
+          WHERE protocol_id IN (${others.map(() => "?").join(",")})
+            AND instr(value, ?) > 0`,
+		args: [...others.map((o) => o.id), `"${protocolId}"`],
+	});
+	const referring = new Set(
+		res.rows
+			.filter((r) =>
+				Object.values(parseValue(r.value).links ?? {}).includes(protocolId),
+			)
+			.map((r) => String(r.protocol_id)),
+	);
+	return others.filter((o) => referring.has(o.id));
+}
+
 export async function listProtocols(
 	db: Client,
 	userId: string,
@@ -241,7 +292,9 @@ export async function getProtocol(
 		listUnregistered(db, userId, board.id),
 	]);
 	const edits = await listEdits(db, protocolId);
-	const others = await listProtocols(db, userId, board.id);
+	const items = await listProtocolItems(db, protocolId);
+	const refs = await otherProtocols(db, protocolId);
+	const exists = new Set(refs.map((r) => r.id));
 	return {
 		board,
 		protocol: toProtocol(row),
@@ -249,16 +302,21 @@ export async function getProtocol(
 		 * The board's other protocols with a meeting date, newest first, to
 		 * refer to with # in notes and decisions (see protocol-refs.ts).
 		 */
-		refs: others
-			.filter((p) => p.id !== protocolId && p.meetingAt)
-			.map(
-				(p): ProtocolRef => ({
-					id: p.id,
-					title: p.title,
-					date: formatMeetingAt(p.meetingAt).slice(0, 10),
-				}),
+		refs,
+		/**
+		 * The references in this protocol's text and what they link to: as
+		 * recorded when saved (even if the protocol was renamed since), then
+		 * the board's protocols as named now. Deleted protocols aren't linked.
+		 */
+		links: [
+			...items.flatMap((i) =>
+				Object.entries(i.value.links ?? {}).map(([text, id]) => ({ text, id })),
 			),
-		items: await listProtocolItems(db, protocolId),
+			...linksFor(refs),
+		].filter((l): l is RefLink => exists.has(l.id)),
+		/** Protocols that refer to this one, newest first. */
+		referredFrom: await referringProtocols(db, protocolId, refs),
+		items,
 		/** Changes made after the protocol was closed, oldest first. */
 		edits,
 		/**
@@ -473,6 +531,16 @@ export async function saveItemValue(
 	};
 	const missing = missingValue(item.type, value);
 	if (missing) throw new BoardError(missing);
+	// Record which protocols the text refers to with #.
+	const texts = [value.notes, value.decision].filter(
+		(t): t is string => typeof t === "string",
+	);
+	const links = findLinks(
+		texts,
+		await otherProtocols(db, parentId),
+		stored.links,
+	);
+	if (Object.keys(links).length > 0) value.links = links;
 	// Only those at the meeting can reserve themselves against a decision.
 	if (value.reservations?.length) {
 		const present = presentNames(await listProtocolItems(db, parentId));
@@ -628,7 +696,8 @@ export async function listEdits(
 }
 
 /** A recorded value without what only the board should see: who is who. */
-export function publicValue(v: ProtocolValue): ProtocolValue {
+export function publicValue({ links: _, ...v }: ProtocolValue): ProtocolValue {
+	// Links point to other protocols, which the public page can't show.
 	return v.reviewers
 		? { ...v, reviewers: v.reviewers.map(({ name }) => ({ name })) }
 		: v;

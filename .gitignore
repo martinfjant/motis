@@ -19,3 +19,8 @@ local.db*
 # Editor swap files (Vim)
 *.swp
 *.swo
+
+# End-to-end tests: their database and reports
+e2e/.data
+test-results
+playwright-report

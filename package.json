@@ -15,7 +15,8 @@
     "lint": "biome lint",
     "check": "biome check",
     "test": "vitest run",
-    "icons": "node scripts/generate-icons.mjs && biome format --write src/components/icons.gen.ts"
+    "icons": "node scripts/generate-icons.mjs && biome format --write src/components/icons.gen.ts",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@libsql/client": "^0.18.0",
@@ -30,6 +31,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.5",
+    "@playwright/test": "1.56.1",
     "@tailwindcss/vite": "^4.3.5",
     "@types/node": "^22.10.2",
     "@types/pdfmake": "0.3.3",
