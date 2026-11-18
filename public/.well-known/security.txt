@@ -1,0 +1,7 @@
+# Found a security problem in Mötis? Please tell us before telling others,
+# and we'll fix it as soon as we can. Swedish or English is fine.
+Contact: mailto:info@motis.se
+Expires: 2027-11-18T00:00:00.000Z
+Preferred-Languages: sv, en
+Canonical: https://xn--mtis-5qa.se/.well-known/security.txt
+Canonical: https://motis.se/.well-known/security.txt

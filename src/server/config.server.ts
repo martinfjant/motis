@@ -92,11 +92,16 @@ export function mailConfig(): MailConfig | null {
 }
 
 /**
- * Whether to trust X-Forwarded-For for the client's IP address (login rate
- * limiting). Only when a proxy in front of the app always sets it, or
- * clients could pretend to be anyone.
+ * The request header holding the visitor's IP address (for limiting login
+ * attempts per address), set by the proxy in front of the app. Only a
+ * header the proxy always sets itself, overwriting whatever the visitor
+ * sent: anything else can be faked. On Bunny, an edge rule sets it (see
+ * .env.example). Without it the address the app sees is used: right without
+ * a proxy, but behind one that is the proxy's, so the address limit is then
+ * left out rather than shared by everyone.
  */
-export const trustProxy = env.TRUST_PROXY === "1";
+export const clientIpHeader =
+	env.CLIENT_IP_HEADER?.trim().toLowerCase() || null;
 
 /**
  * Who may create an account while the service isn't open to everyone:

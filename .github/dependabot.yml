@@ -1,0 +1,30 @@
+# Dependabot opens a pull request when a dependency has an update, so
+# security fixes don't go unnoticed. Each pull request is tested like any
+# other (unit and end-to-end tests) before it can be merged. The Node image
+# in the Dockerfile isn't here: its tag (22-slim) follows Node 22's latest
+# release, fetched anew by every build.
+version: 2
+updates:
+  # npm packages (pnpm). Small updates come together in one pull request a
+  # week; major versions and security fixes come one by one.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # Its version must match the Playwright image the e2e job runs in
+      # (.github/workflows/image.yml), so both are updated together by hand.
+      - dependency-name: "@playwright/test"
+
+  # The actions in .github/workflows, pinned to commits.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
