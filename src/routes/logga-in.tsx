@@ -6,6 +6,7 @@ import { Field, Input } from "#/components/Field";
 import { Form } from "#/components/Form";
 import { LinkButton } from "#/components/LinkButton";
 import { Main } from "#/components/Main";
+import { PasswordInput } from "#/components/PasswordInput";
 import { Section } from "#/components/Section";
 import { logIn } from "#/server/auth.functions";
 
@@ -50,9 +51,8 @@ function LogIn() {
 						<Input name="email" type="email" autoComplete="email" required />
 					</Field>
 					<Field id="password" label="Lösenord">
-						<Input
+						<PasswordInput
 							name="password"
-							type="password"
 							autoComplete="current-password"
 							required
 						/>

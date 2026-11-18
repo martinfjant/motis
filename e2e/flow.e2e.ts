@@ -61,9 +61,24 @@ test("signing up and setting up the board", async () => {
 	if (await code.isVisible()) await code.fill("e2e-kod");
 	await page.getByLabel("Namn").fill("Test Testsson");
 	await page.getByLabel("E-post").fill("test@example.se");
-	await page.getByLabel("Välj ett lösenord för ditt konto").fill("hemligt123");
+	const password = page.getByLabel("Välj ett lösenord för ditt konto");
+	await password.fill("hemligt123");
+	// "Visa lösenord" shows what was typed.
+	const show = password.locator("xpath=following-sibling::button");
+	await expect(show).toHaveAccessibleName("Visa lösenord");
+	await show.click();
+	await expect(password).toHaveAttribute("type", "text");
+	// The browser holds the form back while the two differ.
+	await page.getByLabel("Skriv lösenordet igen").fill("hemligt12");
+	await page.getByRole("button", { name: "Skapa konto" }).click();
+	await expect(page.getByLabel("Skriv lösenordet igen")).toHaveJSProperty(
+		"validationMessage",
+		"Lösenorden är inte likadana.",
+	);
+	await page.getByLabel("Skriv lösenordet igen").fill("hemligt123");
 	await page.getByRole("button", { name: "Skapa konto" }).click();
 
+	await page.getByRole("button", { name: "Ny styrelse" }).click();
 	await page.getByLabel("Föreningens namn").fill("BRF Provhuset");
 	await page.getByRole("button", { name: "Skapa styrelse" }).click();
 	await expect(
@@ -297,6 +312,56 @@ test("unsaved notes come back after a reload", async () => {
 		.getByRole("button", { name: "Släng utkastet" })
 		.click();
 	await expect(point("Driftsfrågor").getByLabel("Anteckningar")).toHaveValue("");
+});
+
+test("one tab writes the ongoing meeting, another follows and takes over", async ({
+	browser,
+}) => {
+	await open(secondUrl);
+	// Someone else on the board (here the same account, on another device).
+	const otherDevice = await browser.newContext({
+		storageState: await page.context().storageState(),
+	});
+	const other = await otherDevice.newPage();
+	await other.goto(secondUrl);
+	const following = other.getByRole("complementary", {
+		name: "Pågående möte",
+	});
+	await expect(following).toContainText("Test Testsson skriver protokollet.");
+	await expect(other.getByLabel("Anteckningar")).toHaveCount(0);
+
+	// What is written shows up there without reloading.
+	const notes = point("Driftsfrågor").getByLabel("Anteckningar");
+	await notes.fill("Hissen fungerar igen.");
+	await point("Driftsfrågor").getByRole("button", { name: "Klar" }).click();
+	await done("Driftsfrågor");
+	await expect(other.getByText("Hissen fungerar igen.")).toBeVisible();
+
+	// Taking over: the first tab follows instead, and is told why.
+	await following.getByRole("button", { name: "Ta över protokollet" }).click();
+	await other
+		.getByRole("alertdialog", { name: "Ta över protokollet?" })
+		.getByRole("button", { name: "Ta över" })
+		.click();
+	await expect(following).toHaveCount(0);
+	await expect(
+		other.getByRole("group", { name: "Driftsfrågor (avklarad)" }),
+	).toBeVisible();
+	const taken = page.getByRole("complementary", { name: "Pågående möte" });
+	await expect(taken).toContainText("Test Testsson tog över protokollet.");
+	await expect(page.getByLabel("Anteckningar")).toHaveCount(0);
+
+	// And back again.
+	await taken.getByRole("button", { name: "Ta över protokollet" }).click();
+	await page
+		.getByRole("alertdialog", { name: "Ta över protokollet?" })
+		.getByRole("button", { name: "Ta över" })
+		.click();
+	await expect(taken).toHaveCount(0);
+	await expect(
+		other.getByRole("complementary", { name: "Pågående möte" }),
+	).toBeVisible();
+	await otherDevice.close();
 });
 
 test("searching the protocols", async () => {

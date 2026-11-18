@@ -289,6 +289,7 @@ function CallMeetingDialog({
 								name="meetingAt"
 								type="datetime-local"
 								defaultValue={plan.nextAt}
+								required
 							/>
 						</Field>
 						<Field id="location" label="Plats">

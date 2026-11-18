@@ -33,7 +33,11 @@ const mk = async (name: string) =>
 		})
 	).id;
 
-const details = { title: "Styrelsemöte", meetingAt: "", location: "" };
+const details = {
+	title: "Styrelsemöte",
+	meetingAt: "2026-11-20T18:00",
+	location: "",
+};
 const item = (title: string, type = "text") => ({
 	title,
 	type,
@@ -118,6 +122,13 @@ test("rejects bad input", async () => {
 	).rejects.toThrow(BoardError);
 	await expect(
 		createAgenda(db, anna, boardId, { ...details, meetingAt: "igår" }),
+	).rejects.toThrow(BoardError);
+	// A meeting without a date and time could never be started.
+	await expect(
+		createAgenda(db, anna, boardId, { ...details, meetingAt: "" }),
+	).rejects.toThrow("Ange datum och tid för mötet.");
+	await expect(
+		createAgenda(db, anna, boardId, { ...details, meetingAt: "2026-11-20" }),
 	).rejects.toThrow(BoardError);
 	await expect(
 		addItem(db, anna, "template", templateId, item("X", "bogus")),

@@ -25,12 +25,14 @@ import {
 	deleteProtocol,
 	getProtocol,
 	getPublicProtocol,
+	leaveProtocol,
 	listProtocols,
 	publicValue,
 	regenerateProtocolShareId,
 	saveItemValue,
 	setCarryOver,
 	updateProtocol,
+	watchProtocol,
 } from "./protocols.server";
 import { searchProtocols } from "./search.server";
 import { settleRemainingPoints } from "./test-helpers";
@@ -254,7 +256,7 @@ test("closing the meeting closes the protocol; later edits need a session and ar
 	expect(closed.edits).toEqual([]);
 
 	// Without an editing session nothing can change any more.
-	const details = { title: "X", meetingAt: "", location: "" };
+	const details = { title: "X", meetingAt: "2026-11-20T18:00", location: "" };
 	await expect(
 		saveItemValue(db, anna, id("Val av ordförande"), { person: "anna" }),
 	).rejects.toThrow(BoardError);
@@ -630,10 +632,15 @@ test("a meeting can only be started on its day, Swedish time", async () => {
 		).id,
 	).toBe(protocol.id);
 
+	// Agendas made before a date was required may still lack one.
 	const undated = await createAgenda(db, anna, boardId, {
 		title: "Utan datum",
-		meetingAt: "",
+		meetingAt: "2026-11-20T18:00",
 		location: "",
+	});
+	await db.execute({
+		sql: "UPDATE agendas SET meeting_at = '' WHERE id = ?",
+		args: [undated.id],
 	});
 	await expect(
 		createProtocol(db, anna, undated.id, { anyDay: false }),
@@ -757,4 +764,62 @@ test("the secretary can't be justerare, whichever is chosen first", async () => 
 	).rejects.toThrow(/justerare och kan inte/);
 	// The chair may be justerare.
 	await saveItemValue(db, anna, id("Val av ordförande"), { person: "bo" });
+});
+
+test("one tab at a time writes an ongoing meeting; the others watch", async () => {
+	const protocol = await createProtocol(db, anna, agendaId);
+	const { items } = await getProtocol(db, anna, protocol.id);
+	const ekonomi = items.find((i) => i.title === "Ekonomi")?.id ?? "";
+	const annasTab = crypto.randomUUID();
+	const bosTab = crypto.randomUUID();
+
+	// The first to open it writes it; the next one watches.
+	const first = await watchProtocol(db, anna, protocol.id, annasTab);
+	expect(first.editor).toEqual({ name: "anna", me: true });
+	const watching = await watchProtocol(db, bo, protocol.id, bosTab);
+	expect(watching.editor).toEqual({ name: "anna", me: false });
+	expect(watching.version).toBe(first.version);
+
+	// Only the writer's changes are saved, and they change the version.
+	await expect(
+		saveItemValue(db, bo, ekonomi, { notes: "Bo" }, bosTab),
+	).rejects.toThrow("anna skriver protokollet just nu");
+	// Pages without a tab id can't get round it either.
+	await expect(saveItemValue(db, bo, ekonomi, { notes: "Bo" })).rejects.toThrow(
+		BoardError,
+	);
+	await saveItemValue(db, anna, ekonomi, { notes: "Anna" }, annasTab);
+	const changed = await watchProtocol(db, bo, protocol.id, bosTab);
+	expect(changed.version).not.toBe(first.version);
+
+	// Bo takes over; Anna's tab finds out on its next check and can't save.
+	const taken = await watchProtocol(db, bo, protocol.id, bosTab, {
+		takeOver: true,
+	});
+	expect(taken.editor).toEqual({ name: "bo", me: true });
+	expect((await watchProtocol(db, anna, protocol.id, annasTab)).editor).toEqual(
+		{ name: "bo", me: false },
+	);
+	await expect(
+		saveItemValue(db, anna, ekonomi, { notes: "Anna igen" }, annasTab),
+	).rejects.toThrow(BoardError);
+	await expect(closeProtocol(db, anna, protocol.id, annasTab)).rejects.toThrow(
+		BoardError,
+	);
+
+	// A tab that stops checking in lets go after a while…
+	const later = new Date(Date.now() + 2 * 60_000);
+	expect(
+		(await watchProtocol(db, anna, protocol.id, annasTab, { now: later }))
+			.editor,
+	).toEqual({ name: "anna", me: true });
+	// …and one that leaves the page lets go at once.
+	await leaveProtocol(db, anna, protocol.id, annasTab);
+	const free = await watchProtocol(db, bo, protocol.id, bosTab, { now: later });
+	expect(free.editor).toEqual({ name: "bo", me: true });
+
+	// Only board members may watch.
+	await expect(
+		watchProtocol(db, cia, protocol.id, crypto.randomUUID()),
+	).rejects.toThrow(BoardError);
 });

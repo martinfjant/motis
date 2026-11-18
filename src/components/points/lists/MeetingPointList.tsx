@@ -80,7 +80,7 @@ export function MeetingPointList({
 
 /**
  * A point's number, in the margin level with its title: in a teal circle for
- * the current point, muted like the rest of a done point.
+ * the current point, muted like the rest of a done or tabled point.
  */
 function PointNumber({
 	n,
@@ -101,7 +101,7 @@ function PointNumber({
 					{n}
 				</span>
 			) : (
-				<span className={state === "done" ? "text-muted" : undefined}>
+				<span className={state === "open" ? undefined : "text-muted"}>
 					{n}.
 				</span>
 			)}

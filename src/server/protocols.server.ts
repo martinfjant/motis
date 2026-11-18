@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import type { Client, Row } from "@libsql/client";
 import {
 	cannotStart,
@@ -14,12 +14,12 @@ import {
 } from "../protocol-refs";
 import {
 	type AgendaDetails,
-	cleanMeetingAt,
 	cleanNames,
 	configJson,
 	listItems,
 	newShareId,
 	requireItem,
+	requireMeetingAt,
 	requireParent,
 	requireTitle,
 } from "./agendas.server";
@@ -50,7 +50,12 @@ import {
 	unfinishedMessage,
 	unfinishedPoints,
 } from "./items";
-import { guardProtocolEdit } from "./protocol-edits.server";
+import {
+	activeEditor,
+	guardProtocolEdit,
+	holdProtocol,
+	releaseProtocol,
+} from "./protocol-edits.server";
 
 export type Protocol = {
 	id: string;
@@ -428,7 +433,7 @@ export async function updateProtocol(
 		sql: "UPDATE protocols SET title = ?, meeting_at = ?, location = ? WHERE id = ?",
 		args: [
 			requireTitle(input.title, "Ange en rubrik för mötet."),
-			cleanMeetingAt(input.meetingAt),
+			requireMeetingAt(input.meetingAt),
 			input.location.trim(),
 			protocolId,
 		],
@@ -622,11 +627,93 @@ export async function closeProtocol(
 	db: Client,
 	userId: string,
 	protocolId: string,
+	editSession?: string,
 ) {
 	await requireParent(db, userId, "protocol", protocolId);
-	if (!(await isClosed(db, protocolId)))
+	if (!(await isClosed(db, protocolId))) {
+		await guardProtocolEdit(db, userId, protocolId, editSession);
 		await requireAllDealtWith(db, protocolId);
+	}
 	await markClosed(db, protocolId);
+}
+
+// ---------- Following an ongoing meeting ----------
+
+/**
+ * A fingerprint of everything shown about a protocol: it changes whenever
+ * anything in it does, so a page can tell it is out of date.
+ */
+export async function protocolVersion(db: Client, protocolId: string) {
+	const results = await db.batch(
+		[
+			{
+				sql: "SELECT title, meeting_at, location, closed_at, share_id FROM protocols WHERE id = ?",
+				args: [protocolId],
+			},
+			{
+				sql: `SELECT id, position, title, type, description, config, value
+              FROM protocol_items WHERE protocol_id = ? ORDER BY position, id`,
+				args: [protocolId],
+			},
+			{
+				sql: "SELECT id, status, decided_at FROM protocol_reviews WHERE protocol_id = ? ORDER BY id",
+				args: [protocolId],
+			},
+			{
+				sql: "SELECT id, edited_at FROM protocol_edits WHERE protocol_id = ? ORDER BY id",
+				args: [protocolId],
+			},
+		],
+		"read",
+	);
+	const hash = createHash("sha256");
+	for (const r of results)
+		hash.update(
+			JSON.stringify(r.rows.map((row) => r.columns.map((c) => row[c]))),
+		);
+	return hash.digest("base64url");
+}
+
+/** Who is writing an open protocol, for the page (null when nobody is). */
+export async function protocolEditor(db: Client, protocolId: string) {
+	const editor = await activeEditor(db, protocolId);
+	return editor && { userId: editor.userId, name: editor.name };
+}
+
+/**
+ * What a page showing a protocol asks every few seconds: whether it has
+ * changed, and who is writing it. While the meeting is going on, the asking
+ * tab gets to write it if nobody else is (or with takeOver, even if someone
+ * is), and keeps it as long as it keeps asking.
+ */
+export async function watchProtocol(
+	db: Client,
+	userId: string,
+	protocolId: string,
+	session: string,
+	{ takeOver = false, now = new Date() } = {},
+) {
+	await requireParent(db, userId, "protocol", protocolId);
+	const holds = await holdProtocol(db, userId, protocolId, session, {
+		takeOver,
+		now,
+	});
+	const editor = await activeEditor(db, protocolId, now);
+	return {
+		version: await protocolVersion(db, protocolId),
+		editor: editor && { name: editor.name, me: holds },
+	};
+}
+
+/** The tab no longer writes the protocol (it left the page). */
+export async function leaveProtocol(
+	db: Client,
+	userId: string,
+	protocolId: string,
+	session: string,
+) {
+	await requireParent(db, userId, "protocol", protocolId);
+	await releaseProtocol(db, protocolId, session);
 }
 
 // ---------- Public sharing ----------

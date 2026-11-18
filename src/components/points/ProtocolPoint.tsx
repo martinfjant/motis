@@ -103,7 +103,7 @@ export function ProtocolPoint({
 		>
 			<legend className="text-xl font-bold">
 				{item.title}
-				{state === "done" && <DoneMark />}
+				{state !== "open" && <DoneMark state={state} />}
 			</legend>
 			{item.description && <MultilineText text={item.description} />}
 			{/* Keyed on the state, so the new content mounts and fades in. */}
@@ -129,12 +129,17 @@ export function ProtocolPoint({
 	);
 }
 
-/** A small tick after a done point's title; screen readers hear it in words. */
-function DoneMark() {
+/**
+ * A small tick after the title of a point finished for this meeting, dealt
+ * with or tabled; screen readers hear which in words.
+ */
+function DoneMark({ state }: { state: Exclude<PointState, "open"> }) {
 	return (
 		<>
 			<Icon name="check" className="ml-2 size-5" />
-			<span className="sr-only"> (avklarad)</span>
+			<span className="sr-only">
+				{state === "done" ? " (avklarad)" : " (bordlagd)"}
+			</span>
 		</>
 	);
 }

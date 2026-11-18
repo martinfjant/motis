@@ -12,6 +12,7 @@ import { Form } from "#/components/Form";
 import { Main } from "#/components/Main";
 import { Notice } from "#/components/Notice";
 import { PageHeader } from "#/components/PageHeader";
+import { PasswordInput } from "#/components/PasswordInput";
 import { Section } from "#/components/Section";
 import { TitleForm, TitleSuggestions } from "#/components/TitleForm";
 import { VerifyEmailNotice } from "#/components/VerifyEmailNotice";
@@ -141,9 +142,8 @@ function ProfileSection({ user }: { user: { name: string; email: string } }) {
 							id="currentPassword"
 							label="Nuvarande lösenord (krävs för att byta e-postadress)"
 						>
-							<Input
+							<PasswordInput
 								name="currentPassword"
-								type="password"
 								autoComplete="current-password"
 								required
 							/>
