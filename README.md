@@ -38,9 +38,10 @@ part and is loaded from `node_modules` at runtime.
 
 Environment variables, all described in [`.env.example`](.env.example). In
 production the database, `APP_URL`, `RESEND_API_KEY` and `MAIL_FROM` are
-required. `/api/health` answers
+required, and a storage zone for uploaded files. `/api/health` answers
 `200 {"ok":true}` when the settings are in place and the database answers,
-and `503` with the problems otherwise; use it as the host's health check.
+and `503` with the problems otherwise. `/api/live` answers `200` whenever
+the server is running, and checks nothing else.
 
 ## Deploying to Bunny Magic Containers
 
@@ -65,8 +66,15 @@ registry (Docker Hub, GitHub Container Registry, …).
    `BUNNY_DATABASE_URL` and `BUNNY_DATABASE_AUTH_TOKEN`.
 3. Create the app from the image, with container port 3000, `APP_URL` set to
    the site's https address, `RESEND_API_KEY`, `MAIL_FROM`, `SIGNUP_PASSWORD`
-   (without it no one can create an account), and `/api/health` as health
-   check.
+   (without it no one can create an account), and the `motis-files` storage
+   zone linked to the app (that sets `STORAGE_ZONE`, `STORAGE_ACCESS_KEY` and
+   `STORAGE_HOSTNAME`). Health checks (Container Settings > Monitoring), all
+   on port 3000:
+   - Startup: TCP. The server is listening.
+   - Readiness: HTTP GET `/api/health`. Settings, database and migrations
+     are in order, so requests can be served.
+   - Liveness: HTTP GET `/api/live`. Not `/api/health`: a restart can't fix
+     the database, so a database problem mustn't restart the app.
 4. The database is migrated when the first instance starts. Several
    instances starting at once take turns.
 

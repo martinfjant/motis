@@ -17,6 +17,7 @@ import { Route as RegistreraRouteImport } from './routes/registrera'
 import { Route as SokRouteImport } from './routes/sok'
 import { Route as UtkorgRouteImport } from './routes/utkorg'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as ApiLiveRouteImport } from './routes/api/live'
 import { Route as BekraftaTokenRouteImport } from './routes/bekrafta.$token'
 import { Route as DagordningShareIdRouteImport } from './routes/dagordning.$shareId'
 import { Route as JusteraTokenRouteImport } from './routes/justera.$token'
@@ -74,6 +75,11 @@ const UtkorgRoute = UtkorgRouteImport.update({
 const ApiHealthRoute = ApiHealthRouteImport.update({
   id: '/api/health',
   path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiLiveRoute = ApiLiveRouteImport.update({
+  id: '/api/live',
+  path: '/api/live',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BekraftaTokenRoute = BekraftaTokenRouteImport.update({
@@ -185,6 +191,7 @@ export interface FileRoutesByFullPath {
   '/sok': typeof SokRoute
   '/utkorg': typeof UtkorgRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/live': typeof ApiLiveRoute
   '/bekrafta/$token': typeof BekraftaTokenRoute
   '/dagordning/$shareId': typeof DagordningShareIdRoute
   '/justera/$token': typeof JusteraTokenRoute
@@ -213,6 +220,7 @@ export interface FileRoutesByTo {
   '/sok': typeof SokRoute
   '/utkorg': typeof UtkorgRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/live': typeof ApiLiveRoute
   '/bekrafta/$token': typeof BekraftaTokenRoute
   '/dagordning/$shareId': typeof DagordningShareIdRoute
   '/justera/$token': typeof JusteraTokenRoute
@@ -241,6 +249,7 @@ export interface FileRoutesById {
   '/sok': typeof SokRoute
   '/utkorg': typeof UtkorgRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/live': typeof ApiLiveRoute
   '/bekrafta/$token': typeof BekraftaTokenRoute
   '/dagordning/$shareId': typeof DagordningShareIdRoute
   '/justera/$token': typeof JusteraTokenRoute
@@ -271,6 +280,7 @@ export interface FileRouteTypes {
     | '/sok'
     | '/utkorg'
     | '/api/health'
+    | '/api/live'
     | '/bekrafta/$token'
     | '/dagordning/$shareId'
     | '/justera/$token'
@@ -299,6 +309,7 @@ export interface FileRouteTypes {
     | '/sok'
     | '/utkorg'
     | '/api/health'
+    | '/api/live'
     | '/bekrafta/$token'
     | '/dagordning/$shareId'
     | '/justera/$token'
@@ -326,6 +337,7 @@ export interface FileRouteTypes {
     | '/sok'
     | '/utkorg'
     | '/api/health'
+    | '/api/live'
     | '/bekrafta/$token'
     | '/dagordning/$shareId'
     | '/justera/$token'
@@ -355,6 +367,7 @@ export interface RootRouteChildren {
   SokRoute: typeof SokRoute
   UtkorgRoute: typeof UtkorgRoute
   ApiHealthRoute: typeof ApiHealthRoute
+  ApiLiveRoute: typeof ApiLiveRoute
   BekraftaTokenRoute: typeof BekraftaTokenRoute
   DagordningShareIdRoute: typeof DagordningShareIdRoute
   JusteraTokenRoute: typeof JusteraTokenRoute
@@ -426,6 +439,13 @@ declare module '@tanstack/react-router' {
       path: '/api/health'
       fullPath: '/api/health'
       preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/live': {
+      id: '/api/live'
+      path: '/api/live'
+      fullPath: '/api/live'
+      preLoaderRoute: typeof ApiLiveRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/bekrafta/$token': {
@@ -587,6 +607,7 @@ const rootRouteChildren: RootRouteChildren = {
   SokRoute: SokRoute,
   UtkorgRoute: UtkorgRoute,
   ApiHealthRoute: ApiHealthRoute,
+  ApiLiveRoute: ApiLiveRoute,
   BekraftaTokenRoute: BekraftaTokenRoute,
   DagordningShareIdRoute: DagordningShareIdRoute,
   JusteraTokenRoute: JusteraTokenRoute,
