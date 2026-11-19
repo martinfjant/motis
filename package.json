@@ -45,7 +45,7 @@
     "code-inspector-plugin": "2.0.9",
     "feather-icons": "4.29.2",
     "tailwindcss": "^4.3.5",
-    "typescript": "^6.0.2",
+    "typescript": "^7.0.2",
     "vite": "^8.0.0",
     "vitest": "^5.1.0"
   }
