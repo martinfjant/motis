@@ -1,4 +1,5 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
+import { AttachmentsProvider } from "#/components/Attachments";
 import { Main } from "#/components/Main";
 import { MeetingDetails } from "#/components/MeetingDetails";
 import { PageHeader } from "#/components/PageHeader";
@@ -41,19 +42,25 @@ export const Route = createFileRoute("/dagordning/$shareId")({
 });
 
 function PublicAgenda() {
-	const { boardName, agenda, items } = Route.useLoaderData();
+	const { boardName, agenda, items, attachments } = Route.useLoaderData();
+	const { shareId } = Route.useParams();
 	return (
-		<Main>
-			{/* Same spacing as Main, which this article sits in. */}
-			<article className="space-y-2.5">
-				<PageHeader title={`Dagordning: ${agenda.title}`} context={boardName}>
-					<MeetingDetails
-						meetingAt={agenda.meetingAt}
-						location={agenda.location}
-					/>
-				</PageHeader>
-				<AgendaPointList items={items} headingLevel={2} />
-			</article>
-		</Main>
+		<AttachmentsProvider
+			attachments={attachments}
+			base={`/api/delad-dagordning/${shareId}/bilagor`}
+		>
+			<Main>
+				{/* Same spacing as Main, which this article sits in. */}
+				<article className="space-y-2.5">
+					<PageHeader title={`Dagordning: ${agenda.title}`} context={boardName}>
+						<MeetingDetails
+							meetingAt={agenda.meetingAt}
+							location={agenda.location}
+						/>
+					</PageHeader>
+					<AgendaPointList items={items} headingLevel={2} />
+				</article>
+			</Main>
+		</AttachmentsProvider>
 	);
 }

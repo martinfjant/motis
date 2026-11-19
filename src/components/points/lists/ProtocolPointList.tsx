@@ -1,3 +1,4 @@
+import { PointAttachments } from "#/components/Attachments";
 import { MultilineText } from "#/components/MultilineText";
 import { RecordedValue } from "../RecordedValue";
 import type { RecordedItem } from "../shared/point";
@@ -16,6 +17,7 @@ export function ProtocolPointList({ items }: { items: RecordedItem[] }) {
 					<div className="">
 						{item.description && <MultilineText text={item.description} />}
 						<RecordedValue item={item} />
+						<PointAttachments itemId={item.id} />
 					</div>
 				</li>
 			))}

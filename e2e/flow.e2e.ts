@@ -1,4 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
+import { PDFDocument } from "pdf-lib";
+import sharp from "sharp";
 
 // The whole life of a protocol, as a board would go through it, in one
 // browser session: sign up, set up the board, hold a meeting, close it,
@@ -61,7 +63,13 @@ const done = (name: string) =>
 	).toBeVisible();
 
 /** Calls a meeting from the board page and starts it. */
-async function startMeeting(boardUrl: string, title: string, at: string) {
+async function startMeeting(
+	boardUrl: string,
+	title: string,
+	at: string,
+	/** Done on the agenda before the meeting starts. */
+	onAgenda?: () => Promise<void>,
+) {
 	await open(boardUrl);
 	await page.getByRole("button", { name: "Kalla till möte" }).click();
 	const dialog = page.getByRole("dialog", { name: "Kalla till möte" });
@@ -69,6 +77,10 @@ async function startMeeting(boardUrl: string, title: string, at: string) {
 	await dialog.getByLabel("Datum och tid").fill(at);
 	await dialog.getByLabel("Plats").fill("Föreningslokalen");
 	await dialog.getByRole("button", { name: "Skapa dagordning" }).click();
+	await expect(
+		page.getByRole("heading", { name: `Dagordning: ${title}` }),
+	).toBeVisible();
+	await onAgenda?.();
 	await page.getByRole("button", { name: "Starta möte" }).click();
 	await expect(
 		page.getByRole("heading", { name: `Protokoll: ${title}` }),
@@ -124,10 +136,85 @@ test("signing up and setting up the board", async () => {
 		await add.getByRole("button", { name: "Lägg till" }).click();
 		await expect(page.getByRole("rowheader", { name })).toBeVisible();
 	}
+
+	// The board's logo and a banner picture, shown on its pages.
+	for (const [label, saved, color] of [
+		["Välj logotyp", "Logotypen är sparad.", "#0f766e"],
+		["Välj bild", "Bilden är sparad.", "#7dd3fc"],
+	]) {
+		const field = page.getByLabel(label);
+		await field.setInputFiles({
+			name: "bild.png",
+			mimeType: "image/png",
+			buffer: await sharp({
+				create: { width: 600, height: 300, channels: 3, background: color },
+			})
+				.png()
+				.toBuffer(),
+		});
+		await page
+			.locator("form", { has: field })
+			.getByRole("button", { name: "Ladda upp" })
+			.click();
+		await expect(page.getByText(saved)).toBeVisible();
+	}
+	await open(boardUrl);
+	const header = page.locator("main > header").first();
+	for (const img of await header.locator("img").all())
+		expect(await img.evaluate((i: HTMLImageElement) => i.naturalWidth)).toBeGreaterThan(0);
+	await expect(header.locator("img")).toHaveCount(2);
 });
 
+/** A one-page PDF and a small picture, as attachments. */
+async function attachmentFiles() {
+	const pdf = await PDFDocument.create();
+	pdf.addPage().drawText("Budget 2027");
+	const png = await sharp({
+		create: { width: 120, height: 80, channels: 3, background: "#b45309" },
+	})
+		.png()
+		.toBuffer();
+	return [
+		{
+			name: "Budget 2027.pdf",
+			mimeType: "application/pdf",
+			buffer: Buffer.from(await pdf.save()),
+		},
+		{ name: "Taket.png", mimeType: "image/png", buffer: png },
+	];
+}
+
+/** The dialog an attachment opens in. */
+const viewer = (target: Page, title: string) =>
+	target.getByRole("dialog", { name: title });
+
 test("holding the meeting, point by point", async () => {
-	await startMeeting(boardUrl, "Styrelsemöte", "2026-11-12T18:00");
+	await startMeeting(boardUrl, "Styrelsemöte", "2026-11-12T18:00", async () => {
+		// Attachments go with the agenda: two on Ekonomi, chosen at once.
+		await page.getByRole("button", { name: "Redigera dagordningen" }).click();
+		const ekonomi = page
+			.getByRole("listitem")
+			.filter({ has: page.getByRole("group", { name: "Ekonomi" }) });
+		const chooser = page.waitForEvent("filechooser");
+		await ekonomi.getByRole("button", { name: "Lägg till bilaga" }).click();
+		await (await chooser).setFiles(await attachmentFiles());
+		await expect(ekonomi).toContainText("2 bilagor är tillagda.");
+		await expect(
+			ekonomi.getByRole("button", { name: "Bilaga 2: Taket.png", exact: true }),
+		).toBeVisible();
+		await page
+			.getByRole("button", { name: "Klar med redigeringen" })
+			.first()
+			.click();
+		// Read on the agenda without leaving it.
+		await page
+			.getByRole("button", { name: "Bilaga 1: Budget 2027.pdf", exact: true })
+			.click();
+		const dialog = viewer(page, "Bilaga 1: Budget 2027.pdf");
+		await expect(dialog.locator("iframe")).toBeVisible();
+		await dialog.getByRole("button", { name: "Stäng" }).click();
+		await expect(dialog).toBeHidden();
+	});
 	protocolUrl = page.url();
 
 	await point("Mötets öppnande")
@@ -179,10 +266,25 @@ test("holding the meeting, point by point", async () => {
 		page.getByRole("option", { name: "18000", exact: true }),
 	).toBeVisible();
 	await notes.press("Enter");
-	await notes.pressSequentially("kr per år.");
-	await expect(notes).toHaveValue("Avgifterna ger 18000 kr per år.");
+	await notes.pressSequentially("kr per år. Se #bud");
+	// The meeting's attachments came along from the agenda; # offers them.
+	await expect(
+		page.getByRole("option", { name: "Bilaga 1: Budget 2027.pdf" }),
+	).toBeVisible();
+	await notes.press("Enter");
+	await expect(notes).toHaveValue(
+		"Avgifterna ger 18000 kr per år. Se Bilaga 1 ",
+	);
 	await economy.getByRole("button", { name: "Klar" }).click();
 	await done("Ekonomi");
+	// The reference opens the attachment.
+	await point("Ekonomi (avklarad)")
+		.getByRole("button", { name: "Bilaga 1", exact: true })
+		.click();
+	await expect(
+		viewer(page, "Bilaga 1: Budget 2027.pdf").locator("iframe"),
+	).toBeVisible();
+	await page.keyboard.press("Escape");
 
 	await point("Driftsfrågor")
 		.getByLabel("Anteckningar")
@@ -286,12 +388,29 @@ test("the shared protocol and the PDF, without logging in", async ({
 	await expect(
 		visitor.getByRole("img", { name: "Signatur: Bo Berg" }),
 	).toBeVisible();
+	// The attachments open through the share link too.
+	await visitor
+		.getByRole("button", { name: "Bilaga 2: Taket.png", exact: true })
+		.click();
+	const picture = viewer(visitor, "Bilaga 2: Taket.png").getByRole("img");
+	await expect(picture).toBeVisible();
+	expect(
+		await picture.evaluate((img: HTMLImageElement) => img.naturalWidth),
+	).toBe(120);
 	await visitor.close();
 
+	// The PDF has the attachments after the protocol: the budget's page and
+	// a page for the picture.
 	const id = protocolUrl.split("/").pop();
-	const pdf = await page.request.get(`/api/protokoll/${id}/pdf`);
-	expect(pdf.status()).toBe(200);
-	expect(pdf.headers()["content-type"]).toContain("application/pdf");
+	const pages = async (path: string) => {
+		const response = await page.request.get(path);
+		expect(response.status()).toBe(200);
+		expect(response.headers()["content-type"]).toContain("application/pdf");
+		return (await PDFDocument.load(await response.body())).getPageCount();
+	};
+	expect(await pages(`/api/protokoll/${id}/pdf`)).toBe(
+		(await pages(`/api/protokoll/${id}/pdf?bilagor=nej`)) + 2,
+	);
 });
 
 test("a second meeting refers back to the first with #", async () => {

@@ -1,4 +1,5 @@
 import { type ComponentType, useRef, useState } from "react";
+import { PointAttachments } from "#/components/Attachments";
 import { Icon } from "#/components/Icon";
 import { MultilineText } from "#/components/MultilineText";
 import {
@@ -9,6 +10,7 @@ import {
 	type ProtocolValue,
 	pointState,
 	type ReviewerCandidate,
+	takesAttachments,
 } from "#/server/items";
 import { AttendanceForm } from "./attendance/AttendanceForm";
 import { DecisionForm } from "./decision/DecisionForm";
@@ -106,6 +108,7 @@ export function ProtocolPoint({
 				{state !== "open" && <DoneMark state={state} />}
 			</legend>
 			{item.description && <MultilineText text={item.description} />}
+			{takesAttachments(item.type) && <PointAttachments itemId={item.id} />}
 			{/* Keyed on the state, so the new content mounts and fades in. */}
 			<div
 				key={state}

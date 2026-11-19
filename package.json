@@ -19,14 +19,18 @@
     "e2e": "playwright test"
   },
   "dependencies": {
+    "@bunny.net/storage-sdk": "0.3.2",
     "@libsql/client": "^0.18.0",
     "@tanstack/react-router": "1.170.46",
     "@tanstack/react-start": "1.169.5",
     "@tanstack/redact": "^0.3.1",
+    "fflate": "0.8.3",
     "nitro": "3.0.260610-beta",
+    "pdf-lib": "1.17.1",
     "pdfmake": "0.3.14",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "sharp": "0.35.5",
     "signature_pad": "5.1.4"
   },
   "devDependencies": {

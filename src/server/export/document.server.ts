@@ -3,6 +3,8 @@ import { type Block, recordedBlocks } from "#/components/points/blocks";
 import { formatInstant, formatMeetingAt } from "../../meeting-time";
 import { requireParent } from "../agendas.server";
 import { BoardError } from "../boards.server";
+import { listAttachments } from "../files/attachments.server";
+import { pdfLogo } from "../files/board-images.server";
 import type { Justering, ProtocolEdit } from "../items";
 import {
 	listEdits,
@@ -17,8 +19,18 @@ import { getJustering } from "../reviews.server";
 
 export type { Block };
 
+/** An attachment as the downloads name it: "Bilaga 2: Budget.pdf". */
+export type DocumentAttachment = {
+	id: string;
+	number: number;
+	name: string;
+	contentType: string;
+};
+
 export type ProtocolDocument = {
 	boardName: string;
+	/** The board's logo as PNG, for the PDF's first page. */
+	logo: Uint8Array | null;
 	title: string;
 	meetingAt: string;
 	location: string;
@@ -27,7 +39,10 @@ export type ProtocolDocument = {
 		title: string;
 		description: string;
 		blocks: Block[];
+		attachments: DocumentAttachment[];
 	}[];
+	/** Every attachment, numbered, in point order. */
+	attachments: DocumentAttachment[];
 	edits: ProtocolEdit[];
 	justering: Justering | null;
 };
@@ -44,13 +59,23 @@ async function buildDocument(
 	const protocol = toProtocol(res.rows[0]);
 	if (!protocol.closedAt)
 		throw new BoardError("Protokollet kan laddas ner när det är stängt.");
-	const [items, edits, justering] = await Promise.all([
+	const [items, edits, justering, attachments, logo] = await Promise.all([
 		listProtocolItems(db, protocolId),
 		listEdits(db, protocolId),
 		getJustering(db, protocolId),
+		listAttachments(db, "protocol", protocolId),
+		pdfLogo(db, protocol.boardId),
 	]);
+	const documentAttachments = attachments.map((a) => ({
+		id: a.id,
+		itemId: a.itemId,
+		number: a.number,
+		name: a.name,
+		contentType: a.contentType,
+	}));
 	return {
 		boardName,
+		logo,
 		title: protocol.title,
 		meetingAt: protocol.meetingAt,
 		location: protocol.location,
@@ -59,7 +84,9 @@ async function buildDocument(
 			title: item.title,
 			description: item.description,
 			blocks: recordedBlocks({ ...item, value: publicValue(item.value) }),
+			attachments: documentAttachments.filter((a) => a.itemId === item.id),
 		})),
+		attachments: documentAttachments,
 		edits,
 		justering,
 	};
@@ -102,6 +129,10 @@ export function fileName(doc: ProtocolDocument, extension: string): string {
 		.trim();
 	return `${name}.${extension}`;
 }
+
+/** "Bilaga 2: Budget.pdf". */
+export const attachmentLabel = (a: DocumentAttachment) =>
+	`Bilaga ${a.number}: ${a.name}`;
 
 /** Details shared by both formats. */
 export function meetingLines(doc: ProtocolDocument) {

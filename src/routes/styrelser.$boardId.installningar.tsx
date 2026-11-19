@@ -5,6 +5,7 @@ import {
 	useRouter,
 } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { BoardImagesSection } from "#/components/BoardImagesSection";
 import { Breadcrumbs } from "#/components/Breadcrumbs";
 import { Button } from "#/components/Button";
 import { useConfirm } from "#/components/ConfirmDialog";
@@ -128,6 +129,12 @@ function Settings() {
 			<BackgroundSection
 				boardId={board.id}
 				current={board.background}
+				canEdit={isAdmin}
+			/>
+			<BoardImagesSection
+				boardId={board.id}
+				logo={board.logo}
+				banner={board.banner}
 				canEdit={isAdmin}
 			/>
 

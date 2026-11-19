@@ -34,6 +34,10 @@ export function canCarryOver(type: ItemType): boolean {
 	return type === "text" || type === "decision";
 }
 
+/** Points that can have files attached ("Bilaga 1"…): the same ones. */
+export const takesAttachments = (type: string) =>
+	type === "text" || type === "decision";
+
 /**
  * Where a point must sit: opening the meeting first, closing it last, every
  * other point in between.

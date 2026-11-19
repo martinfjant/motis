@@ -10,6 +10,7 @@ import {
 import { calculate, formatResult } from "#/calc";
 import { formatInstant } from "#/meeting-time";
 import { matchRefs, refText } from "#/protocol-refs";
+import { useAttachments } from "./Attachments";
 import { Button } from "./Button";
 import { textareaStyle, useFieldProps } from "./Field";
 import { ProtocolRefs } from "./ProtocolRefs";
@@ -29,7 +30,7 @@ const SIGNS = ["@", "#", "="] as const;
 type Sign = (typeof SIGNS)[number];
 const LIST_LABEL: Record<Sign, string> = {
 	"@": "Personer",
-	"#": "Protokoll",
+	"#": "Bilagor och protokoll",
 	"=": "Uträkning",
 };
 
@@ -50,6 +51,26 @@ export function findMention(value: string, caret: number, sign = "@") {
 	return { start: at, query };
 }
 
+/**
+ * Attachments for "#query": all of them for an empty query; otherwise those
+ * whose "Bilaga N name" has every typed word in it ("bil", "2", "budget"),
+ * the one numbered as typed first.
+ */
+export function matchAttachments<T extends { number: number; name: string }>(
+	attachments: T[],
+	query: string,
+) {
+	const words = query.toLocaleLowerCase("sv").split(/\s+/).filter(Boolean);
+	const found = attachments.filter((a) => {
+		const text = `bilaga ${a.number} ${a.name}`.toLocaleLowerCase("sv");
+		return words.every((w) => text.includes(w));
+	});
+	// A typed number that is an attachment's number puts that one first
+	// ("bilaga 2" before "Budget 2027").
+	const exact = (a: T) => words.includes(String(a.number));
+	return [...found.filter(exact), ...found.filter((a) => !exact(a))];
+}
+
 /** People whose name starts with the query, ignoring case. */
 export function matchPeople(people: Mentionable[], query: string) {
 	const q = query.toLocaleLowerCase("sv");
@@ -57,17 +78,27 @@ export function matchPeople(people: Mentionable[], query: string) {
 }
 
 /**
- * A textarea where typing @ lists the board's people, and # its other
- * protocols, in a popover narrowed as more is typed; after = it offers the
+ * A textarea where typing @ lists the board's people, and # the meeting's
+ * attachments and the board's other protocols, in a popover narrowed as more is typed; after = it offers the
  * result of the arithmetic typed so far, alone or followed by the
  * calculation in parentheses. Arrow keys move, Enter
  * or Tab picks, Escape closes; picking replaces "@query" with the name, or
  * "#query" with the reference ("#Styrelsemöte 12-11-2026"). The popover is
  * placed just below the sign with inline styles.
  */
-export function MentionTextarea(props: ComponentProps<"textarea">) {
+export function MentionTextarea({
+	drafts = true,
+	...props
+}: ComponentProps<"textarea"> & {
+	/**
+	 * Keep unsaved text on the device (notes). Off where a form is emptied
+	 * after saving, like adding a point, or the text would come back.
+	 */
+	drafts?: boolean;
+}) {
 	const people = useContext(MentionNames);
 	const { refs } = useContext(ProtocolRefs);
+	const { attachments } = useAttachments();
 	const textarea = useRef<HTMLTextAreaElement>(null);
 	const list = useRef<HTMLDivElement>(null);
 	const listId = useId();
@@ -81,7 +112,7 @@ export function MentionTextarea(props: ComponentProps<"textarea">) {
 	// Notes are kept on this device until saved (see useDraft).
 	const draft = useDraft(
 		textarea,
-		fieldProps.id,
+		drafts ? fieldProps.id : undefined,
 		String(props.defaultValue ?? ""),
 	);
 	// Escape closes the list until a new @ is typed.
@@ -100,7 +131,7 @@ export function MentionTextarea(props: ComponentProps<"textarea">) {
 		let sign: Sign | null = null;
 		let found: ReturnType<typeof findMention> = null;
 		for (const s of SIGNS) {
-			if (s === "#" && refs.length === 0) continue;
+			if (s === "#" && refs.length === 0 && attachments.length === 0) continue;
 			const f = findMention(el.value, caret, s);
 			if (f && (!found || f.start > found.start)) [sign, found] = [s, f];
 		}
@@ -131,12 +162,20 @@ export function MentionTextarea(props: ComponentProps<"textarea">) {
 			];
 		}
 		if (sign === "#")
-			return matchRefs(refs, query).map((r) => ({
-				key: r.id,
-				label: r.title,
-				date: r.date,
-				insert: refText(r),
-			}));
+			return [
+				// The meeting's own attachments first, then other protocols.
+				...matchAttachments(attachments, query).map((a) => ({
+					key: a.id,
+					label: `Bilaga ${a.number}: ${a.name}`,
+					insert: `Bilaga ${a.number}`,
+				})),
+				...matchRefs(refs, query).map((r) => ({
+					key: r.id,
+					label: r.title,
+					date: r.date,
+					insert: refText(r),
+				})),
+			];
 		return matchPeople(people, query).map((p) => ({
 			key: p.label,
 			label: p.label,

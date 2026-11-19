@@ -17,19 +17,25 @@ import { Route as RegistreraRouteImport } from './routes/registrera'
 import { Route as SokRouteImport } from './routes/sok'
 import { Route as UtkorgRouteImport } from './routes/utkorg'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as ApiLiveRouteImport } from './routes/api/live'
 import { Route as BekraftaTokenRouteImport } from './routes/bekrafta.$token'
 import { Route as DagordningShareIdRouteImport } from './routes/dagordning.$shareId'
 import { Route as JusteraTokenRouteImport } from './routes/justera.$token'
 import { Route as NyttLosenordTokenRouteImport } from './routes/nytt-losenord.$token'
 import { Route as ProtokollShareIdRouteImport } from './routes/protokoll.$shareId'
 import { Route as StyrelserBoardIdRouteImport } from './routes/styrelser.$boardId'
+import { Route as ApiBilagorAttachmentIdRouteImport } from './routes/api/bilagor.$attachmentId'
 import { Route as StyrelserBoardIdIndexRouteImport } from './routes/styrelser.$boardId.index'
 import { Route as StyrelserBoardIdInstallningarRouteImport } from './routes/styrelser.$boardId.installningar'
+import { Route as ApiBilderFormatHashRouteImport } from './routes/api/bilder.$format.$hash'
 import { Route as ApiDelatProtokollShareIdFormatRouteImport } from './routes/api/delat-protokoll.$shareId.$format'
 import { Route as ApiProtokollProtocolIdFormatRouteImport } from './routes/api/protokoll.$protocolId.$format'
 import { Route as StyrelserBoardIdDagordningarAgendaIdRouteImport } from './routes/styrelser.$boardId.dagordningar.$agendaId'
 import { Route as StyrelserBoardIdMallarTemplateIdRouteImport } from './routes/styrelser.$boardId.mallar.$templateId'
 import { Route as StyrelserBoardIdProtokollProtocolIdRouteImport } from './routes/styrelser.$boardId.protokoll.$protocolId'
+import { Route as ApiDeladDagordningShareIdBilagorAttachmentIdRouteImport } from './routes/api/delad-dagordning.$shareId.bilagor.$attachmentId'
+import { Route as ApiDelatProtokollShareIdBilagorAttachmentIdRouteImport } from './routes/api/delat-protokoll.$shareId.bilagor.$attachmentId'
+import { Route as ApiJusteraTokenBilagorAttachmentIdRouteImport } from './routes/api/justera.$token.bilagor.$attachmentId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -71,6 +77,11 @@ const ApiHealthRoute = ApiHealthRouteImport.update({
   path: '/api/health',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiLiveRoute = ApiLiveRouteImport.update({
+  id: '/api/live',
+  path: '/api/live',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BekraftaTokenRoute = BekraftaTokenRouteImport.update({
   id: '/bekrafta/$token',
   path: '/bekrafta/$token',
@@ -101,6 +112,11 @@ const StyrelserBoardIdRoute = StyrelserBoardIdRouteImport.update({
   path: '/styrelser/$boardId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiBilagorAttachmentIdRoute = ApiBilagorAttachmentIdRouteImport.update({
+  id: '/api/bilagor/$attachmentId',
+  path: '/api/bilagor/$attachmentId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StyrelserBoardIdIndexRoute = StyrelserBoardIdIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -112,6 +128,11 @@ const StyrelserBoardIdInstallningarRoute =
     path: '/installningar',
     getParentRoute: () => StyrelserBoardIdRoute,
   } as any)
+const ApiBilderFormatHashRoute = ApiBilderFormatHashRouteImport.update({
+  id: '/api/bilder/$format/$hash',
+  path: '/api/bilder/$format/$hash',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiDelatProtokollShareIdFormatRoute =
   ApiDelatProtokollShareIdFormatRouteImport.update({
     id: '/api/delat-protokoll/$shareId/$format',
@@ -142,6 +163,24 @@ const StyrelserBoardIdProtokollProtocolIdRoute =
     path: '/protokoll/$protocolId',
     getParentRoute: () => StyrelserBoardIdRoute,
   } as any)
+const ApiDeladDagordningShareIdBilagorAttachmentIdRoute =
+  ApiDeladDagordningShareIdBilagorAttachmentIdRouteImport.update({
+    id: '/api/delad-dagordning/$shareId/bilagor/$attachmentId',
+    path: '/api/delad-dagordning/$shareId/bilagor/$attachmentId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiDelatProtokollShareIdBilagorAttachmentIdRoute =
+  ApiDelatProtokollShareIdBilagorAttachmentIdRouteImport.update({
+    id: '/api/delat-protokoll/$shareId/bilagor/$attachmentId',
+    path: '/api/delat-protokoll/$shareId/bilagor/$attachmentId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiJusteraTokenBilagorAttachmentIdRoute =
+  ApiJusteraTokenBilagorAttachmentIdRouteImport.update({
+    id: '/api/justera/$token/bilagor/$attachmentId',
+    path: '/api/justera/$token/bilagor/$attachmentId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -152,19 +191,25 @@ export interface FileRoutesByFullPath {
   '/sok': typeof SokRoute
   '/utkorg': typeof UtkorgRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/live': typeof ApiLiveRoute
   '/bekrafta/$token': typeof BekraftaTokenRoute
   '/dagordning/$shareId': typeof DagordningShareIdRoute
   '/justera/$token': typeof JusteraTokenRoute
   '/nytt-losenord/$token': typeof NyttLosenordTokenRoute
   '/protokoll/$shareId': typeof ProtokollShareIdRoute
   '/styrelser/$boardId': typeof StyrelserBoardIdRouteWithChildren
+  '/api/bilagor/$attachmentId': typeof ApiBilagorAttachmentIdRoute
   '/styrelser/$boardId/installningar': typeof StyrelserBoardIdInstallningarRoute
   '/styrelser/$boardId/': typeof StyrelserBoardIdIndexRoute
+  '/api/bilder/$format/$hash': typeof ApiBilderFormatHashRoute
   '/api/delat-protokoll/$shareId/$format': typeof ApiDelatProtokollShareIdFormatRoute
   '/api/protokoll/$protocolId/$format': typeof ApiProtokollProtocolIdFormatRoute
   '/styrelser/$boardId/dagordningar/$agendaId': typeof StyrelserBoardIdDagordningarAgendaIdRoute
   '/styrelser/$boardId/mallar/$templateId': typeof StyrelserBoardIdMallarTemplateIdRoute
   '/styrelser/$boardId/protokoll/$protocolId': typeof StyrelserBoardIdProtokollProtocolIdRoute
+  '/api/delad-dagordning/$shareId/bilagor/$attachmentId': typeof ApiDeladDagordningShareIdBilagorAttachmentIdRoute
+  '/api/delat-protokoll/$shareId/bilagor/$attachmentId': typeof ApiDelatProtokollShareIdBilagorAttachmentIdRoute
+  '/api/justera/$token/bilagor/$attachmentId': typeof ApiJusteraTokenBilagorAttachmentIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -175,18 +220,24 @@ export interface FileRoutesByTo {
   '/sok': typeof SokRoute
   '/utkorg': typeof UtkorgRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/live': typeof ApiLiveRoute
   '/bekrafta/$token': typeof BekraftaTokenRoute
   '/dagordning/$shareId': typeof DagordningShareIdRoute
   '/justera/$token': typeof JusteraTokenRoute
   '/nytt-losenord/$token': typeof NyttLosenordTokenRoute
   '/protokoll/$shareId': typeof ProtokollShareIdRoute
+  '/api/bilagor/$attachmentId': typeof ApiBilagorAttachmentIdRoute
   '/styrelser/$boardId/installningar': typeof StyrelserBoardIdInstallningarRoute
   '/styrelser/$boardId': typeof StyrelserBoardIdIndexRoute
+  '/api/bilder/$format/$hash': typeof ApiBilderFormatHashRoute
   '/api/delat-protokoll/$shareId/$format': typeof ApiDelatProtokollShareIdFormatRoute
   '/api/protokoll/$protocolId/$format': typeof ApiProtokollProtocolIdFormatRoute
   '/styrelser/$boardId/dagordningar/$agendaId': typeof StyrelserBoardIdDagordningarAgendaIdRoute
   '/styrelser/$boardId/mallar/$templateId': typeof StyrelserBoardIdMallarTemplateIdRoute
   '/styrelser/$boardId/protokoll/$protocolId': typeof StyrelserBoardIdProtokollProtocolIdRoute
+  '/api/delad-dagordning/$shareId/bilagor/$attachmentId': typeof ApiDeladDagordningShareIdBilagorAttachmentIdRoute
+  '/api/delat-protokoll/$shareId/bilagor/$attachmentId': typeof ApiDelatProtokollShareIdBilagorAttachmentIdRoute
+  '/api/justera/$token/bilagor/$attachmentId': typeof ApiJusteraTokenBilagorAttachmentIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -198,19 +249,25 @@ export interface FileRoutesById {
   '/sok': typeof SokRoute
   '/utkorg': typeof UtkorgRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/live': typeof ApiLiveRoute
   '/bekrafta/$token': typeof BekraftaTokenRoute
   '/dagordning/$shareId': typeof DagordningShareIdRoute
   '/justera/$token': typeof JusteraTokenRoute
   '/nytt-losenord/$token': typeof NyttLosenordTokenRoute
   '/protokoll/$shareId': typeof ProtokollShareIdRoute
   '/styrelser/$boardId': typeof StyrelserBoardIdRouteWithChildren
+  '/api/bilagor/$attachmentId': typeof ApiBilagorAttachmentIdRoute
   '/styrelser/$boardId/installningar': typeof StyrelserBoardIdInstallningarRoute
   '/styrelser/$boardId/': typeof StyrelserBoardIdIndexRoute
+  '/api/bilder/$format/$hash': typeof ApiBilderFormatHashRoute
   '/api/delat-protokoll/$shareId/$format': typeof ApiDelatProtokollShareIdFormatRoute
   '/api/protokoll/$protocolId/$format': typeof ApiProtokollProtocolIdFormatRoute
   '/styrelser/$boardId/dagordningar/$agendaId': typeof StyrelserBoardIdDagordningarAgendaIdRoute
   '/styrelser/$boardId/mallar/$templateId': typeof StyrelserBoardIdMallarTemplateIdRoute
   '/styrelser/$boardId/protokoll/$protocolId': typeof StyrelserBoardIdProtokollProtocolIdRoute
+  '/api/delad-dagordning/$shareId/bilagor/$attachmentId': typeof ApiDeladDagordningShareIdBilagorAttachmentIdRoute
+  '/api/delat-protokoll/$shareId/bilagor/$attachmentId': typeof ApiDelatProtokollShareIdBilagorAttachmentIdRoute
+  '/api/justera/$token/bilagor/$attachmentId': typeof ApiJusteraTokenBilagorAttachmentIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -223,19 +280,25 @@ export interface FileRouteTypes {
     | '/sok'
     | '/utkorg'
     | '/api/health'
+    | '/api/live'
     | '/bekrafta/$token'
     | '/dagordning/$shareId'
     | '/justera/$token'
     | '/nytt-losenord/$token'
     | '/protokoll/$shareId'
     | '/styrelser/$boardId'
+    | '/api/bilagor/$attachmentId'
     | '/styrelser/$boardId/installningar'
     | '/styrelser/$boardId/'
+    | '/api/bilder/$format/$hash'
     | '/api/delat-protokoll/$shareId/$format'
     | '/api/protokoll/$protocolId/$format'
     | '/styrelser/$boardId/dagordningar/$agendaId'
     | '/styrelser/$boardId/mallar/$templateId'
     | '/styrelser/$boardId/protokoll/$protocolId'
+    | '/api/delad-dagordning/$shareId/bilagor/$attachmentId'
+    | '/api/delat-protokoll/$shareId/bilagor/$attachmentId'
+    | '/api/justera/$token/bilagor/$attachmentId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -246,18 +309,24 @@ export interface FileRouteTypes {
     | '/sok'
     | '/utkorg'
     | '/api/health'
+    | '/api/live'
     | '/bekrafta/$token'
     | '/dagordning/$shareId'
     | '/justera/$token'
     | '/nytt-losenord/$token'
     | '/protokoll/$shareId'
+    | '/api/bilagor/$attachmentId'
     | '/styrelser/$boardId/installningar'
     | '/styrelser/$boardId'
+    | '/api/bilder/$format/$hash'
     | '/api/delat-protokoll/$shareId/$format'
     | '/api/protokoll/$protocolId/$format'
     | '/styrelser/$boardId/dagordningar/$agendaId'
     | '/styrelser/$boardId/mallar/$templateId'
     | '/styrelser/$boardId/protokoll/$protocolId'
+    | '/api/delad-dagordning/$shareId/bilagor/$attachmentId'
+    | '/api/delat-protokoll/$shareId/bilagor/$attachmentId'
+    | '/api/justera/$token/bilagor/$attachmentId'
   id:
     | '__root__'
     | '/'
@@ -268,19 +337,25 @@ export interface FileRouteTypes {
     | '/sok'
     | '/utkorg'
     | '/api/health'
+    | '/api/live'
     | '/bekrafta/$token'
     | '/dagordning/$shareId'
     | '/justera/$token'
     | '/nytt-losenord/$token'
     | '/protokoll/$shareId'
     | '/styrelser/$boardId'
+    | '/api/bilagor/$attachmentId'
     | '/styrelser/$boardId/installningar'
     | '/styrelser/$boardId/'
+    | '/api/bilder/$format/$hash'
     | '/api/delat-protokoll/$shareId/$format'
     | '/api/protokoll/$protocolId/$format'
     | '/styrelser/$boardId/dagordningar/$agendaId'
     | '/styrelser/$boardId/mallar/$templateId'
     | '/styrelser/$boardId/protokoll/$protocolId'
+    | '/api/delad-dagordning/$shareId/bilagor/$attachmentId'
+    | '/api/delat-protokoll/$shareId/bilagor/$attachmentId'
+    | '/api/justera/$token/bilagor/$attachmentId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -292,14 +367,20 @@ export interface RootRouteChildren {
   SokRoute: typeof SokRoute
   UtkorgRoute: typeof UtkorgRoute
   ApiHealthRoute: typeof ApiHealthRoute
+  ApiLiveRoute: typeof ApiLiveRoute
   BekraftaTokenRoute: typeof BekraftaTokenRoute
   DagordningShareIdRoute: typeof DagordningShareIdRoute
   JusteraTokenRoute: typeof JusteraTokenRoute
   NyttLosenordTokenRoute: typeof NyttLosenordTokenRoute
   ProtokollShareIdRoute: typeof ProtokollShareIdRoute
   StyrelserBoardIdRoute: typeof StyrelserBoardIdRouteWithChildren
+  ApiBilagorAttachmentIdRoute: typeof ApiBilagorAttachmentIdRoute
+  ApiBilderFormatHashRoute: typeof ApiBilderFormatHashRoute
   ApiDelatProtokollShareIdFormatRoute: typeof ApiDelatProtokollShareIdFormatRoute
   ApiProtokollProtocolIdFormatRoute: typeof ApiProtokollProtocolIdFormatRoute
+  ApiDeladDagordningShareIdBilagorAttachmentIdRoute: typeof ApiDeladDagordningShareIdBilagorAttachmentIdRoute
+  ApiDelatProtokollShareIdBilagorAttachmentIdRoute: typeof ApiDelatProtokollShareIdBilagorAttachmentIdRoute
+  ApiJusteraTokenBilagorAttachmentIdRoute: typeof ApiJusteraTokenBilagorAttachmentIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -360,6 +441,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/live': {
+      id: '/api/live'
+      path: '/api/live'
+      fullPath: '/api/live'
+      preLoaderRoute: typeof ApiLiveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/bekrafta/$token': {
       id: '/bekrafta/$token'
       path: '/bekrafta/$token'
@@ -402,6 +490,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StyrelserBoardIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/bilagor/$attachmentId': {
+      id: '/api/bilagor/$attachmentId'
+      path: '/api/bilagor/$attachmentId'
+      fullPath: '/api/bilagor/$attachmentId'
+      preLoaderRoute: typeof ApiBilagorAttachmentIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/styrelser/$boardId/': {
       id: '/styrelser/$boardId/'
       path: '/'
@@ -415,6 +510,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/styrelser/$boardId/installningar'
       preLoaderRoute: typeof StyrelserBoardIdInstallningarRouteImport
       parentRoute: typeof StyrelserBoardIdRoute
+    }
+    '/api/bilder/$format/$hash': {
+      id: '/api/bilder/$format/$hash'
+      path: '/api/bilder/$format/$hash'
+      fullPath: '/api/bilder/$format/$hash'
+      preLoaderRoute: typeof ApiBilderFormatHashRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/delat-protokoll/$shareId/$format': {
       id: '/api/delat-protokoll/$shareId/$format'
@@ -451,6 +553,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StyrelserBoardIdProtokollProtocolIdRouteImport
       parentRoute: typeof StyrelserBoardIdRoute
     }
+    '/api/delad-dagordning/$shareId/bilagor/$attachmentId': {
+      id: '/api/delad-dagordning/$shareId/bilagor/$attachmentId'
+      path: '/api/delad-dagordning/$shareId/bilagor/$attachmentId'
+      fullPath: '/api/delad-dagordning/$shareId/bilagor/$attachmentId'
+      preLoaderRoute: typeof ApiDeladDagordningShareIdBilagorAttachmentIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/delat-protokoll/$shareId/bilagor/$attachmentId': {
+      id: '/api/delat-protokoll/$shareId/bilagor/$attachmentId'
+      path: '/api/delat-protokoll/$shareId/bilagor/$attachmentId'
+      fullPath: '/api/delat-protokoll/$shareId/bilagor/$attachmentId'
+      preLoaderRoute: typeof ApiDelatProtokollShareIdBilagorAttachmentIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/justera/$token/bilagor/$attachmentId': {
+      id: '/api/justera/$token/bilagor/$attachmentId'
+      path: '/api/justera/$token/bilagor/$attachmentId'
+      fullPath: '/api/justera/$token/bilagor/$attachmentId'
+      preLoaderRoute: typeof ApiJusteraTokenBilagorAttachmentIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -484,14 +607,23 @@ const rootRouteChildren: RootRouteChildren = {
   SokRoute: SokRoute,
   UtkorgRoute: UtkorgRoute,
   ApiHealthRoute: ApiHealthRoute,
+  ApiLiveRoute: ApiLiveRoute,
   BekraftaTokenRoute: BekraftaTokenRoute,
   DagordningShareIdRoute: DagordningShareIdRoute,
   JusteraTokenRoute: JusteraTokenRoute,
   NyttLosenordTokenRoute: NyttLosenordTokenRoute,
   ProtokollShareIdRoute: ProtokollShareIdRoute,
   StyrelserBoardIdRoute: StyrelserBoardIdRouteWithChildren,
+  ApiBilagorAttachmentIdRoute: ApiBilagorAttachmentIdRoute,
+  ApiBilderFormatHashRoute: ApiBilderFormatHashRoute,
   ApiDelatProtokollShareIdFormatRoute: ApiDelatProtokollShareIdFormatRoute,
   ApiProtokollProtocolIdFormatRoute: ApiProtokollProtocolIdFormatRoute,
+  ApiDeladDagordningShareIdBilagorAttachmentIdRoute:
+    ApiDeladDagordningShareIdBilagorAttachmentIdRoute,
+  ApiDelatProtokollShareIdBilagorAttachmentIdRoute:
+    ApiDelatProtokollShareIdBilagorAttachmentIdRoute,
+  ApiJusteraTokenBilagorAttachmentIdRoute:
+    ApiJusteraTokenBilagorAttachmentIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
