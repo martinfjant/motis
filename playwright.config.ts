@@ -37,6 +37,8 @@ export default defineConfig({
 			FILES_DIR: "e2e/.data/files",
 			BUNNY_STORAGE_ZONE: "",
 			BUNNY_STORAGE_KEY: "",
+			STORAGE_ZONE: "",
+			STORAGE_ACCESS_KEY: "",
 			APP_URL: `http://localhost:${PORT}`,
 			SIGNUP_PASSWORD: "e2e-kod",
 			// Never real email from the tests, whatever .env says: everything

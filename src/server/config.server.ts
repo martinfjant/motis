@@ -130,25 +130,46 @@ export type FileStorageConfig =
 	| { kind: "folder"; dir: string };
 
 /**
- * Production requires BUNNY_STORAGE_ZONE and BUNNY_STORAGE_KEY (the zone's
- * password). Development uses FILES_DIR (default local-files/), unless the
- * zone is set: then it is used there too.
+ * Production requires a storage zone. Linking the zone to the app in Bunny
+ * sets STORAGE_ZONE, STORAGE_ACCESS_KEY and STORAGE_HOSTNAME (e.g.
+ * se.storage.bunnycdn.com, whose first part is the region); the
+ * BUNNY_STORAGE_ names work too. Development uses FILES_DIR (default
+ * local-files/) unless a zone is set.
  */
 export function fileStorageConfig(): FileStorageConfig {
-	const zone = env.BUNNY_STORAGE_ZONE?.trim();
-	const accessKey = env.BUNNY_STORAGE_KEY?.trim();
+	const setting = (...names: string[]) =>
+		names.map((n) => env[n]?.trim()).find(Boolean);
+	const zone = setting("BUNNY_STORAGE_ZONE", "STORAGE_ZONE");
+	const accessKey = setting("BUNNY_STORAGE_KEY", "STORAGE_ACCESS_KEY");
 	if (zone && accessKey)
 		return {
 			kind: "bunny",
 			zone,
 			accessKey,
-			region: env.BUNNY_STORAGE_REGION?.trim() || "se",
+			region:
+				setting("BUNNY_STORAGE_REGION") ??
+				regionOf(setting("STORAGE_HOSTNAME")) ??
+				"se",
 		};
 	if (isProduction)
 		throw new ConfigError(
-			`Inställningen ${zone ? "BUNNY_STORAGE_KEY" : "BUNNY_STORAGE_ZONE"} saknas.`,
+			zone
+				? "Inställningen STORAGE_ACCESS_KEY (eller BUNNY_STORAGE_KEY) saknas."
+				: "Inställningen STORAGE_ZONE (eller BUNNY_STORAGE_ZONE) saknas.",
 		);
 	return { kind: "folder", dir: env.FILES_DIR?.trim() || "local-files" };
+}
+
+/**
+ * The region in a storage hostname, as Bunny's SDK names it:
+ * "se.storage.bunnycdn.com" is "se"; the main region, Falkenstein, has none
+ * ("storage.bunnycdn.com") and is "de".
+ */
+export function regionOf(hostname: string | undefined): string | undefined {
+	if (!hostname) return undefined;
+	const host = hostname.replace(/^https?:\/\//, "").split("/")[0];
+	if (host === "storage.bunnycdn.com") return "de";
+	return /^([a-z]+)\.storage\.bunnycdn\.com$/.exec(host)?.[1];
 }
 
 /** Session cookies only over https in production. */
