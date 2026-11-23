@@ -32,8 +32,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 22
-      - run: corepack enable
+          node-version-file: .nvmrc
+      # Node 25 and later no longer include Corepack.
+      - run: npm install --global corepack@0.36.0 && corepack enable
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
       - run: pnpm exec tsc --noEmit
@@ -53,8 +54,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 22
-      - run: corepack enable
+          node-version-file: .nvmrc
+      # Node 25 and later no longer include Corepack.
+      - run: npm install --global corepack@0.36.0 && corepack enable
       - run: pnpm install --frozen-lockfile
       - run: pnpm e2e
       - if: failure()
@@ -90,7 +92,7 @@ jobs:
         with:
           context: .
           platforms: linux/amd64
-          # Always the latest node:22-slim, with its security fixes.
+          # Always the latest node:<version>-slim, with its security fixes.
           pull: true
           push: true
           tags: ${{ steps.meta.outputs.tags }}

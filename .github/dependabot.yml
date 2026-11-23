@@ -1,8 +1,8 @@
 # Dependabot opens a pull request when a dependency has an update, so
 # security fixes don't go unnoticed. Each pull request is tested like any
 # other (unit and end-to-end tests) before it can be merged. The Node image
-# in the Dockerfile isn't here: its tag (22-slim) follows Node 22's latest
-# release, fetched anew by every build.
+# in the Dockerfile isn't here: its tag (26-slim) follows the latest release
+# of the Node version in .nvmrc, fetched anew by every build.
 version: 2
 updates:
   # npm packages (pnpm). Small updates come together in one pull request a
@@ -18,6 +18,10 @@ updates:
       # Its version must match the Playwright image the e2e job runs in
       # (.github/workflows/image.yml), so both are updated together by hand.
       - dependency-name: "@playwright/test"
+      # Its major version follows the Node version in .nvmrc, so it is raised
+      # by hand together with Node.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   # The actions in .github/workflows, pinned to commits.
   - package-ecosystem: github-actions

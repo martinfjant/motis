@@ -7,12 +7,16 @@
 #   docker build --platform linux/amd64 -t brf-protokoll .
 # Settings are environment variables; see .env.example.
 
-ARG NODE_VERSION=22
+# Keep the same major version as .nvmrc (used by CI and nvm locally).
+ARG NODE_VERSION=26
+
+# Node 25 and later no longer include Corepack, which installs the pnpm
+# version named in package.json's packageManager, so it is installed first.
 
 # 1. Build: all dependencies, then the production build in .output/.
 FROM --platform=linux/amd64 node:${NODE_VERSION}-slim AS build
 WORKDIR /app
-RUN corepack enable
+RUN npm install --global corepack@0.36.0 && corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 RUN pnpm install --frozen-lockfile
 COPY . .
@@ -22,7 +26,7 @@ RUN pnpm build
 #    which has a native part and is loaded from node_modules at runtime.
 FROM --platform=linux/amd64 node:${NODE_VERSION}-slim AS deps
 WORKDIR /app
-RUN corepack enable
+RUN npm install --global corepack@0.36.0 && corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 RUN pnpm install --prod --frozen-lockfile
 
