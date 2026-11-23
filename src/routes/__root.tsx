@@ -121,7 +121,7 @@ function SiteFooter() {
 	if (links.length === 0) return null;
 	return (
 		// Glass, like the main menu at the top, so the links read on any background.
-		<footer className="mx-auto w-full max-w-4xl px-2 pb-6 sm:w-9/10 sm:px-4">
+		<footer className="mx-auto mt-auto w-full max-w-4xl px-2 pb-6 sm:w-9/10 sm:px-4">
 			<nav
 				aria-label="Om Mötis"
 				className="rounded-xl border border-glass-line bg-glass shadow-2xs backdrop-blur-md [--color-link:var(--color-link-on-glass)]"
@@ -153,7 +153,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			<head>
 				<HeadContent />
 			</head>
-			<body>
+			{/* A column at least the window's height, so the footer (mt-auto) sits
+			    at the bottom even when the page has little on it. */}
+			<body className="flex min-h-dvh flex-col">
 				<ConfirmProvider>
 					<SiteHeader />
 					{children}
