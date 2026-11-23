@@ -5,7 +5,16 @@ styrelser. TanStack Start (React) with libSQL/SQLite, Tailwind and Biome.
 
 ## Development
 
-pnpm is run through corepack (the version is pinned in `package.json`):
+The Node version is in `.nvmrc` (the Dockerfile and CI use the same major
+version), so `nvm use` picks it. pnpm is run through corepack (the version is
+pinned in `package.json`). Node 25 and later no longer include corepack, so
+install it once for each Node version:
+
+```bash
+npm install --global corepack
+```
+
+Then:
 
 ```bash
 corepack pnpm install
