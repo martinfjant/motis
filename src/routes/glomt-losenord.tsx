@@ -6,6 +6,7 @@ import { Field, Input } from "#/components/Field";
 import { Form } from "#/components/Form";
 import { Main } from "#/components/Main";
 import { PageHeader } from "#/components/PageHeader";
+import { Panel } from "#/components/Panel";
 import { requestPasswordReset } from "#/server/auth.functions";
 
 export const Route = createFileRoute("/glomt-losenord")({
@@ -58,18 +59,20 @@ function ForgotPassword() {
 					kan välja ett nytt lösenord.
 				</p>
 			</PageHeader>
-			<Form onSubmit={onSubmit}>
-				<Field id="email" label="E-post">
-					<Input name="email" type="email" autoComplete="email" required />
-				</Field>
-				<ErrorMessage error={error} />
-				<Button icon="mail" type="submit" aria-busy={pending}>
-					Skicka länk
-				</Button>
-			</Form>
-			<p>
-				<Link to="/logga-in">Tillbaka till inloggningen</Link>
-			</p>
+			<Panel>
+				<Form onSubmit={onSubmit}>
+					<Field id="email" label="E-post">
+						<Input name="email" type="email" autoComplete="email" required />
+					</Field>
+					<ErrorMessage error={error} />
+					<Button icon="mail" type="submit" aria-busy={pending}>
+						Skicka länk
+					</Button>
+				</Form>
+				<p>
+					<Link to="/logga-in">Tillbaka till inloggningen</Link>
+				</p>
+			</Panel>
 		</Main>
 	);
 }

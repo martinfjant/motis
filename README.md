@@ -28,6 +28,9 @@ the outbox at <http://localhost:3000/utkorg>, where the links in them can be
 followed. To try real delivery, set `RESEND_API_KEY`, `MAIL_FROM` and
 `DEV_MAIL_TO`; every email then goes to `DEV_MAIL_TO`.
 
+Static pages (help, privacy policy, terms, accessibility statement) are
+Markdown files in `content/sidor/`; see `content/README.md`.
+
 Database changes are numbered SQL files in `src/server/migrations/`. They
 run automatically, in order, the first time the server uses the database;
 each one either applies completely or not at all.

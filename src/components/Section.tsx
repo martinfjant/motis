@@ -1,4 +1,5 @@
 import type { ComponentProps, ReactNode } from "react";
+import { CARD } from "./Panel";
 
 /** A part of a page with its own heading, which also names it. */
 export function Section({
@@ -12,11 +13,7 @@ export function Section({
 	title: ReactNode;
 }) {
 	return (
-		<section
-			aria-labelledby={id}
-			{...props}
-			className="rounded-2xl border border-glass-line bg-glass-strong p-3 sm:p-4 space-y-2.5 shadow-2xs backdrop-blur-md"
-		>
+		<section aria-labelledby={id} {...props} className={CARD}>
 			<h2 id={id} className="text-2xl">
 				{title}
 			</h2>

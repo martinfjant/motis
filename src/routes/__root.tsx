@@ -6,6 +6,7 @@ import {
 	Scripts,
 	useLocation,
 	useRouter,
+	useRouterState,
 } from "@tanstack/react-router";
 import { ConfirmProvider } from "#/components/ConfirmDialog";
 import { NotFound } from "#/components/NotFound";
@@ -14,11 +15,17 @@ import { UserMenu } from "#/components/UserMenu";
 import { useBoardLook } from "#/components/useBoardLook";
 import { DEFAULT_PATTERN } from "#/patterns";
 import { getCurrentUser, logOut } from "#/server/auth.functions";
+import { getFooterLinks } from "#/server/pages.functions";
+import type { FooterLink } from "#/server/pages.server";
 import patternsCss from "../patterns.css?url";
 import tailwindCss from "../tailwind.css?url";
 
 export const Route = createRootRoute({
 	beforeLoad: async () => ({ user: await getCurrentUser() }),
+	// The footer's links to the static pages. They only change with a new
+	// version of the app, so they are fetched once.
+	loader: async () => ({ footerLinks: await getFooterLinks() }),
+	staleTime: Number.POSITIVE_INFINITY,
 	head: () => ({
 		meta: [
 			{ charSet: "utf-8" },
@@ -97,6 +104,42 @@ function SiteHeader() {
 	);
 }
 
+/**
+ * Links to the static pages marked "footer" (content/sidor/), on every
+ * page. Read from the router's state rather than the root's loader data,
+ * since the shell also renders when that data isn't there (an error).
+ */
+function SiteFooter() {
+	const links = useRouterState({
+		select: (s) =>
+			(
+				s.matches.find((m) => m.routeId === "__root__")?.loaderData as
+					| { footerLinks?: FooterLink[] }
+					| undefined
+			)?.footerLinks ?? [],
+	});
+	if (links.length === 0) return null;
+	return (
+		// Glass, like the main menu at the top, so the links read on any background.
+		<footer className="mx-auto mt-auto w-full max-w-4xl px-2 pb-6 sm:w-9/10 sm:px-4">
+			<nav
+				aria-label="Om Mötis"
+				className="rounded-xl border border-glass-line bg-glass shadow-2xs backdrop-blur-md [--color-link:var(--color-link-on-glass)]"
+			>
+				<ul className="flex flex-wrap gap-x-5 gap-y-2 px-5 py-3">
+					{links.map((l) => (
+						<li key={l.path}>
+							<Link to="/$" params={{ _splat: l.path }}>
+								{l.title}
+							</Link>
+						</li>
+					))}
+				</ul>
+			</nav>
+		</footer>
+	);
+}
+
 /** The background pattern of the board being viewed, if not the default. */
 function useBoardPattern(): string | undefined {
 	const { pattern } = useBoardLook();
@@ -110,10 +153,13 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			<head>
 				<HeadContent />
 			</head>
-			<body>
+			{/* A column at least the window's height, so the footer (mt-auto) sits
+			    at the bottom even when the page has little on it. */}
+			<body className="flex min-h-dvh flex-col">
 				<ConfirmProvider>
 					<SiteHeader />
 					{children}
+					<SiteFooter />
 				</ConfirmProvider>
 				<Scripts />
 			</body>

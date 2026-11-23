@@ -4,6 +4,7 @@ import { Main } from "#/components/Main";
 import { MeetingDetails } from "#/components/MeetingDetails";
 import { PageHeader } from "#/components/PageHeader";
 import { AgendaPointList } from "#/components/points/lists/AgendaPointList";
+import { Section } from "#/components/Section";
 import { getPublicAgenda } from "#/server/agendas.functions";
 
 // Public, read-only agenda. Anyone with the link can see it, so it only
@@ -58,7 +59,9 @@ function PublicAgenda() {
 							location={agenda.location}
 						/>
 					</PageHeader>
-					<AgendaPointList items={items} headingLevel={2} />
+					<Section id="points" title="Punkter">
+						<AgendaPointList items={items} headingLevel={3} />
+					</Section>
 				</article>
 			</Main>
 		</AttachmentsProvider>

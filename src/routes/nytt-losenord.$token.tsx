@@ -5,6 +5,7 @@ import { ErrorMessage } from "#/components/ErrorMessage";
 import { Form } from "#/components/Form";
 import { Main } from "#/components/Main";
 import { PageHeader } from "#/components/PageHeader";
+import { Panel } from "#/components/Panel";
 import { NewPasswordFields } from "#/components/PasswordInput";
 import { checkPasswordReset, resetPassword } from "#/server/auth.functions";
 
@@ -64,13 +65,15 @@ function NewPassword() {
 			<PageHeader title="Välj ett nytt lösenord">
 				<p>Du loggas in med det nya lösenordet, och ut överallt annars.</p>
 			</PageHeader>
-			<Form onSubmit={onSubmit}>
-				<NewPasswordFields label="Nytt lösenord" />
-				<ErrorMessage error={error} />
-				<Button icon="save" type="submit" aria-busy={pending}>
-					Spara lösenordet
-				</Button>
-			</Form>
+			<Panel>
+				<Form onSubmit={onSubmit}>
+					<NewPasswordFields label="Nytt lösenord" />
+					<ErrorMessage error={error} />
+					<Button icon="save" type="submit" aria-busy={pending}>
+						Spara lösenordet
+					</Button>
+				</Form>
+			</Panel>
 		</Main>
 	);
 }

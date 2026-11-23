@@ -31,6 +31,16 @@ function SearchPage() {
 			<PageHeader title="Sök i protokollen">
 				{/* For phones, where the header has no room for it. */}
 				<SearchField key={q} defaultValue={q} className="md:hidden" />
+				{/* In the header, so it isn't loose on the background. */}
+				{results.length > 0 && (
+					<p aria-live="polite">
+						{hits === 1 ? "1 träff" : `${hits} träffar`} i{" "}
+						{results.length === 1
+							? "1 protokoll"
+							: `${results.length} protokoll`}
+						.
+					</p>
+				)}
 			</PageHeader>
 
 			{q.trim() === "" ? null : results.length === 0 ? (
@@ -41,54 +51,43 @@ function SearchPage() {
 					</p>
 				</Section>
 			) : (
-				<>
-					<p aria-live="polite" className="px-1">
-						{hits === 1 ? "1 träff" : `${hits} träffar`} i{" "}
-						{results.length === 1
-							? "1 protokoll"
-							: `${results.length} protokoll`}
-						.
-					</p>
-					{results.map((r) => (
-						<Section
-							key={r.protocolId}
-							id={`traff-${r.protocolId}`}
-							title={
-								<>
-									<Link
-										to="/styrelser/$boardId/protokoll/$protocolId"
-										params={{ boardId: r.boardId, protocolId: r.protocolId }}
-									>
-										<Marked text={r.title} words={words} />
-									</Link>{" "}
-									{r.date && (
-										<span className="whitespace-nowrap text-muted">
-											{r.date}
-										</span>
-									)}
-								</>
-							}
-						>
-							<p className="text-muted">{r.boardName}</p>
-							{r.hits.length > 0 && (
-								<ul className="list-disc space-y-2 pl-6">
-									{r.hits.map((h) => (
-										<li key={h.itemId}>
-											<strong>
-												<Marked text={h.itemTitle} words={words} />
-											</strong>
-											{h.excerpt && (
-												<>
-													: <Marked text={h.excerpt} words={words} />
-												</>
-											)}
-										</li>
-									))}
-								</ul>
-							)}
-						</Section>
-					))}
-				</>
+				results.map((r) => (
+					<Section
+						key={r.protocolId}
+						id={`traff-${r.protocolId}`}
+						title={
+							<>
+								<Link
+									to="/styrelser/$boardId/protokoll/$protocolId"
+									params={{ boardId: r.boardId, protocolId: r.protocolId }}
+								>
+									<Marked text={r.title} words={words} />
+								</Link>{" "}
+								{r.date && (
+									<span className="whitespace-nowrap text-muted">{r.date}</span>
+								)}
+							</>
+						}
+					>
+						<p className="text-muted">{r.boardName}</p>
+						{r.hits.length > 0 && (
+							<ul className="list-disc space-y-2 pl-6">
+								{r.hits.map((h) => (
+									<li key={h.itemId}>
+										<strong>
+											<Marked text={h.itemTitle} words={words} />
+										</strong>
+										{h.excerpt && (
+											<>
+												: <Marked text={h.excerpt} words={words} />
+											</>
+										)}
+									</li>
+								))}
+							</ul>
+						)}
+					</Section>
+				))
 			)}
 		</Main>
 	);

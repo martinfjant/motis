@@ -6,6 +6,7 @@ import { Field, Input } from "#/components/Field";
 import { Form } from "#/components/Form";
 import { Main } from "#/components/Main";
 import { PageHeader } from "#/components/PageHeader";
+import { Panel } from "#/components/Panel";
 import { NewPasswordFields, PasswordInput } from "#/components/PasswordInput";
 import { getSignupPolicy, signUp } from "#/server/auth.functions";
 
@@ -65,24 +66,30 @@ function SignUp() {
 					</p>
 				)}
 			</PageHeader>
-			<Form onSubmit={onSubmit}>
-				{policy.kind === "password" && (
-					<Field id="signupPassword" label="Lösenord för att skapa konto">
-						<PasswordInput name="signupPassword" autoComplete="off" required />
+			<Panel>
+				<Form onSubmit={onSubmit}>
+					{policy.kind === "password" && (
+						<Field id="signupPassword" label="Lösenord för att skapa konto">
+							<PasswordInput
+								name="signupPassword"
+								autoComplete="off"
+								required
+							/>
+						</Field>
+					)}
+					<Field id="name" label="Namn">
+						<Input name="name" autoComplete="name" required />
 					</Field>
-				)}
-				<Field id="name" label="Namn">
-					<Input name="name" autoComplete="name" required />
-				</Field>
-				<Field id="email" label="E-post">
-					<Input name="email" type="email" autoComplete="email" required />
-				</Field>
-				<NewPasswordFields label="Välj ett lösenord för ditt konto" />
-				<ErrorMessage error={error} />
-				<Button icon="user-plus" type="submit" aria-busy={pending}>
-					Skapa konto
-				</Button>
-			</Form>
+					<Field id="email" label="E-post">
+						<Input name="email" type="email" autoComplete="email" required />
+					</Field>
+					<NewPasswordFields label="Välj ett lösenord för ditt konto" />
+					<ErrorMessage error={error} />
+					<Button icon="user-plus" type="submit" aria-busy={pending}>
+						Skapa konto
+					</Button>
+				</Form>
+			</Panel>
 		</Main>
 	);
 }
