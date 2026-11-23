@@ -73,7 +73,6 @@ export function JusteringSignatures({
 			{/* No markers: each signature stands on its own. role="list" keeps
 			    Safari announcing it as a list without them. */}
 			{/* biome-ignore lint/a11y/noRedundantRoles: Safari drops the list role without markers */}
-			{/* biome-ignore lint/a11y/useSemanticElements: it is a <ul>; Safari drops its list role without markers */}
 			<ul role="list" className="space-y-4">
 				{justering.reviewers.map((r) => (
 					<li key={r.name}>
