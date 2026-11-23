@@ -57,7 +57,7 @@ export async function verifyPassword(
 	stored: string,
 ): Promise<boolean> {
 	const hash = parse(stored);
-	if (!hash || !hash.salt || !hash.key) return false;
+	if (!hash?.salt || !hash.key) return false;
 	const expected = Buffer.from(hash.key, "base64");
 	const actual = await derive(
 		password,

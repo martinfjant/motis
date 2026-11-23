@@ -35,7 +35,6 @@ export function MeetingPointList({
 	return (
 		// The numbers are drawn here (a list marker can't have a circle), so
 		// role="list" keeps Safari announcing it as a list.
-		// biome-ignore lint/a11y/useSemanticElements: it is an <ol>; Safari drops its list role without markers
 		<ol
 			ref={list}
 			// biome-ignore lint/a11y/noRedundantRoles: Safari drops the list role without markers

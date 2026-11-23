@@ -128,7 +128,7 @@ export function AttachmentsProvider({
 }
 
 /** "PDF, 1,2 MB". */
-function describe(a: Attachment) {
+function attachmentSummary(a: Attachment) {
 	const kind = a.contentType === "application/pdf" ? "PDF" : "bild";
 	const size =
 		a.size >= 1_000_000
@@ -175,7 +175,7 @@ export function PointAttachments({ itemId }: { itemId: string }) {
 					<li key={a.id} className="flex items-center gap-2">
 						<Icon name="paperclip" className="size-4 shrink-0 text-muted" />
 						<AttachmentLink attachment={a}>{attachmentTitle(a)}</AttachmentLink>
-						<span className="text-sm text-muted">({describe(a)})</span>
+						<span className="text-sm text-muted">({attachmentSummary(a)})</span>
 					</li>
 				))}
 			</ul>
@@ -286,7 +286,9 @@ function AttachmentEditor({
 							<AttachmentLink attachment={a}>
 								{attachmentTitle(a)}
 							</AttachmentLink>
-							<span className="text-sm text-muted">({describe(a)})</span>
+							<span className="text-sm text-muted">
+								({attachmentSummary(a)})
+							</span>
 							<IconButton
 								icon="upload"
 								label={`Byt ut ${attachmentTitle(a)}`}
