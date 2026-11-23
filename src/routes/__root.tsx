@@ -120,9 +120,13 @@ function SiteFooter() {
 	});
 	if (links.length === 0) return null;
 	return (
-		<footer>
-			<nav aria-label="Om Mötis">
-				<ul>
+		// Glass, like the main menu at the top, so the links read on any background.
+		<footer className="mx-auto w-full max-w-4xl px-2 pb-6 sm:w-9/10 sm:px-4">
+			<nav
+				aria-label="Om Mötis"
+				className="rounded-xl border border-glass-line bg-glass shadow-2xs backdrop-blur-md [--color-link:var(--color-link-on-glass)]"
+			>
+				<ul className="flex flex-wrap gap-x-5 gap-y-2 px-5 py-3">
 					{links.map((l) => (
 						<li key={l.path}>
 							<Link to="/$" params={{ _splat: l.path }}>

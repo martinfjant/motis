@@ -28,6 +28,29 @@ export const Route = createFileRoute("/$")({
 	component: StaticPage,
 });
 
+/**
+ * The page's text on a card: white, or dark in dark mode (bg-surface), so
+ * it reads well on any background. Styles for the elements Markdown makes,
+ * which Tailwind's base styles leave plain (no heading sizes, no bullets).
+ */
+const PAGE_TEXT = [
+	"space-y-4 rounded-2xl border border-line-faint bg-surface p-4 leading-relaxed shadow-2xs sm:p-6",
+	// Headings: room above, and kept clear of the top when linked to
+	"[&_h2]:pt-4 [&_h2]:text-2xl [&_h2]:font-semibold [&>h2:first-child]:pt-0",
+	"[&_h3]:pt-2 [&_h3]:text-xl [&_h3]:font-semibold",
+	"[&_h4]:font-semibold [&_:is(h2,h3,h4)]:scroll-mt-4",
+	// Lists
+	"[&_ul]:list-disc [&_ol]:list-decimal [&_:is(ul,ol)]:space-y-1 [&_:is(ul,ol)]:pl-6",
+	"[&_li::marker]:text-muted [&_li>:is(ul,ol)]:mt-1",
+	// Quotes, code, rules
+	"[&_blockquote]:border-l-4 [&_blockquote]:border-line [&_blockquote]:pl-4 [&_blockquote]:text-muted",
+	"[&_code]:rounded [&_code]:bg-surface-muted [&_code]:px-1 [&_code]:text-[0.9em]",
+	"[&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-surface-muted [&_pre]:p-3 [&_pre_code]:p-0",
+	"[&_hr]:border-line",
+	// Tables
+	"[&_table]:w-full [&_table]:border-collapse [&_:is(th,td)]:border [&_:is(th,td)]:border-line [&_:is(th,td)]:px-2 [&_:is(th,td)]:py-1 [&_:is(th,td)]:text-left [&_th]:bg-surface-muted [&_th]:font-semibold",
+].join(" ");
+
 function StaticPage() {
 	const page = Route.useLoaderData();
 	const router = useRouter();
@@ -56,7 +79,7 @@ function StaticPage() {
 
 	return (
 		<Main>
-			<article>
+			<article className="space-y-2.5">
 				<PageHeader title={page.title}>
 					{page.updated && (
 						<p>
@@ -72,6 +95,7 @@ function StaticPage() {
 				{/* biome-ignore lint/a11y/useKeyWithClickEvents: Enter on a link is a click, so the keyboard is covered */}
 				<div
 					onClick={onClick}
+					className={PAGE_TEXT}
 					// biome-ignore lint/security/noDangerouslySetInnerHtml: the HTML comes from our own Markdown files in content/sidor/, never from users
 					dangerouslySetInnerHTML={{ __html: page.html }}
 				/>
